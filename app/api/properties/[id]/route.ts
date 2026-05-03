@@ -4,11 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { UpdatePropertySchema } from '@/lib/validations'
 
-type Ctx = { params: { id: string } }
+type Ctx = { params: Promise<{ id: string }> }
 
 export async function GET(_req: Request, { params }: Ctx) {
+  const { id } = await params
+
   const property = await prisma.property.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       admin: { select: { name: true, phone: true, email: true } },
       _count: { select: { savedBy: true, views: true } },
@@ -36,7 +38,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const property = await prisma.property.findUnique({ where: { id: params.id } })
+  const { id } = await params
+
+  const property = await prisma.property.findUnique({ where: { id } })
   if (!property) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 })
   }
@@ -57,7 +61,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
   }
 
   const updated = await prisma.property.update({
-    where: { id: params.id },
+    where: { id },
     data: parsed.data,
   })
 
@@ -70,7 +74,9 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const property = await prisma.property.findUnique({ where: { id: params.id } })
+  const { id } = await params
+
+  const property = await prisma.property.findUnique({ where: { id } })
   if (!property) {
     return NextResponse.json({ error: 'Property not found' }, { status: 404 })
   }
@@ -78,7 +84,7 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     return NextResponse.json({ error: 'Forbidden: not your property' }, { status: 403 })
   }
 
-  await prisma.property.delete({ where: { id: params.id } })
+  await prisma.property.delete({ where: { id } })
 
   return NextResponse.json({ deleted: true })
 }
