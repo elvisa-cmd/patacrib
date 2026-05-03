@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ property.title }} - Patacrib</title>
+    
+    <!-- Mapbox -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.9.1/mapbox-gl.css' rel='stylesheet' />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        #map { height: 400px; width: 100%; }
+        .property-image { width: 100%; height: 300px; object-fit: cover; }
+        .distance-badge {
+            background: #007bff;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .amenity-item {
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation (keep your existing navigation) -->
+    
+    <div class="container mt-4">
+        <!-- Property Header -->
+        <div class="row">
+            <div class="col-md-8">
+                <h1>{{ property.title }}</h1>
+                <p class="text-muted">{{ property.address }}, {{ property.city }}</p>
+            </div>
+            <div class="col-md-4 text-right">
+                <h2 class="text-primary">{{ format_price(property.price) }}/{{ property.price_type }}</h2>
+                {% if current_user.is_authenticated %}
+                <button id="saveBtn" class="btn btn-warning" onclick="toggleSave({{ property.id }})">
+                    {% if is_saved %}<i class="fas fa-heart"></i> Saved{% else %}<i class="far fa-heart"></i> Save{% endif %}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Property Images -->
+        <div class="row mb-4">
+            {% if images %}
+                {% for image in images %}
+                <div class="col-md-3 mb-3">
+                    <img src="{{ image }}" class="property-image rounded" alt="Property Image">
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <img src="/static/default-property.jpg" class="property-image rounded" alt="Default Property Image">
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Property Details -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Description</h4>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ property.description }}</p>
+                    </div>
+                </div>
+                
+                <!-- Features -->
+                {% if features %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-star"></i> Features</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for feature in features %}
+                            <div class="col-md-6">
+                                <i class="fas fa-check text-success"></i> {{ feature }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Amenities -->
+                {% if amenities %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="fas fa-map-marker-alt"></i> Nearby Amenities</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap">
+                            {% for amenity in amenities %}
+                            <span class="amenity-item m-1">{{ amenity }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-4">
+                <!-- Quick Stats -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Property Details</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><i class="fas fa-bed"></i> <strong>Bedrooms:</strong> {{ property.bedrooms }}</p>
+                        <p><i class="fas fa-bath"></i> <strong>Bathrooms:</strong> {{ property.bathrooms }}</p>
+                        <p><i class="fas fa-home"></i> <strong>Type:</strong> {{ property.property_type }}</p>
+                        <p><i class="fas fa-map-pin"></i> <strong>Estate:</strong> {{ property.estate or 'N/A' }}</p>
+                        <p><i class="fas fa-calendar"></i> <strong>Listed:</strong> {{ property.created_at.strftime('%Y-%m-%d') }}</p>
+                    </div>
+                </div>
+                
+                <!-- Contact Admin -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Contact Agent</h4>
+                    </div>
+                    <div class="card-body">
+                        <p><i class="fas fa-user"></i> <strong>{{ admin.name }}</strong></p>
+                        <p><i class="fas fa-phone"></i> {{ admin.phone }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ admin.email }}</p>
+                        <a href="tel:{{ admin.phone }}" class="btn btn-primary btn-block">
+                            <i class="fas fa-phone"></i> Call Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- MAPBOX INTEGRATION -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4><i class="fas fa-map-marked-alt"></i> Location & Directions</h4>
+            </div>
+            <div class="card-body">
+                <!-- Map Container -->
+                <div id="map"></div>
+                
+                <!-- Route Calculator -->
+                <div class="mt-4 p-3 bg-light rounded">
+                    <h5>Get Directions</h5>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Your Location:</label>
+                                <input type="text" id="userLocation" class="form-control" 
+                                       placeholder="Enter your address or use current location">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Mode:</label>
+                                <select id="travelMode" class="form-control">
+                                    <option value="driving">🚗 Driving</option>
+                                    <option value="walking">🚶 Walking</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="calculateRoute()" class="btn btn-success">
+                        <i class="fas fa-route"></i> Calculate Route
+                    </button>
+                    
+                    <div id="routeResult" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <h6>Route Information:</h6>
+                            <p><strong>Distance:</strong> <span id="routeDistance"></span> km</p>
+                            <p><strong>Estimated Time:</strong> <span id="routeTime"></span> minutes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Nearby Properties -->
+        {% if nearby_properties %}
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-building"></i> Properties Nearby (within 5km)</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for nearby in nearby_properties %}
+                    {% set nearby_images = nearby.images|from_json %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card h-100">
+                            <img src="{{ nearby_images[0] if nearby_images else '/static/default-property.jpg' }}" 
+                                 class="card-img-top" 
+                                 style="height: 150px; object-fit: cover;">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ nearby.title[:25] }}...</h6>
+                                <p class="card-text text-primary">{{ format_price(nearby.price) }}</p>
+                                <span class="distance-badge">
+                                    <i class="fas fa-location-arrow"></i> {{ nearby.distance }} km
+                                </span>
+                                <a href="{{ url_for('property_detail', property_id=nearby.id) }}" 
+                                   class="btn btn-sm btn-outline-primary mt-2">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer (keep your existing footer) -->
+    
+    <script>
+        // Initialize Mapbox
+        mapboxgl.accessToken = '{{ mapbox_token }}';
+        
+        const propertyCoords = [{{ property.longitude }}, {{ property.latitude }}];
+        
+        // Create map
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: propertyCoords,
+            zoom: 14
+        });
+        
+        // Add property marker
+        new mapboxgl.Marker({ color: '#FF0000' })
+            .setLngLat(propertyCoords)
+            .setPopup(new mapboxgl.Popup().setHTML(`
+                <h5>{{ property.title }}</h5>
+                <p>{{ property.address }}</p>
+                <p><strong>Price:</strong> {{ format_price(property.price) }}</p>
+            `))
+            .addTo(map);
+        
+        // Add navigation controls
+        map.addControl(new mapboxgl.NavigationControl());
+        
+        // Function to calculate route
+        async function calculateRoute() {
+            const userLocation = document.getElementById('userLocation').value;
+            
+            if (!userLocation) {
+                alert('Please enter your location or use current location');
+                return;
+            }
+            
+            // If user selects "current location"
+            if (userLocation.toLowerCase().includes('current')) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(async (position) => {
+                        const userLat = position.coords.latitude;
+                        const userLon = position.coords.longitude;
+                        await fetchRoute(userLat, userLon);
+                        
+                        // Add user marker
+                        new mapboxgl.Marker({ color: '#007bff' })
+                            .setLngLat([userLon, userLat])
+                            .setPopup(new mapboxgl.Popup().setHTML('<h6>Your Location</h6>'))
+                            .addTo(map);
+                    });
+                } else {
+                    alert('Geolocation not supported by your browser');
+                }
+            } else {
+                // For manual address, you'd need geocoding API
+                alert('For manual addresses, please use "Current Location" or implement geocoding');
+            }
+        }
+        
+        async function fetchRoute(userLat, userLon) {
+            try {
+                const response = await fetch(`/api/calculate-route?start_lat=${userLat}&start_lon=${userLon}&end_lat={{ property.latitude }}&end_lon={{ property.longitude }}`);
+                const data = await response.json();
+                
+                if (data.distance_km) {
+                    document.getElementById('routeDistance').textContent = data.distance_km;
+                    document.getElementById('routeTime').textContent = data.estimated_time_minutes;
+                    document.getElementById('routeResult').style.display = 'block';
+                    
+                    // Draw a simple line (in production, use Mapbox Directions API)
+                    const bounds = new mapboxgl.LngLatBounds()
+                        .extend([userLon, userLat])
+                        .extend(propertyCoords);
+                    map.fitBounds(bounds, { padding: 50 });
+                }
+            } catch (error) {
+                console.error('Error calculating route:', error);
+                alert('Error calculating route. Please try again.');
+            }
+        }
+        
+        // Save property function
+        async function toggleSave(propertyId) {
+            try {
+                const response = await fetch(`/save-property/${propertyId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                const saveBtn = document.getElementById('saveBtn');
+                
+                if (result.saved) {
+                    saveBtn.innerHTML = '<i class="fas fa-heart"></i> Saved';
+                    saveBtn.className = 'btn btn-warning';
+                    alert('Property saved to your favorites!');
+                } else {
+                    saveBtn.innerHTML = '<i class="far fa-heart"></i> Save';
+                    saveBtn.className = 'btn btn-outline-warning';
+                    alert('Property removed from saved list');
+                }
+            } catch (error) {
+                console.error('Error saving property:', error);
+                alert('Error saving property. Please try again.');
+            }
+        }
+        
+        // Auto-detect location on page load
+        window.onload = function() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(() => {
+                    document.getElementById('userLocation').value = 'Current Location (detected)';
+                });
+            }
+        };
+    </script>
+</body>
+</html>

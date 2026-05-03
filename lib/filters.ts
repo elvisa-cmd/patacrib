@@ -1,0 +1,73 @@
+import { Prisma } from '@prisma/client'
+
+export interface SearchFilters {
+  q?:           string
+  estate?:      string
+  type?:        string
+  minPrice?:    string
+  maxPrice?:    string
+  bedrooms?:    string
+  sort?:        string
+  borehole?:    string
+  powerBackup?: string
+  nearMatatu?:  string
+}
+
+export function buildPropertyFilter(
+  filters: SearchFilters
+): Prisma.PropertyWhereInput {
+  const where: Prisma.PropertyWhereInput = { status: 'available' }
+
+  if (filters.q) {
+    where.OR = [
+      { title:       { contains: filters.q, mode: 'insensitive' } },
+      { description: { contains: filters.q, mode: 'insensitive' } },
+      { estate:      { contains: filters.q, mode: 'insensitive' } },
+      { address:     { contains: filters.q, mode: 'insensitive' } },
+    ]
+  }
+
+  if (filters.estate) {
+    where.estate = { equals: filters.estate, mode: 'insensitive' }
+  }
+
+  if (filters.type) {
+    where.propertyType = filters.type
+  }
+
+  const minPrice = filters.minPrice ? Number(filters.minPrice) : undefined
+  const maxPrice = filters.maxPrice ? Number(filters.maxPrice) : undefined
+
+  if (minPrice && !isNaN(minPrice)) {
+    where.price = { ...(where.price as object), gte: minPrice }
+  }
+
+  if (maxPrice && !isNaN(maxPrice)) {
+    where.price = { ...(where.price as object), lte: maxPrice }
+  }
+
+  if (filters.bedrooms && filters.bedrooms !== 'any') {
+    if (filters.bedrooms === '4+') {
+      where.bedrooms = { gte: 4 }
+    } else {
+      where.bedrooms = Number(filters.bedrooms)
+    }
+  }
+
+  if (filters.borehole === '1')    where.borehole    = true
+  if (filters.powerBackup === '1') where.powerBackup = true
+  if (filters.nearMatatu === '1')  where.matatuRoutes = { isEmpty: false }
+
+  return where
+}
+
+export function buildPropertyOrderBy(
+  sort?: string
+): Prisma.PropertyOrderByWithRelationInput {
+  switch (sort) {
+    case 'price-asc':  return { price: 'asc' }
+    case 'price-desc': return { price: 'desc' }
+    case 'oldest':     return { createdAt: 'asc' }
+    default:           return { createdAt: 'desc' }
+  }
+}

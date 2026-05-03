@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+
+{% block title %}Relocation Assistant · Patacrib{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1200px; margin: 2rem auto;">
+    
+    <!-- HEADER -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h1 style="font-size: 2.2rem; font-weight: 700; color: #0a1e3c; margin-bottom: 0.5rem;">
+            <i class="fas fa-compass" style="color: #1e4a7a;"></i> Relocation Assistant
+        </h1>
+        <p style="color: #2c3e5c; font-size: 1rem; max-width: 600px; margin: 0 auto;">
+            Moving to Nairobi? We'll help you find the perfect neighborhood based on your work, budget, and lifestyle.
+        </p>
+    </div>
+
+    <!-- QUESTIONNAIRE CARD -->
+    <div class="card" style="background: linear-gradient(145deg, #1e4a7a, #0a1e3c); color: white; padding: 2.5rem; margin-bottom: 2rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Work Location -->
+            <div>
+                <label style="color: white; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem;">
+                    <i class="fas fa-briefcase"></i> Where will you work?
+                </label>
+                <select id="workLocation" style="width: 100%; padding: 0.8rem; border-radius: 12px; border: none; font-size: 0.9rem;">
+                    <option value="">Select work location</option>
+                    <option value="cbd">CBD (Central Business District)</option>
+                    <option value="westlands">Westlands</option>
+                    <option value="upperhill">Upper Hill</option>
+                    <option value="industrial">Industrial Area</option>
+                    <option value="gigiri">Gigiri / UN</option>
+                    <option value="parklands">Parklands</option>
+                    <option value="kilimani">Kilimani</option>
+                    <option value="notsure">I work remotely / Not sure</option>
+                </select>
+            </div>
+
+            <!-- Monthly Budget -->
+            <div>
+                <label style="color: white; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem;">
+                    <i class="fas fa-money-bill-wave"></i> Monthly budget
+                </label>
+                <select id="budget" style="width: 100%; padding: 0.8rem; border-radius: 12px; border: none; font-size: 0.9rem;">
+                    <option value="">Select budget</option>
+                    <option value="10-20">KSh 10,000 - 20,000</option>
+                    <option value="20-35">KSh 20,000 - 35,000</option>
+                    <option value="35-50">KSh 35,000 - 50,000</option>
+                    <option value="50-80">KSh 50,000 - 80,000</option>
+                    <option value="80-120">KSh 80,000 - 120,000</option>
+                    <option value="120+">KSh 120,000+</option>
+                </select>
+            </div>
+
+            <!-- Property Type -->
+            <div>
+                <label style="color: white; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.5rem;">
+                    <i class="fas fa-home"></i> What type?
+                </label>
+                <select id="propertyType" style="width: 100%; padding: 0.8rem; border-radius: 12px; border: none; font-size: 0.9rem;">
+                    <option value="">Select type</option>
+                    <option value="bedsitter">Bedsitter</option>
+                    <option value="1bedroom">1 Bedroom</option>
+                    <option value="2bedroom">2 Bedroom</option>
+                    <option value="3bedroom">3 Bedroom</option>
+                    <option value="4bedroom">4+ Bedroom</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Lifestyle Preferences -->
+        <div style="margin-top: 1.5rem;">
+            <label style="color: white; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 0.8rem;">
+                <i class="fas fa-heart"></i> What matters to you?
+            </label>
+            <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="nightlife"> Nightlife
+                </label>
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="quiet"> Quiet area
+                </label>
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="family"> Family friendly
+                </label>
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="schools"> Near schools
+                </label>
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="shopping"> Shopping malls
+                </label>
+                <label style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 100px; display: flex; align-items: center; gap: 0.3rem;">
+                    <input type="checkbox" value="security"> 24hr security
+                </label>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div style="text-align: center; margin-top: 2rem;">
+            <button onclick="findNeighborhoods()" class="btn" style="background: white; color: #1e4a7a; padding: 0.8rem 3rem; border-radius: 100px; font-weight: 700; font-size: 1rem; border: none; cursor: pointer;">
+                <i class="fas fa-search"></i> Find My Perfect Neighborhood
+            </button>
+        </div>
+    </div>
+
+    <!-- RECOMMENDED NEIGHBORHOODS (ALL NAIROBI) -->
+    <div id="recommendations" style="margin-top: 2rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem;">
+            <i class="fas fa-star" style="color: #1e4a7a;"></i> Nairobi Neighborhoods
+        </h2>
+
+        <!-- Quick Filter Tabs -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            <button class="filter-tab active" onclick="filterNeighborhoods('all')">All</button>
+            <button class="filter-tab" onclick="filterNeighborhoods('budget')">Budget (Under 25k)</button>
+            <button class="filter-tab" onclick="filterNeighborhoods('mid')">Mid-Range (25k-50k)</button>
+            <button class="filter-tab" onclick="filterNeighborhoods('luxury')">Luxury (50k+)</button>
+            <button class="filter-tab" onclick="filterNeighborhoods('family')">Family Friendly</button>
+            <button class="filter-tab" onclick="filterNeighborhoods('nightlife')">Nightlife</button>
+        </div>
+
+        <!-- Neighborhood Grid -->
+        <div class="neighborhood-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;">
+            
+            <!-- Eastlands -->
+            <div class="neighborhood-card" data-category="budget family">
+                <div style="height: 140px; background: linear-gradient(145deg, #2a6bb0, #1e4a7a); border-radius: 16px 16px 0 0; position: relative;">
+                    <div style="position: absolute; bottom: 10px; left: 15px; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Eastlands</h3>
+                        <span style="background: #00a86b; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Best Value</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 15-25k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>30-40 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>B-</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 34, 36, 40, 42 • <i class="fas fa-water"></i> Alternate days
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Buruburu, Umoja, Dandora, Kayole. Very affordable, established communities.</p>
+                    <button onclick="viewNeighborhood('Eastlands')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Kilimani -->
+            <div class="neighborhood-card" data-category="mid nightlife shopping">
+                <div style="height: 140px; background: linear-gradient(145deg, #1e4a7a, #0a1e3c); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Kilimani</h3>
+                        <span style="background: #ffd700; color: black; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Young Pros</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 35-60k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>15 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>B+</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 44, 105, 33C • <i class="fas fa-water"></i> 8am-12pm
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Trendy area with many restaurants, gyms, and social spots. Popular with young professionals.</p>
+                    <button onclick="viewNeighborhood('Kilimani')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Westlands -->
+            <div class="neighborhood-card" data-category="mid luxury nightlife">
+                <div style="height: 140px; background: linear-gradient(145deg, #2a6bb0, #1e4a7a); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Westlands</h3>
+                        <span style="background: #ffd700; color: black; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Corporate</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 45-80k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>10 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>A-</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 23, 48, 11 • <i class="fas fa-water"></i> 6am-10am
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Business hub with major offices, malls, and nightlife. Modern apartments.</p>
+                    <button onclick="viewNeighborhood('Westlands')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- South B/C -->
+            <div class="neighborhood-card" data-category="mid family">
+                <div style="height: 140px; background: linear-gradient(145deg, #0a1e3c, #1e3a5f); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">South B/C</h3>
+                        <span style="background: #00a86b; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Family</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 25-45k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>20 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>B</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 33, 125, 15 • <i class="fas fa-water"></i> 10am-2pm
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Quiet, established residential areas. Good schools and family atmosphere.</p>
+                    <button onclick="viewNeighborhood('South B')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Karen/Langata -->
+            <div class="neighborhood-card" data-category="luxury family">
+                <div style="height: 140px; background: linear-gradient(145deg, #1e4a7a, #2a6bb0); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Karen/Langata</h3>
+                        <span style="background: #ffd700; color: black; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Luxury</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 60-150k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>30-40 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>A</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 24, 126, 3 • <i class="fas fa-water"></i> 6am-10am
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Spacious homes, embassies, international schools. Very safe, green environment.</p>
+                    <button onclick="viewNeighborhood('Karen')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Parklands -->
+            <div class="neighborhood-card" data-category="mid family">
+                <div style="height: 140px; background: linear-gradient(145deg, #2a6bb0, #1e4a7a); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Parklands</h3>
+                        <span style="background: #00a86b; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Central</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 30-50k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>10 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>B+</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 7, 8, 46 • <i class="fas fa-water"></i> 6am-10am
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Close to CBD, multicultural area with hospitals and schools.</p>
+                    <button onclick="viewNeighborhood('Parklands')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Kileleshwa -->
+            <div class="neighborhood-card" data-category="mid luxury">
+                <div style="height: 140px; background: linear-gradient(145deg, #1e4a7a, #0a1e3c); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Kileleshwa</h3>
+                        <span style="background: #ffd700; color: black; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Modern</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 40-70k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>15 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>B+</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 46, 48 • <i class="fas fa-water"></i> 8am-12pm
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Modern apartments, leafy streets, popular with diplomats and professionals.</p>
+                    <button onclick="viewNeighborhood('Kileleshwa')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+
+            <!-- Donholm -->
+            <div class="neighborhood-card" data-category="budget family">
+                <div style="height: 140px; background: linear-gradient(145deg, #2a6bb0, #1e4a7a); border-radius: 16px 16px 0 0;">
+                    <div style="padding: 1rem; color: white;">
+                        <h3 style="color: white; font-size: 1.3rem;">Donholm</h3>
+                        <span style="background: #00a86b; padding: 0.2rem 0.8rem; border-radius: 100px; font-size: 0.7rem;">⭐ Value</span>
+                    </div>
+                </div>
+                <div style="padding: 1.2rem;">
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <div><span style="color: #64748b;">Rent</span><br><strong>KSh 15-25k</strong></div>
+                        <div><span style="color: #64748b;">To CBD</span><br><strong>35 min</strong></div>
+                        <div><span style="color: #64748b;">Safety</span><br><strong>C+</strong></div>
+                    </div>
+                    <p style="font-size: 0.8rem; margin-bottom: 1rem;">
+                        <i class="fas fa-bus"></i> 34, 36, 38 • <i class="fas fa-water"></i> Alternate days
+                    </p>
+                    <p style="font-size: 0.8rem; color: #2c3e5c;">Affordable, family-oriented, many shopping options.</p>
+                    <button onclick="viewNeighborhood('Donholm')" class="btn-outline" style="width: 100%; margin-top: 1rem;">View properties</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPARISON TOOL -->
+    <div style="margin-top: 3rem;">
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 1rem;">
+            <i class="fas fa-balance-scale" style="color: #1e4a7a;"></i> Compare Neighborhoods
+        </h2>
+        <div style="display: grid; grid-template-columns: 1fr 0.1fr 1fr; gap: 0.5rem; align-items: center;">
+            <select id="compare1" class="form-control">
+                <option value="">Select first neighborhood</option>
+                <option value="eastlands">Eastlands</option>
+                <option value="kilimani">Kilimani</option>
+                <option value="westlands">Westlands</option>
+                <option value="southb">South B/C</option>
+                <option value="karen">Karen/Langata</option>
+                <option value="parklands">Parklands</option>
+                <option value="kileleshwa">Kileleshwa</option>
+                <option value="donholm">Donholm</option>
+            </select>
+            
+            <div style="text-align: center; font-size: 1.5rem; color: #1e4a7a;">VS</div>
+            
+            <select id="compare2" class="form-control">
+                <option value="">Select second neighborhood</option>
+                <option value="eastlands">Eastlands</option>
+                <option value="kilimani">Kilimani</option>
+                <option value="westlands">Westlands</option>
+                <option value="southb">South B/C</option>
+                <option value="karen">Karen/Langata</option>
+                <option value="parklands">Parklands</option>
+                <option value="kileleshwa">Kileleshwa</option>
+                <option value="donholm">Donholm</option>
+            </select>
+        </div>
+        <button onclick="compareNeighborhoods()" class="btn-primary" style="margin-top: 1rem; width: 100%;">Compare</button>
+    </div>
+
+    <!-- QUICK TIPS -->
+    <div style="background: #e1f0fa; border-radius: 20px; padding: 1.5rem; margin-top: 2rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-bottom: 1rem;">
+            <i class="fas fa-lightbulb" style="color: #1e4a7a;"></i> Tips for Newcomers
+        </h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+            <div>
+                <i class="fas fa-check-circle" style="color: #00a86b;"></i> <strong>Stay central first:</strong> Try Kilimani or Westlands for 3 months
+            </div>
+            <div>
+                <i class="fas fa-check-circle" style="color: #00a86b;"></i> <strong>Matatus run 5am-11pm</strong> – plan your commute
+            </div>
+            <div>
+                <i class="fas fa-check-circle" style="color: #00a86b;"></i> <strong>Water schedules</strong> vary – check before moving
+            </div>
+            <div>
+                <i class="fas fa-check-circle" style="color: #00a86b;"></i> <strong>Traffic jam</strong> – leave early!
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .neighborhood-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        transition: 0.2s;
+    }
+    .neighborhood-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(30,74,122,0.1);
+    }
+    .filter-tab {
+        padding: 0.4rem 1.2rem;
+        border-radius: 100px;
+        border: 1px solid rgba(30,74,122,0.2);
+        background: transparent;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    .filter-tab.active {
+        background: #1e4a7a;
+        color: white;
+        border-color: #1e4a7a;
+    }
+    .btn-outline {
+        background: transparent;
+        border: 1px solid #1e4a7a;
+        color: #1e4a7a;
+        padding: 0.5rem;
+        border-radius: 100px;
+        cursor: pointer;
+    }
+    .btn-outline:hover {
+        background: #1e4a7a;
+        color: white;
+    }
+</style>
+
+<script>
+    function findNeighborhoods() {
+        const work = document.getElementById('workLocation').value;
+        const budget = document.getElementById('budget').value;
+        const type = document.getElementById('propertyType').value;
+        
+        // Scroll to neighborhoods
+        document.getElementById('recommendations').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function filterNeighborhoods(category) {
+        // Update active tab
+        document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Filter cards
+        const cards = document.querySelectorAll('.neighborhood-card');
+        cards.forEach(card => {
+            if (category === 'all') {
+                card.style.display = 'block';
+            } else {
+                const categories = card.dataset.category;
+                if (categories.includes(category)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    function viewNeighborhood(name) {
+        window.location.href = `/search?q=${encodeURIComponent(name)}`;
+    }
+
+    function compareNeighborhoods() {
+        const n1 = document.getElementById('compare1').value;
+        const n2 = document.getElementById('compare2').value;
+        if (n1 && n2) {
+            alert(`Comparing ${n1} and ${n2} - This will show detailed comparison`);
+        }
+    }
+</script>
+{% endblock %}

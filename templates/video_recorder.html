@@ -1,0 +1,280 @@
+<div class="video-recorder-container bg-gray-900 rounded-xl overflow-hidden shadow-2xl">
+    <!-- Sleek Header -->
+    <div class="bg-gray-800 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="flex space-x-1">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <span class="text-white text-sm font-medium ml-2">Property Video Recorder</span>
+        </div>
+        <div class="text-gray-400 text-xs">
+            <span class="recording-time">00:00</span>
+        </div>
+    </div>
+    
+    <!-- Video Preview -->
+    <div class="relative bg-black aspect-video">
+        <video id="videoPreview" autoplay playsinline muted class="w-full h-full object-cover"></video>
+        
+        <!-- Recording Indicator -->
+        <div id="recordingIndicator" class="absolute top-4 right-4 hidden">
+            <div class="flex items-center space-x-2 bg-red-600 px-3 py-1.5 rounded-full">
+                <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                <span class="text-white text-xs font-medium">REC</span>
+            </div>
+        </div>
+        
+        <!-- No Camera Placeholder -->
+        <div id="noCameraMessage" class="absolute inset-0 flex items-center justify-center bg-gray-900 hidden">
+            <div class="text-center">
+                <svg class="w-16 h-16 text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                </svg>
+                <p class="text-gray-400 text-sm">Camera not available</p>
+                <label class="mt-3 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-lg cursor-pointer hover:bg-blue-700">
+                    Upload Video Instead
+                    <input type="file" accept="video/*" class="hidden" id="videoUpload">
+                </label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Controls - Sleek Design -->
+    <div class="bg-gray-800 px-4 py-4">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- Camera Selection -->
+                <select id="cameraSelect" class="bg-gray-700 text-white text-sm rounded-lg px-3 py-2 border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Select Camera</option>
+                </select>
+                
+                <!-- Microphone Toggle -->
+                <button id="micToggle" class="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Record Button -->
+                <button id="recordButton" class="flex items-center space-x-2 px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                    <div class="w-2 h-2 bg-white rounded-full"></div>
+                    <span class="text-sm font-medium">Record</span>
+                </button>
+                
+                <!-- Stop Button -->
+                <button id="stopButton" class="flex items-center space-x-2 px-6 py-2 bg-gray-600 text-white rounded-lg opacity-50 cursor-not-allowed" disabled>
+                    <div class="w-2 h-2 bg-white"></div>
+                    <span class="text-sm font-medium">Stop</span>
+                </button>
+                
+                <!-- Preview Button -->
+                <button id="previewButton" class="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 transition hidden">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Recording Preview -->
+        <div id="recordingPreview" class="mt-4 hidden">
+            <div class="flex items-center justify-between bg-gray-700 rounded-lg p-3">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-white text-sm font-medium">New Recording</p>
+                        <p class="text-gray-400 text-xs" id="recordingDuration">0:00</p>
+                    </div>
+                </div>
+                <button type="button" class="remove-recording text-gray-400 hover:text-red-500 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linecap="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Hidden Input for Video URL -->
+        <input type="hidden" name="recorded_video" id="recordedVideoInput">
+    </div>
+</div>
+
+<script>
+class PropertyVideoRecorder {
+    constructor() {
+        this.mediaRecorder = null;
+        this.stream = null;
+        this.chunks = [];
+        this.recordingTime = 0;
+        this.timer = null;
+        
+        this.initialize();
+    }
+    
+    async initialize() {
+        this.preview = document.getElementById('videoPreview');
+        this.recordBtn = document.getElementById('recordButton');
+        this.stopBtn = document.getElementById('stopButton');
+        this.cameraSelect = document.getElementById('cameraSelect');
+        this.recordingIndicator = document.getElementById('recordingIndicator');
+        this.recordingTimeEl = document.querySelector('.recording-time');
+        this.noCameraMsg = document.getElementById('noCameraMessage');
+        this.recordingPreview = document.getElementById('recordingPreview');
+        this.recordedVideoInput = document.getElementById('recordedVideoInput');
+        
+        await this.loadCameras();
+        this.attachEvents();
+    }
+    
+    async loadCameras() {
+        try {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            
+            this.cameraSelect.innerHTML = '<option value="">Select Camera</option>';
+            videoDevices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                this.cameraSelect.appendChild(option);
+            });
+            
+            if (videoDevices.length > 0) {
+                this.noCameraMsg.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error('Error loading cameras:', error);
+            this.noCameraMsg.classList.remove('hidden');
+        }
+    }
+    
+    async startCamera(deviceId) {
+        try {
+            if (this.stream) {
+                this.stream.getTracks().forEach(track => track.stop());
+            }
+            
+            this.stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: deviceId ? { exact: deviceId } : undefined },
+                audio: true
+            });
+            
+            this.preview.srcObject = this.stream;
+            this.preview.classList.remove('hidden');
+            
+            // Initialize MediaRecorder
+            this.mediaRecorder = new MediaRecorder(this.stream, {
+                mimeType: 'video/webm;codecs=vp9,opus' || 'video/webm;codecs=vp8,opus' || 'video/webm'
+            });
+            
+            this.mediaRecorder.ondataavailable = (e) => this.chunks.push(e.data);
+            this.mediaRecorder.onstop = () => this.saveRecording();
+            
+        } catch (error) {
+            console.error('Error starting camera:', error);
+            this.noCameraMsg.classList.remove('hidden');
+        }
+    }
+    
+    startRecording() {
+        if (!this.mediaRecorder) return;
+        
+        this.chunks = [];
+        this.mediaRecorder.start(1000);
+        this.recordingTime = 0;
+        
+        this.timer = setInterval(() => {
+            this.recordingTime++;
+            const minutes = Math.floor(this.recordingTime / 60);
+            const seconds = this.recordingTime % 60;
+            this.recordingTimeEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+        
+        this.recordingIndicator.classList.remove('hidden');
+        this.recordBtn.disabled = true;
+        this.stopBtn.disabled = false;
+        this.recordBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        this.stopBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+            this.stream.getTracks().forEach(track => track.stop());
+            
+            clearInterval(this.timer);
+            this.recordingIndicator.classList.add('hidden');
+            this.recordBtn.disabled = false;
+            this.stopBtn.disabled = true;
+            this.recordBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            this.stopBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    
+    saveRecording() {
+        const blob = new Blob(this.chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        
+        // Upload to server
+        const formData = new FormData();
+        formData.append('video', blob, 'recording.webm');
+        
+        fetch('/upload-video', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.url) {
+                this.recordedVideoInput.value = data.url;
+                this.showRecordingPreview(data.url);
+            }
+        })
+        .catch(error => console.error('Error uploading:', error));
+    }
+    
+    showRecordingPreview(videoUrl) {
+        this.recordingPreview.classList.remove('hidden');
+        const duration = `${Math.floor(this.recordingTime / 60)}:${(this.recordingTime % 60).toString().padStart(2, '0')}`;
+        document.getElementById('recordingDuration').textContent = duration;
+        
+        // Add remove functionality
+        this.recordingPreview.querySelector('.remove-recording').onclick = () => {
+            this.recordingPreview.classList.add('hidden');
+            this.recordedVideoInput.value = '';
+        };
+    }
+    
+    attachEvents() {
+        this.cameraSelect.addEventListener('change', (e) => {
+            this.startCamera(e.target.value);
+        });
+        
+        this.recordBtn.addEventListener('click', () => this.startRecording());
+        this.stopBtn.addEventListener('click', () => this.stopRecording());
+        
+        // Microphone toggle
+        document.getElementById('micToggle').addEventListener('click', (e) => {
+            if (this.stream) {
+                const audioTrack = this.stream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    e.currentTarget.classList.toggle('bg-red-600', !audioTrack.enabled);
+                }
+            }
+        });
+    }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new PropertyVideoRecorder();
+});
+</script>

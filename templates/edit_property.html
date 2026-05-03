@@ -1,0 +1,623 @@
+{% extends "base.html" %}
+
+{% block title %}Edit property · Patacrib{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- HEADER -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 1.2rem;">
+        <div>
+            <h1 style="font-size: 1.6rem; font-weight: 600; margin-bottom: 0.1rem;">Edit property</h1>
+            <p style="color: #64748b; font-size: 0.75rem;">Update your property information</p>
+        </div>
+        <a href="/dashboard/admin" class="btn btn-outline" style="padding: 0.5rem 1.2rem;">
+            <i class="fas fa-arrow-left" style="font-size: 0.65rem;"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form id="propertyForm" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- BASIC INFORMATION -->
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-info-circle" style="color: #64748b;"></i> Basic information
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" name="title" class="form-control" value="{{ property.title }}" placeholder="Modern 2 bed apartment" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Type</label>
+                    <select name="property_type" class="form-control" required>
+                        <option value="">Select</option>
+                        <option value="bedsitter" {% if property.property_type == 'bedsitter' %}selected{% endif %}>Bedsitter</option>
+                        <option value="1bedroom" {% if property.property_type == '1bedroom' %}selected{% endif %}>1 Bedroom</option>
+                        <option value="2bedroom" {% if property.property_type == '2bedroom' %}selected{% endif %}>2 Bedroom</option>
+                        <option value="3bedroom" {% if property.property_type == '3bedroom' %}selected{% endif %}>3 Bedroom</option>
+                        <option value="4bedroom" {% if property.property_type == '4bedroom' %}selected{% endif %}>4 Bedroom</option>
+                        <option value="5+bedroom" {% if property.property_type == '5+bedroom' %}selected{% endif %}>5+ Bedroom</option>
+                        <option value="studio" {% if property.property_type == 'studio' %}selected{% endif %}>Studio</option>
+                        <option value="shop" {% if property.property_type == 'shop' %}selected{% endif %}>Shop</option>
+                        <option value="office" {% if property.property_type == 'office' %}selected{% endif %}>Office</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Price (KSh)</label>
+                    <input type="number" name="price" class="form-control" value="{{ property.price }}" placeholder="45000" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Price type</label>
+                    <select name="price_type" class="form-control" required>
+                        <option value="month" {% if property.price_type == 'month' %}selected{% endif %}>Per month</option>
+                        <option value="year" {% if property.price_type == 'year' %}selected{% endif %}>Per year</option>
+                        <option value="day" {% if property.price_type == 'day' %}selected{% endif %}>Per day</option>
+                        <option value="negotiable" {% if property.price_type == 'negotiable' %}selected{% endif %}>Negotiable</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Bedrooms</label>
+                    <input type="number" name="bedrooms" class="form-control" value="{{ property.bedrooms }}" placeholder="2" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Bathrooms</label>
+                    <input type="number" name="bathrooms" class="form-control" value="{{ property.bathrooms }}" placeholder="2" min="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="4" placeholder="Describe the property..." required>{{ property.description }}</textarea>
+            </div>
+        </div>
+
+        <!-- LOCATION -->
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-map-marker-alt" style="color: #64748b;"></i> Location
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">City/Town</label>
+                    <select name="city" class="form-control" required>
+                        <option value="">Select city</option>
+                        <option value="Nairobi" {% if property.city == 'Nairobi' %}selected{% endif %}>Nairobi</option>
+                        <option value="Mombasa" {% if property.city == 'Mombasa' %}selected{% endif %}>Mombasa</option>
+                        <option value="Kisumu" {% if property.city == 'Kisumu' %}selected{% endif %}>Kisumu</option>
+                        <option value="Nakuru" {% if property.city == 'Nakuru' %}selected{% endif %}>Nakuru</option>
+                        <option value="Eldoret" {% if property.city == 'Eldoret' %}selected{% endif %}>Eldoret</option>
+                        <option value="Kiambu" {% if property.city == 'Kiambu' %}selected{% endif %}>Kiambu</option>
+                        <option value="Machakos" {% if property.city == 'Machakos' %}selected{% endif %}>Machakos</option>
+                        <option value="Kajiado" {% if property.city == 'Kajiado' %}selected{% endif %}>Kajiado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Estate/Area</label>
+                    <input type="text" name="estate" class="form-control" value="{{ property.estate or '' }}" placeholder="e.g. Kilimani, Westlands">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Street/Address</label>
+                    <input type="text" name="address" class="form-control" value="{{ property.address }}" placeholder="e.g. Moi Avenue, House 123" required>
+                </div>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+                <div style="background: #f1f5f9; padding: 0.6rem 1rem; border-radius: 100px; color: #0f172a; font-size: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fas fa-info-circle" style="color: #64748b;"></i> Status: 
+                    <select name="status" style="background: white; border: 1px solid #e2e8f0; border-radius: 100px; padding: 0.2rem 0.8rem; margin-left: 0.3rem; font-size: 0.7rem;">
+                        <option value="available" {% if property.status == 'available' %}selected{% endif %}>Available</option>
+                        <option value="rented" {% if property.status == 'rented' %}selected{% endif %}>Rented</option>
+                        <option value="sold" {% if property.status == 'sold' %}selected{% endif %}>Sold</option>
+                    </select>
+                </div>
+                
+                {% if property.latitude and property.longitude %}
+                <div style="background: #f1f5f9; padding: 0.6rem 1rem; border-radius: 100px; color: #0f172a; font-size: 0.7rem; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fas fa-satellite" style="color: #0f172a;"></i> 
+                    GPS: {{ property.latitude|round(4) }}, {{ property.longitude|round(4) }} 
+                    {% if property.gps_accuracy %}<span style="color: #0f172a; font-weight: 600;">±{{ property.gps_accuracy|int }}m</span>{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- EXISTING IMAGES -->
+        {% if images %}
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-images" style="color: #64748b;"></i> Current images
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 0.8rem;">
+                {% for image in images %}
+                <div style="position: relative; padding-top: 100%; background: #f1f5f9; border-radius: 12px; overflow: hidden;">
+                    <img src="{{ image }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ADD MORE IMAGES -->
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-plus-circle" style="color: #64748b;"></i> Add more images
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <div onclick="document.getElementById('imageInput').click()" style="background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 20px; padding: 1.5rem 1rem; text-align: center; cursor: pointer; transition: 0.2s;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem;"></i>
+                        <p style="color: #0f172a; font-size: 0.8rem; font-weight: 500;">Click to select multiple images</p>
+                    </div>
+                    <input type="file" id="imageInput" name="images" accept="image/*" multiple style="display: none;" onchange="previewImages(this)">
+                </div>
+                
+                <div>
+                    <div onclick="startPhotoCamera()" style="background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 20px; padding: 1.5rem 1rem; text-align: center; cursor: pointer;">
+                        <i class="fas fa-camera" style="font-size: 2rem; color: #94a3b8; margin-bottom: 0.5rem;"></i>
+                        <p style="color: #0f172a; font-size: 0.8rem; font-weight: 500;">Take new photos with webcam</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="imagePreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;"></div>
+            
+            <!-- WEBCAM CAPTURE SECTION -->
+            <div id="photoCameraContainer" style="display: none; margin-top: 1rem;">
+                <div style="background: #0f172a; border-radius: 20px; overflow: hidden; padding: 1.5rem; text-align: center;">
+                    <video id="photoWebcam" autoplay playsinline style="width: 100%; max-width: 400px; border-radius: 12px; transform: scaleX(-1);"></video>
+                    <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: 1rem;">
+                        <button type="button" class="btn btn-primary" onclick="capturePhoto()" style="padding: 0.6rem 1.8rem;">
+                            <i class="fas fa-camera-retro"></i> Capture
+                        </button>
+                        <button type="button" class="btn btn-outline" onclick="stopPhotoCamera()" style="padding: 0.6rem 1.5rem; background: white;">
+                            <i class="fas fa-stop"></i> Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="photoPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 0.5rem; margin-top: 0.5rem;"></div>
+        </div>
+
+        <!-- EXISTING VIDEO -->
+        {% if property.video %}
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-video" style="color: #64748b;"></i> Current video
+            </h3>
+            <video controls style="width: 100%; max-width: 480px; border-radius: 16px;">
+                <source src="{{ property.video }}" type="video/mp4">
+            </video>
+        </div>
+        {% endif %}
+
+        <!-- UPDATE VIDEO -->
+        <div class="card" style="padding: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-video" style="color: #64748b;"></i> Update video
+            </h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <div onclick="document.getElementById('videoInput').click()" style="background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 20px; padding: 1.5rem 1rem; text-align: center; cursor: pointer;">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: #94a3b8; margin-bottom: 0.5rem;"></i>
+                        <p style="color: #0f172a; font-size: 0.75rem; font-weight: 500;">Upload new video file</p>
+                    </div>
+                    <input type="file" id="videoInput" name="video" accept="video/*" style="display: none;" onchange="previewVideo(this)">
+                    <div id="videoPreview" style="margin-top: 0.5rem;"></div>
+                </div>
+                
+                <div>
+                    <div onclick="startVideoRecording()" style="background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 20px; padding: 1.5rem 1rem; text-align: center; cursor: pointer;">
+                        <i class="fas fa-circle" style="font-size: 1.8rem; color: #ef4444; margin-bottom: 0.5rem;"></i>
+                        <p style="color: #0f172a; font-size: 0.75rem; font-weight: 500;">Record new video</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIDEO RECORDING INTERFACE -->
+            <div id="videoRecordingInterface" style="display: none; margin-top: 1rem;">
+                <div style="background: #0f172a; border-radius: 20px; padding: 1.5rem;">
+                    <div style="display: flex; flex-direction: column; align-items: center;">
+                        <div style="background: #000; border-radius: 16px; overflow: hidden; width: 100%; max-width: 480px; margin-bottom: 1rem;">
+                            <video id="videoPreviewElement" autoplay playsinline style="width: 100%; transform: scaleX(-1);"></video>
+                        </div>
+                        
+                        <div id="recordedVideoContainer" style="display: none; width: 100%; max-width: 480px; margin-bottom: 1rem;">
+                            <video id="recordedVideoElement" controls style="width: 100%; border-radius: 16px;"></video>
+                        </div>
+                        
+                        <div style="display: flex; gap: 0.8rem; flex-wrap: wrap; justify-content: center;">
+                            <button type="button" id="startCameraBtn" class="btn btn-outline" onclick="initializeCamera()" style="padding: 0.6rem 1.2rem; background: white;">
+                                <i class="fas fa-camera"></i> Camera
+                            </button>
+                            <button type="button" id="recordBtn" class="btn btn-primary" onclick="toggleRecording()" disabled style="padding: 0.6rem 1.5rem; background: #ef4444;">
+                                <i class="fas fa-circle"></i> Record
+                            </button>
+                            <button type="button" id="stopBtn" class="btn btn-outline" onclick="stopRecording()" disabled style="padding: 0.6rem 1.2rem; background: white;">
+                                <i class="fas fa-square"></i> Stop
+                            </button>
+                            <button type="button" id="playRecordBtn" class="btn btn-outline" onclick="playRecording()" disabled style="padding: 0.6rem 1.2rem; background: white;">
+                                <i class="fas fa-play"></i> Play
+                            </button>
+                            <button type="button" id="saveRecordBtn" class="btn btn-primary" onclick="saveRecording()" disabled style="padding: 0.6rem 1.5rem; display: none;">
+                                <i class="fas fa-check"></i> Save video
+                            </button>
+                        </div>
+                        
+                        <div id="recordingTimer" style="margin-top: 1rem; font-size: 0.9rem; color: white; display: none;">
+                            <i class="fas fa-circle" style="color: #ef4444; animation: pulse 1s infinite;"></i> Recording: <span id="timerDisplay">00:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" name="recorded_video" id="recordedVideoInput">
+        </div>
+
+        <!-- FEATURES & AMENITIES -->
+        <div class="card" style="padding: 1.5rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- FEATURES -->
+                <div>
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fas fa-check-circle" style="color: #64748b;"></i> Features
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        {% set selected_features = features %}
+                        {% for feature in ['Parking', 'Security', 'Water', 'Electricity', 'Furnished', 'WiFi', 'Balcony', 'Gym', 'Pool', 'Elevator', 'Garden', 'Pet Friendly'] %}
+                        <label style="display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; background: #f1f5f9; border-radius: 100px; font-size: 0.7rem; color: #0f172a; cursor: pointer; transition: 0.2s;">
+                            <input type="checkbox" name="features[]" value="{{ feature }}" {% if feature in selected_features %}checked{% endif %} style="accent-color: #0f172a; width: 14px; height: 14px;">
+                            <span>{{ feature }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- AMENITIES -->
+                <div>
+                    <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem;">
+                        <i class="fas fa-utensils" style="color: #64748b;"></i> Nearby amenities
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        {% set selected_amenities = amenities %}
+                        {% for amenity in ['School', 'Hospital', 'Mall', 'Supermarket', 'Bank', 'Restaurant', 'Pharmacy', 'Police', 'Bus Stop'] %}
+                        <label style="display: flex; align-items: center; gap: 0.3rem; padding: 0.4rem 0.8rem; background: #f1f5f9; border-radius: 100px; font-size: 0.7rem; color: #0f172a; cursor: pointer;">
+                            <input type="checkbox" name="amenities[]" value="{{ amenity }}" {% if amenity in selected_amenities %}checked{% endif %} style="accent-color: #0f172a; width: 14px; height: 14px;">
+                            <span>{{ amenity }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GPS CAPTURE SECTION - OPTIONAL UPDATE -->
+        <div class="card" style="padding: 1.5rem; background: #f8fafc;">
+            <h3 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.4rem;">
+                <i class="fas fa-satellite" style="color: #0f172a;"></i> Update GPS location (optional)
+            </h3>
+            <p style="color: #64748b; font-size: 0.75rem; margin-bottom: 1rem;">
+                Only capture if you are at the property and need to update the exact pin location.
+            </p>
+            
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <button type="button" id="captureLocationBtn" class="btn btn-outline" onclick="captureExactLocation()" style="padding: 0.6rem 1.5rem;">
+                    <i class="fas fa-crosshairs"></i> Capture New GPS Location
+                </button>
+                
+                <div id="gpsStatus" style="display: flex; align-items: center; gap: 0.5rem; color: #64748b; font-size: 0.75rem;">
+                    <i class="fas fa-location-dot"></i>
+                    <span id="locationStatusText">Current GPS: ±{{ property.gps_accuracy|int }}m accuracy</span>
+                </div>
+            </div>
+            
+            <!-- HIDDEN GPS INPUTS -->
+            <input type="hidden" name="latitude" id="latitudeInput" value="{{ property.latitude or '' }}">
+            <input type="hidden" name="longitude" id="longitudeInput" value="{{ property.longitude or '' }}">
+            <input type="hidden" name="gps_accuracy" id="gpsAccuracyInput" value="{{ property.gps_accuracy or '' }}">
+        </div>
+
+        <!-- HIDDEN INPUTS FOR WEBCAM IMAGES -->
+        <div id="webcamImagesContainer"></div>
+
+        <!-- FORM ACTIONS -->
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 0.5rem;">
+            <a href="/dashboard/admin" class="btn btn-outline" style="padding: 0.7rem 1.8rem;">Cancel</a>
+            <button type="submit" class="btn btn-primary" style="padding: 0.7rem 2rem;">
+                <i class="fas fa-save"></i> Update Property
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    .image-preview-item {
+        position: relative;
+        padding-top: 100%;
+        background: #f1f5f9;
+        border-radius: 12px;
+        overflow: hidden;
+        animation: fadeIn 0.2s ease;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .image-preview-item img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+<script>
+    // ===== IMAGE PREVIEW =====
+    function previewImages(input) {
+        const preview = document.getElementById('imagePreview');
+        if (input.files) {
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'image-preview-item';
+                    div.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    preview.appendChild(div);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+    }
+
+    // ===== VIDEO PREVIEW =====
+    function previewVideo(input) {
+        const preview = document.getElementById('videoPreview');
+        preview.innerHTML = '';
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            preview.innerHTML = `<div style="background: #f0fdf4; padding: 0.6rem 1rem; border-radius: 100px; font-size: 0.7rem; color: #166534;">
+                <i class="fas fa-check-circle"></i> ${file.name}
+            </div>`;
+        }
+    }
+
+    // ===== PHOTO CAMERA =====
+    let photoStream = null;
+    const photoVideo = document.getElementById('photoWebcam');
+    
+    window.startPhotoCamera = function() {
+        if (photoStream) photoStream.getTracks().forEach(t => t.stop());
+        
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            .then(stream => {
+                photoStream = stream;
+                photoVideo.srcObject = stream;
+                document.getElementById('photoCameraContainer').style.display = 'block';
+            })
+            .catch(err => alert('Camera access denied. Please allow permissions.'));
+    }
+    
+    window.capturePhoto = function() {
+        if (!photoStream) return alert('Please start the camera first');
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = photoVideo.videoWidth || 640;
+        canvas.height = photoVideo.videoHeight || 480;
+        canvas.getContext('2d').drawImage(photoVideo, 0, 0);
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9);
+        
+        const preview = document.getElementById('photoPreview');
+        const div = document.createElement('div');
+        div.className = 'image-preview-item';
+        div.innerHTML = `<img src="${imageData}" alt="Webcam">`;
+        preview.appendChild(div);
+        
+        const container = document.getElementById('webcamImagesContainer');
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'webcam_images[]';
+        input.value = imageData;
+        container.appendChild(input);
+    }
+    
+    window.stopPhotoCamera = function() {
+        if (photoStream) {
+            photoStream.getTracks().forEach(t => t.stop());
+            photoStream = null;
+        }
+        document.getElementById('photoCameraContainer').style.display = 'none';
+    }
+
+    // ===== VIDEO RECORDING =====
+    let videoStream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let startTime = null;
+    let timerInterval = null;
+    let recordedBlob = null;
+    
+    window.startVideoRecording = function() {
+        document.getElementById('videoRecordingInterface').style.display = 'block';
+    }
+    
+    window.initializeCamera = function() {
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+        
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then(stream => {
+                videoStream = stream;
+                document.getElementById('videoPreviewElement').srcObject = stream;
+                document.getElementById('startCameraBtn').disabled = true;
+                document.getElementById('recordBtn').disabled = false;
+            })
+            .catch(err => alert('Camera/Microphone access denied.'));
+    }
+    
+    window.toggleRecording = function() {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            startRecording();
+        }
+    }
+    
+    function startRecording() {
+        recordedChunks = [];
+        
+        try {
+            mediaRecorder = new MediaRecorder(videoStream, { mimeType: 'video/webm;codecs=vp8,opus' });
+        } catch (e) {
+            mediaRecorder = new MediaRecorder(videoStream);
+        }
+        
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(recordedBlob);
+            document.getElementById('recordedVideoElement').src = url;
+            document.getElementById('recordedVideoContainer').style.display = 'block';
+            document.getElementById('playRecordBtn').disabled = false;
+            document.getElementById('saveRecordBtn').style.display = 'inline-flex';
+            document.getElementById('saveRecordBtn').disabled = false;
+        };
+        
+        mediaRecorder.start();
+        startTime = Date.now();
+        
+        document.getElementById('recordBtn').disabled = true;
+        document.getElementById('stopBtn').disabled = false;
+        document.getElementById('recordingTimer').style.display = 'block';
+        
+        timerInterval = setInterval(updateTimer, 100);
+    }
+    
+    window.stopRecording = function() {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+            
+            document.getElementById('recordBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('startCameraBtn').disabled = false;
+            clearInterval(timerInterval);
+        }
+    }
+    
+    function updateTimer() {
+        if (startTime) {
+            const seconds = Math.floor((Date.now() - startTime) / 1000);
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            document.getElementById('timerDisplay').innerHTML = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    window.playRecording = function() {
+        document.getElementById('recordedVideoElement').play();
+    }
+    
+    window.saveRecording = function() {
+        if (!recordedBlob) return;
+        
+        const formData = new FormData();
+        formData.append('video', recordedBlob, `recording_${Date.now()}.webm`);
+        
+        fetch('/upload-video', { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('recordedVideoInput').value = data.url;
+                    document.getElementById('saveRecordBtn').innerHTML = '<i class="fas fa-check"></i> Saved!';
+                    document.getElementById('saveRecordBtn').disabled = true;
+                    
+                    const preview = document.getElementById('videoPreview');
+                    preview.innerHTML = `<div style="background: #f0fdf4; padding: 0.6rem 1rem; border-radius: 100px; color: #166534;">
+                        <i class="fas fa-check-circle"></i> Video saved successfully
+                    </div>`;
+                }
+            });
+    }
+    
+    // ===== GPS CAPTURE =====
+    window.captureExactLocation = function() {
+        const statusText = document.getElementById('locationStatusText');
+        const captureBtn = document.getElementById('captureLocationBtn');
+        
+        if (!navigator.geolocation) {
+            alert('GPS not supported');
+            return;
+        }
+        
+        statusText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Getting GPS signal...';
+        captureBtn.disabled = true;
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const accuracy = position.coords.accuracy;
+                
+                document.getElementById('latitudeInput').value = lat;
+                document.getElementById('longitudeInput').value = lng;
+                document.getElementById('gpsAccuracyInput').value = accuracy;
+                
+                statusText.innerHTML = `✅ GPS updated: ±${Math.round(accuracy)}m accuracy`;
+                captureBtn.disabled = false;
+                
+                alert(`✅ GPS location updated!\nAccuracy: ±${Math.round(accuracy)} meters`);
+            },
+            function(error) {
+                let msg = '❌ GPS failed';
+                if (error.code === 1) msg = '❌ Permission denied';
+                if (error.code === 2) msg = '❌ Location unavailable';
+                if (error.code === 3) msg = '❌ Timeout - try again';
+                
+                statusText.innerHTML = msg;
+                captureBtn.disabled = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+    
+    // Cleanup
+    window.addEventListener('beforeunload', function() {
+        if (photoStream) photoStream.getTracks().forEach(t => t.stop());
+        if (videoStream) videoStream.getTracks().forEach(t => t.stop());
+        if (timerInterval) clearInterval(timerInterval);
+    });
+</script>
+{% endblock %}

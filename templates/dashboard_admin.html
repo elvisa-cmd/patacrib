@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Patacrib{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3rem 0;">
+    <!-- Dashboard Header -->
+    <div style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin-bottom: 0.5rem; color: var(--primary);">Welcome, {{ current_user.name }}</h1>
+                <p style="color: var(--gray);">Property Management Dashboard</p>
+            </div>
+            <a href="/add-property" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add New Property
+            </a>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: #E3F2FD; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">{{ stats.total }}</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Total Properties</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <div style="width: 50px; height: 50px; background: #E8F5E9; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #2E7D32;">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div>
+                    <div style="font-size: 1.5rem; font-weight: 700;">{{ stats.available }}</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Available</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Properties List -->
+    <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+        <div style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);">
+            <h2 style="margin: 0;">Your Properties</h2>
+        </div>
+        
+        {% if properties %}
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: var(--light);">
+                        <th style="padding: 1rem 2rem; text-align: left; font-weight: 600; color: var(--gray);">Property</th>
+                        <th style="padding: 1rem 2rem; text-align: left; font-weight: 600; color: var(--gray);">Location</th>
+                        <th style="padding: 1rem 2rem; text-align: left; font-weight: 600; color: var(--gray);">Price</th>
+                        <th style="padding: 1rem 2rem; text-align: left; font-weight: 600; color: var(--gray);">Status</th>
+                        <th style="padding: 1rem 2rem; text-align: left; font-weight: 600; color: var(--gray);">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for property in properties %}
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem;">{{ property.title }}</div>
+                            <div style="font-size: 0.9rem; color: var(--gray);">{{ property.property_type|title }}</div>
+                        </td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="font-size: 0.9rem;">
+                                <div style="margin-bottom: 0.25rem;">{{ property.estate }}</div>
+                                <div style="color: var(--gray);">{{ property.city }}</div>
+                            </div>
+                        </td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="font-weight: 600; color: var(--primary);">
+                                {{ format_price(property.price) }}
+                            </div>
+                        </td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500; background: #D4EDDA; color: #155724;">
+                                {{ property.status|title }}
+                            </span>
+                        </td>
+                        <td style="padding: 1.5rem 2rem;">
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="/property/{{ property.id }}" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--gray);">
+            <i class="fas fa-home" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <h3>No Properties Yet</h3>
+            <p>Start by adding your first property</p>
+            <a href="/add-property" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-plus"></i> Add Property
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

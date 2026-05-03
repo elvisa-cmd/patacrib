@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Patacrib Kenya - Find Your Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section style="background: linear-gradient(rgba(10, 36, 99, 0.9), rgba(10, 36, 99, 0.8)), url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920'); background-size: cover; background-position: center; color: white; padding: 6rem 0;">
+    <div class="container">
+        <div style="max-width: 600px;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; line-height: 1.2;">Find Your Perfect Home in Kenya</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 2rem; opacity: 0.9;">
+                Search properties with exact locations and routes across Kenya.
+            </p>
+            
+            <!-- Search Box -->
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                <form action="/search" method="GET" style="display: grid; gap: 1rem;">
+                    <input type="text" name="q" placeholder="Search by location or property..."
+                           style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <select name="city" style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                            <option value="">All Cities</option>
+                            <option value="Nairobi">Nairobi</option>
+                            <option value="Mombasa">Mombasa</option>
+                            <option value="Kisumu">Kisumu</option>
+                        </select>
+                        
+                        <select name="type" style="padding: 1rem; border: 1px solid var(--border); border-radius: 8px;">
+                            <option value="">All Types</option>
+                            <option value="bedsitter">Bedsitter</option>
+                            <option value="apartment">Apartment</option>
+                            <option value="house">House</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search Properties
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Properties -->
+<section style="padding: 4rem 0; background: white;">
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 3rem; color: var(--primary);">Available Properties</h2>
+        
+        {% if properties %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+            {% for property in properties %}
+            <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.08); transition: transform 0.3s;">
+                <a href="/property/{{ property.id }}" style="text-decoration: none; color: inherit;">
+                    <!-- Property Image -->
+                    <div style="height: 200px; overflow: hidden; position: relative;">
+                        <img src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400" 
+                             style="width: 100%; height: 100%; object-fit: cover;">
+                        
+                        <!-- Price Tag -->
+                        <div style="position: absolute; top: 1rem; right: 1rem; background: white; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; color: var(--primary);">
+                            {{ format_price(property.price) }}
+                        </div>
+                    </div>
+                    
+                    <!-- Property Details -->
+                    <div style="padding: 1.5rem;">
+                        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem; color: var(--dark);">{{ property.title }}</h3>
+                        
+                        <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--gray); margin-bottom: 1rem; font-size: 0.9rem;">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>{{ property.city }}, {{ property.estate }}</span>
+                        </div>
+                        
+                        <!-- Property Features -->
+                        <div style="display: flex; gap: 1.5rem; margin-bottom: 1.5rem; color: var(--gray); font-size: 0.9rem;">
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <i class="fas fa-bed"></i>
+                                <span>{{ property.bedrooms }} Bed</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.25rem;">
+                                <i class="fas fa-bath"></i>
+                                <span>{{ property.bathrooms }} Bath</span>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.9rem; color: var(--secondary);">
+                                <i class="fas fa-home"></i> {{ property.property_type|title }}
+                            </span>
+                            <span class="btn btn-outline" style="padding: 0.5rem 1rem;">
+                                View Details
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--gray);">
+            <i class="fas fa-home" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <h3>No Properties Yet</h3>
+            <p>Properties will appear here once added by admin.</p>
+            {% if current_user.is_authenticated and current_user.user_type == 'admin' %}
+            <a href="/add-property" class="btn btn-primary" style="margin-top: 1rem;">
+                Add Your First Property
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- How It Works -->
+<section style="padding: 4rem 0; background: var(--light);">
+    <div class="container">
+        <h2 style="text-align: center; margin-bottom: 3rem; color: var(--primary);">How It Works</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    <i class="fas fa-search"></i>
+                </div>
+                <h3 style="margin-bottom: 1rem;">Search</h3>
+                <p style="color: var(--gray);">Find properties by location, price, or type</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    <i class="fas fa-eye"></i>
+                </div>
+                <h3 style="margin-bottom: 1rem;">View</h3>
+                <p style="color: var(--gray);">See photos, videos, and exact location</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    <i class="fas fa-route"></i>
+                </div>
+                <h3 style="margin-bottom: 1rem;">Navigate</h3>
+                <p style="color: var(--gray);">Get exact routes to properties</p>
+            </div>
+            
+            <div style="text-align: center;">
+                <div style="width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 1.5rem;">
+                    <i class="fas fa-handshake"></i>
+                </div>
+                <h3 style="margin-bottom: 1rem;">Contact</h3>
+                <p style="color: var(--gray);">Connect with property owners directly</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

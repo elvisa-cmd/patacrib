@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Starlink Hub | cutting‑edge tech</title>
+  <!-- Font Awesome 6 (free) for subtle icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #fbfbfd;
+      color: #1d1c1f;
+      line-height: 1.47059;
+      font-weight: 400;
+      letter-spacing: -0.022em;
+    }
+
+    /* smooth scrolling & consistent spacing */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 22px;
+    }
+
+    /* ===== HEADER (apple‑like clarity) ===== */
+    nav {
+      background-color: #ffffffcc;
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      background-color: rgba(255, 255, 255, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .nav-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 22px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* we simulate the logo using a placeholder image — adjust path to your desktop location */
+    .logo-img {
+      width: 44px;
+      height: 44px;
+      background: #e8e8ed;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 10px;
+      color: #6e6e73;
+      background-image: url('file:///Users/yourname/Desktop/hub.jpeg'); 
+      background-size: cover;
+      background-position: center;
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    /* fallback in case the image isn't found: show a clean icon + "hub" */
+    .logo-img::before {
+      content: "✨";
+      font-size: 24px;
+      opacity: 0.7;
+      background: rgba(255,255,255,0.5);
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      backdrop-filter: blur(2px);
+    }
+
+    /* if the image loads, the pseudo-element won't be visible because it's behind background? we'll make it hidden when image is present */
+    .logo-img {
+      color: transparent;
+      text-indent: -9999px; 
+      background-size: cover;
+    }
+    /* we keep the fallback clean – it's fine, real logo will override */
+
+    .brand-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      background: linear-gradient(145deg, #1f1e24, #3a3942);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 40px;
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #1d1c1f;
+      font-size: 0.9rem;
+      font-weight: 400;
+      opacity: 0.88;
+      transition: opacity 0.2s;
+    }
+
+    .nav-links a:hover {
+      opacity: 1;
+      color: #0066cc;
+    }
+
+    .nav-icons {
+      display: flex;
+      gap: 22px;
+      color: #1d1c1f;
+    }
+
+    .nav-icons i {
+      font-size: 1.1rem;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      cursor: default;
+    }
+
+    /* ===== HERO section (apple watch style but for gadgets) ===== */
+    .hero {
+      background-color: #f5f5f7;
+      border-radius: 0 0 24px 24px;
+      margin-bottom: 48px;
+      overflow: hidden;
+    }
+
+    .hero-content {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 30px;
+      padding: 50px 0;
+    }
+
+    .hero-text {
+      flex: 1 1 300px;
+    }
+
+    .hero-text .badge {
+      color: #bf4800;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 8px;
+    }
+
+    .hero-text h1 {
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+      color: #1d1c1f;
+      margin-bottom: 12px;
+    }
+
+    .hero-text h2 {
+      font-size: 1.8rem;
+      font-weight: 450;
+      color: #6e6e73;
+      margin-bottom: 20px;
+    }
+
+    .hero-text p {
+      font-size: 1.2rem;
+      color: #1d1c1f;
+      max-width: 460px;
+      margin-bottom: 30px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 22px;
+      align-items: center;
+    }
+
+    .primary-link {
+      color: #0066cc;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .primary-link i {
+      font-size: 0.9rem;
+      transition: transform 0.2s;
+    }
+
+    .primary-link:hover i {
+      transform: translateX(5px);
+    }
+
+    .secondary-link {
+      color: #6e6e73;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    .hero-visual {
+      flex: 1 1 300px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .product-collage {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .product-tile {
+      background: #ffffffd9;
+      backdrop-filter: blur(6px);
+      border-radius: 24px;
+      padding: 18px 12px;
+      text-align: center;
+      box-shadow: 0 12px 28px -6px rgba(0,0,0,0.08);
+      border: 1px solid rgba(255,255,255,0.6);
+    }
+
+    .product-tile i {
+      font-size: 2.4rem;
+      color: #1d1c1f;
+      margin-bottom: 10px;
+    }
+
+    .product-tile span {
+      display: block;
+      font-weight: 480;
+      font-size: 0.95rem;
+    }
+
+    /* ===== categories ===== */
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.003em;
+      margin: 56px 0 28px;
+      color: #1d1c1f;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 22px;
+      margin-bottom: 60px;
+    }
+
+    .category-card {
+      background-color: white;
+      border-radius: 28px;
+      padding: 32px 20px;
+      text-align: center;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.02);
+      transition: all 0.2s ease;
+      border: 1px solid rgba(0,0,0,0.04);
+      cursor: default;
+    }
+
+    .category-card:hover {
+      transform: scale(1.02);
+      box-shadow: 0 22px 32px -12px rgba(0,0,0,0.12);
+      border-color: rgba(0,102,204,0.2);
+    }
+
+    .category-card i {
+      font-size: 2.8rem;
+      margin-bottom: 16px;
+      color: #0066cc;
+    }
+
+    .category-card h3 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .category-card p {
+      color: #6e6e73;
+      font-size: 0.9rem;
+    }
+
+    /* ===== featured products grid ===== */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 26px;
+      margin: 40px 0 60px;
+    }
+
+    .product-card {
+      background-color: white;
+      border-radius: 22px;
+      padding: 24px 16px 20px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.02);
+      border: 1px solid #f0f0f2;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-card:hover {
+      border-color: rgba(0,102,204,0.25);
+      box-shadow: 0 24px 38px -14px rgba(0,0,0,0.12);
+    }
+
+    .product-image {
+      background: #f9f9fb;
+      border-radius: 18px;
+      padding: 28px 8px;
+      text-align: center;
+      margin-bottom: 18px;
+      font-size: 3.5rem;
+      color: #2c2c34;
+    }
+
+    .product-info {
+      margin-bottom: 16px;
+    }
+
+    .product-cat {
+      font-size: 0.75rem;
+      color: #0066cc;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    .product-title {
+      font-weight: 600;
+      font-size: 1.2rem;
+      margin: 4px 0 6px;
+    }
+
+    .product-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1d1c1f;
+    }
+
+    .product-price small {
+      font-size: 0.85rem;
+      color: #6e6e73;
+      font-weight: 400;
+    }
+
+    .product-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+    }
+
+    .btn {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 28px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: default;
+      transition: background 0.1s;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #0066cc;
+      color: #0066cc;
+    }
+
+    /* ===== story / promo (apple "why starlink hub") ===== */
+    .story-section {
+      background: #ffffff;
+      border-radius: 28px;
+      padding: 60px 40px;
+      margin: 70px 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 30px;
+      box-shadow: 0 20px 36px -12px rgba(0,0,0,0.06);
+    }
+
+    .story-text {
+      flex: 2 1 300px;
+    }
+
+    .story-text h2 {
+      font-size: 2.3rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .story-text p {
+      font-size: 1.2rem;
+      color: #4a4a50;
+      max-width: 550px;
+    }
+
+    .story-icons {
+      flex: 1 1 200px;
+      display: flex;
+      justify-content: space-around;
+    }
+
+    .story-icon-item {
+      text-align: center;
+    }
+
+    .story-icon-item i {
+      font-size: 2.6rem;
+      color: #0066cc;
+    }
+
+    .story-icon-item span {
+      display: block;
+      margin-top: 10px;
+      font-weight: 500;
+    }
+
+    /* ===== footer (clean, minimal) ===== */
+    footer {
+      background-color: #f5f5f7;
+      border-top: 1px solid rgba(0,0,0,0.04);
+      margin-top: 70px;
+      padding: 40px 0 30px;
+      color: #6e6e73;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 40px;
+      margin-bottom: 50px;
+    }
+
+    .footer-col p {
+      font-size: 0.8rem;
+      margin: 14px 0 10px;
+      line-height: 1.4;
+    }
+
+    .footer-col ul {
+      list-style: none;
+    }
+
+    .footer-col li {
+      margin-bottom: 10px;
+    }
+
+    .footer-col a {
+      text-decoration: none;
+      color: #515154;
+      font-size: 0.85rem;
+    }
+
+    .footer-col a:hover {
+      text-decoration: underline;
+      color: #0066cc;
+    }
+
+    .copyright {
+      border-top: 1px solid #d2d2d6;
+      padding-top: 24px;
+      font-size: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .copyright-links {
+      display: flex;
+      gap: 22px;
+    }
+
+    /* responsiveness */
+    @media (max-width: 700px) {
+      .nav-links { display: none; }
+      .hero-text h1 { font-size: 2.5rem; }
+      .hero-content { flex-direction: column-reverse; }
+      .story-section { padding: 40px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- header / navigation (apple-inspired clarity) -->
+  <nav>
+    <div class="nav-wrapper">
+      <div class="logo-area">
+        <!-- logo image pointing to desktop: hub.jpeg – adjust path if needed -->
+        <div class="logo-img" role="img" aria-label="Starlink Hub logo" style="background-image: url('file:///Users/yourname/Desktop/hub.jpeg');"></div>
+        <span class="brand-name">Starlink Hub</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#">Store</a></li>
+        <li><a href="#">TV & Home</a></li>
+        <li><a href="#">Phones</a></li>
+        <li><a href="#">Gadgets</a></li>
+        <li><a href="#">Support</a></li>
+      </ul>
+      <div class="nav-icons">
+        <i class="fa-regular fa-magnifying-glass"></i>
+        <i class="fa-regular fa-bag-shopping"></i>
+        <i class="fa-regular fa-circle-user"></i>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- Hero unit – “The ultimate tech experience” -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-text">
+          <div class="badge">STARLINK HUB EXCLUSIVE</div>
+          <h1>Brilliant. <br>Powerful. Yours.</h1>
+          <h2>TVs, phones & beyond.</h2>
+          <p>Get the latest intelligent displays, pro-grade smartphones, and essential gadgets — only at Starlink Hub.</p>
+          <div class="hero-buttons">
+            <a href="#" class="primary-link">Explore the lineup <i class="fa-solid fa-arrow-right"></i></a>
+            <a href="#" class="secondary-link">Watch the event <i class="fa-regular fa-circle-play"></i></a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="product-collage">
+            <div class="product-tile"><i class="fa-solid fa-tv"></i><span>vision pro</span></div>
+            <div class="product-tile"><i class="fa-solid fa-mobile-screen"></i><span>iphone 16</span></div>
+            <div class="product-tile"><i class="fa-solid fa-headphones"></i><span>audio</span></div>
+            <div class="product-tile"><i class="fa-solid fa-tablet"></i><span>ipad</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- category browse (tvs, phones, gadgets) -->
+    <h2 class="section-title">Categories — curated by Starlink.</h2>
+    <div class="category-grid">
+      <div class="category-card">
+        <i class="fa-solid fa-tv"></i>
+        <h3>TV & Home</h3>
+        <p>4K OLED · smart hubs · soundbars</p>
+      </div>
+      <div class="category-card">
+        <i class="fa-solid fa-mobile-alt"></i>
+        <h3>Phones</h3>
+        <p>flagships · foldables · pro cameras</p>
+      </div>
+      <div class="category-card">
+        <i class="fa-solid fa-clock"></i>
+        <h3>Wearables</h3>
+        <p>smartwatches · earbuds · trackers</p>
+      </div>
+      <div class="category-card">
+        <i class="fa-solid fa-laptop"></i>
+        <h3>Gadgets</h3>
+        <p>drones · robots · AR/VR</p>
+      </div>
+    </div>
+
+    <!-- featured products – TVs, phones, gadgets – exactly as requested -->
+    <h2 class="section-title">New this week.</h2>
+    <div class="product-grid">
+      <!-- product 1 - TV -->
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-tv"></i></div>
+        <div class="product-info">
+          <span class="product-cat">Starlink Vision</span>
+          <div class="product-title">QLED 4K TV 65"</div>
+          <div class="product-price">$1,299 <small>or $54/mo</small></div>
+        </div>
+        <div class="product-actions">
+          <span class="btn">Add</span>
+          <span class="btn-outline btn">Learn</span>
+        </div>
+      </div>
+
+      <!-- product 2 - Phone -->
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-mobile-alt"></i></div>
+        <div class="product-info">
+          <span class="product-cat">Starlink S24 Ultra</span>
+          <div class="product-title">6.8" 200x zoom, titanium</div>
+          <div class="product-price">$1,449 <small>or $60/mo</small></div>
+        </div>
+        <div class="product-actions">
+          <span class="btn">Add</span>
+          <span class="btn-outline btn">Learn</span>
+        </div>
+      </div>
+
+      <!-- product 3 - Gadget (drone) -->
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-helicopter"></i></div>
+        <div class="product-info">
+          <span class="product-cat">Starlink Aero</span>
+          <div class="product-title">4K HDR drone + smart controller</div>
+          <div class="product-price">$999 <small>or $42/mo</small></div>
+        </div>
+        <div class="product-actions">
+          <span class="btn">Add</span>
+          <span class="btn-outline btn">Learn</span>
+        </div>
+      </div>
+
+      <!-- product 4 - Phone -->
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-phone"></i></div>
+        <div class="product-info">
+          <span class="product-cat">Starlink Flip</span>
+          <div class="product-title">foldable compact · 512GB</div>
+          <div class="product-price">$1,099 <small>or $46/mo</small></div>
+        </div>
+        <div class="product-actions">
+          <span class="btn">Add</span>
+          <span class="btn-outline btn">Learn</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- brand story / why starlink hub (apple vibe) -->
+    <div class="story-section">
+      <div class="story-text">
+        <h2>Starlink Hub: where innovation meets simplicity.</h2>
+        <p>We hand‑pick the most advanced tech — from 8K TVs to AI‑powered phones — and back them with exceptional support. Just like Apple, but with a galaxy of choice.</p>
+      </div>
+      <div class="story-icons">
+        <div class="story-icon-item">
+          <i class="fa-regular fa-star"></i>
+          <span>expert advice</span>
+        </div>
+        <div class="story-icon-item">
+          <i class="fa-regular fa-truck-fast"></i>
+          <span>fast delivery</span>
+        </div>
+        <div class="story-icon-item">
+          <i class="fa-regular fa-clock"></i>
+          <span>2‑hour pickup</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- extra featured gadgets -->
+    <h2 class="section-title">Gadgets, simplified.</h2>
+    <div class="product-grid">
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-ear-listen"></i></div>
+        <div class="product-info">
+          <span class="product-cat">audio</span>
+          <div class="product-title">noise‑cancelling buds pro</div>
+          <div class="product-price">$249</div>
+        </div>
+        <div class="product-actions"><span class="btn">Add</span></div>
+      </div>
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-robot"></i></div>
+        <div class="product-info">
+          <span class="product-cat">home gadget</span>
+          <div class="product-title">AI cleaning robot mop</div>
+          <div class="product-price">$699</div>
+        </div>
+        <div class="product-actions"><span class="btn">Add</span></div>
+      </div>
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-gamepad"></i></div>
+        <div class="product-info">
+          <span class="product-cat">gaming</span>
+          <div class="product-title">stream deck + capture</div>
+          <div class="product-price">$189</div>
+        </div>
+        <div class="product-actions"><span class="btn">Add</span></div>
+      </div>
+      <div class="product-card">
+        <div class="product-image"><i class="fa-solid fa-camera"></i></div>
+        <div class="product-info">
+          <span class="product-cat">vlog</span>
+          <div class="product-title">pocket gimbal creator</div>
+          <div class="product-price">$159</div>
+        </div>
+        <div class="product-actions"><span class="btn">Add</span></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- footer (clean, apple‑esque) -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Shop & Learn</h4>
+          <ul>
+            <li><a href="#">TVs</a></li>
+            <li><a href="#">Phones</a></li>
+            <li><a href="#">Gadgets</a></li>
+            <li><a href="#">Accessories</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Starlink Hub</h4>
+          <ul>
+            <li><a href="#">Newsroom</a></li>
+            <li><a href="#">Careers</a></li>
+            <li><a href="#">Ethics</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">help.starlink</a></li>
+            <li><a href="#">returns</a></li>
+            <li><a href="#">warranty</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <p style="margin-top: 0;"><i class="fa-regular fa-location-dot"></i>  find a store nearby</p>
+          <p>︎<i class="fa-regular fa-envelope"></i>  hello@starlinkhub.com</p>
+        </div>
+      </div>
+      <div class="copyright">
+        <span>Copyright © 2025 Starlink Hub. All rights reserved.</span>
+        <span class="copyright-links">
+          <a href="#">privacy</a>
+          <a href="#">terms</a>
+          <a href="#">sitemap</a>
+        </span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

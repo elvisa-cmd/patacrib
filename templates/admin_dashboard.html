@@ -1,0 +1,602 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard · Patacrib{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-primary {
+        background: #1e4a7a;
+        color: white;
+        border: none;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary:hover {
+        background: #2a6bb0;
+    }
+    .btn-outline {
+        background: transparent;
+        border: 1px solid #1e4a7a;
+        color: #1e4a7a;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-outline:hover {
+        background: #1e4a7a;
+        color: white;
+    }
+    .btn-success {
+        background: #00a86b;
+        color: white;
+        border: none;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-success:hover {
+        background: #00875a;
+    }
+    a {
+        text-decoration: none;
+    }
+    .trend-up { color: #00a86b; }
+    .trend-down { color: #dc2626; }
+    .chart-bar {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .chart-bar-fill {
+        height: 100%;
+        background: #1e4a7a;
+        border-radius: 4px;
+        transition: width 0.3s;
+    }
+    .property-card {
+        transition: all 0.3s;
+        position: relative;
+    }
+    .property-card.occupied {
+        opacity: 0.5;
+        background: #f1f5f9;
+        filter: grayscale(0.5);
+    }
+    .property-card.occupied:hover {
+        opacity: 0.7;
+    }
+    .occupancy-toggle {
+        cursor: pointer;
+    }
+    .badge {
+        padding: 0.2rem 0.6rem;
+        border-radius: 50px;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+    .badge-available { background: #00a86b; color: white; }
+    .badge-rented { background: #f59e0b; color: white; }
+    .badge-occupied { background: #64748b; color: white; }
+    .badge-sold { background: #dc2626; color: white; }
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    .chart-container {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.2rem;
+    }
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    .filter-tab {
+        padding: 0.4rem 1rem;
+        border-radius: 50px;
+        background: #f1f5f9;
+        color: #2c3e5c;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: 0.2s;
+    }
+    .filter-tab.active {
+        background: #1e4a7a;
+        color: white;
+    }
+    .stat-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.2rem;
+    }
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #0a1e3c;
+        line-height: 1.2;
+    }
+    .stat-label {
+        color: #2c3e5c;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .stat-trend {
+        font-size: 0.65rem;
+        margin-top: 0.3rem;
+    }
+    .performance-metric {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .performance-metric:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 1rem;">
+    <!-- Header -->
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.8rem; font-weight: 700; color: #0a1e3c; margin-bottom: 0.2rem;">Welcome, {{ current_user.name }}</h1>
+        <p style="color: #2c3e5c; font-size: 0.9rem;">Your property performance dashboard</p>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            {% if current_user.is_verified %}
+            <span class="badge" style="background: #00a86b; color: white; display: inline-block;">
+                <i class="fas fa-check-circle"></i> Verified Agent
+            </span>
+            {% else %}
+            <a href="/verify-account" class="btn btn-outline" style="padding: 0.3rem 1rem; font-size: 0.7rem;">
+                <i class="fas fa-shield-alt"></i> Get Verified
+            </a>
+            {% endif %}
+            <span class="badge" style="background: #1e4a7a; color: white;">
+                <i class="fas fa-clock"></i> Member since {{ current_user.member_since.strftime('%b %Y') }}
+            </span>
+        </div>
+    </div>
+
+    <!-- REAL-TIME ANALYTICS DASHBOARD -->
+    <div style="margin-bottom: 2rem;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fas fa-chart-line" style="color: #1e4a7a;"></i>
+            Real-Time Performance Analytics
+        </h2>
+
+        <!-- Key Metrics Cards -->
+        <div class="analytics-grid">
+            <!-- Total Revenue -->
+            <div class="stat-card">
+                <div class="stat-label">Total Revenue</div>
+                <div class="stat-value">{{ stats.total_revenue|format_ksh }}</div>
+                <div class="stat-trend">
+                    {% if stats.revenue_trend > 0 %}
+                    <span class="trend-up"><i class="fas fa-arrow-up"></i> {{ stats.revenue_trend }}%</span>
+                    {% else %}
+                    <span class="trend-down"><i class="fas fa-arrow-down"></i> {{ stats.revenue_trend }}%</span>
+                    {% endif %}
+                    from last month
+                </div>
+            </div>
+
+            <!-- Conversion Rate -->
+            <div class="stat-card">
+                <div class="stat-label">Conversion Rate</div>
+                <div class="stat-value">{{ stats.conversion_rate }}%</div>
+                <div class="stat-trend">
+                    <span>{{ stats.rented }} of {{ stats.total }} properties rented</span>
+                </div>
+            </div>
+
+            <!-- Average Views per Property -->
+            <div class="stat-card">
+                <div class="stat-label">Avg Views/Property</div>
+                <div class="stat-value">{{ stats.avg_views_per_property }}</div>
+                <div class="stat-trend">
+                    <span>{{ stats.total_views }} total views</span>
+                </div>
+            </div>
+
+            <!-- Response Rate -->
+            <div class="stat-card">
+                <div class="stat-label">Response Rate</div>
+                <div class="stat-value">{{ current_user.response_rate }}%</div>
+                <div class="stat-trend">
+                    <span>Avg time: {{ current_user.response_time }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Charts Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <!-- Views Timeline Chart -->
+            <div class="chart-container">
+                <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;">Views Last 7 Days</h3>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; height: 120px;">
+                    {% for day in stats.views_timeline %}
+                    <div style="display: flex; flex-direction: column; align-items: center; width: 12%;">
+                        <div style="height: {{ (day.count / stats.max_views * 80) if stats.max_views > 0 else 0 }}px; width: 100%; background: #1e4a7a; border-radius: 4px 4px 0 0; transition: height 0.3s;"></div>
+                        <span style="font-size: 0.55rem; margin-top: 0.3rem;">{{ day.day }}</span>
+                        <span style="font-size: 0.55rem; font-weight: 600;">{{ day.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Property Type Distribution -->
+            <div class="chart-container">
+                <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;">Properties by Type</h3>
+                {% for type in stats.property_types %}
+                <div style="margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 0.2rem;">
+                        <span>{{ type.name }}</span>
+                        <span>{{ type.count }} ({{ type.percentage }}%)</span>
+                    </div>
+                    <div class="chart-bar">
+                        <div class="chart-bar-fill" style="width: {{ type.percentage }}%;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Top Performing Properties -->
+            <div class="chart-container">
+                <h3 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem;">Top Performing Properties</h3>
+                {% if stats.top_properties %}
+                    {% for prop in stats.top_properties %}
+                    <div class="performance-metric">
+                        <div>
+                            <div style="font-weight: 600; font-size: 0.8rem;">{{ prop.title[:20] }}</div>
+                            <div style="font-size: 0.65rem; color: #64748b;">{{ prop.views }} views • {{ prop.saves }} saves</div>
+                        </div>
+                        <div style="font-size: 0.7rem; font-weight: 600; color: #1e4a7a;">{{ prop.price|format_ksh }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: #64748b; font-size: 0.8rem; text-align: center;">No data yet</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Detailed Metrics -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+            <div class="stat-card">
+                <div class="stat-label">Engagement Rate</div>
+                <div class="stat-value">{{ stats.engagement_rate }}%</div>
+                <div class="stat-trend">{{ stats.saves }} saves from {{ stats.views }} views</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Average Price</div>
+                <div class="stat-value">{{ stats.avg_price|format_ksh }}</div>
+                <div class="stat-trend">Across {{ stats.total }} properties</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Occupancy Rate</div>
+                <div class="stat-value">{{ stats.occupancy_rate }}%</div>
+                <div class="stat-trend">{{ stats.rented }} rented, {{ stats.occupied }} occupied</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Listings Growth</div>
+                <div class="stat-value">{{ stats.new_listings_30d }}</div>
+                <div class="stat-trend">new in last 30 days</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards (Your Original) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="width: 40px; height: 40px; background: #e6f0fa; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-building" style="color: #1e4a7a;"></i>
+                </div>
+                <div>
+                    <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.2rem;">Total</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #0a1e3c;">{{ stats.total }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="width: 40px; height: 40px; background: #e0f2e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-check-circle" style="color: #00a86b;"></i>
+                </div>
+                <div>
+                    <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.2rem;">Available</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #0a1e3c;">{{ stats.available }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="width: 40px; height: 40px; background: #fff0e0; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-hand-holding-usd" style="color: #f59e0b;"></i>
+                </div>
+                <div>
+                    <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.2rem;">Rented</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #0a1e3c;">{{ stats.rented }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="width: 40px; height: 40px; background: #fee2e2; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-eye" style="color: #dc2626;"></i>
+                </div>
+                <div>
+                    <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.2rem;">Views</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #0a1e3c;">{{ stats.views }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                <div style="width: 40px; height: 40px; background: #f3e8ff; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-heart" style="color: #8b5cf6;"></i>
+                </div>
+                <div>
+                    <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.2rem;">Saves</p>
+                    <p style="font-size: 1.5rem; font-weight: 700; color: #0a1e3c;">{{ stats.saves }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs for Listings -->
+    <div class="filter-tabs">
+        <span class="filter-tab active" onclick="filterProperties('all')">All Properties ({{ stats.total }})</span>
+        <span class="filter-tab" onclick="filterProperties('available')">Available ({{ stats.available }})</span>
+        <span class="filter-tab" onclick="filterProperties('rented')">Rented ({{ stats.rented }})</span>
+        <span class="filter-tab" onclick="filterProperties('occupied')">Occupied ({{ stats.occupied }})</span>
+    </div>
+
+    <!-- Your Listings Section -->
+    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden;">
+        <!-- Section Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.5rem; border-bottom: 1px solid #e2e8f0;">
+            <h2 style="font-size: 1.2rem; font-weight: 600; color: #0a1e3c;">
+                <i class="fas fa-list" style="color: #1e4a7a; margin-right: 0.5rem;"></i>
+                Your Listings
+            </h2>
+            <a href="/property/add" class="btn btn-primary" style="padding: 0.5rem 1.2rem;">
+                <i class="fas fa-plus"></i> Add New
+            </a>
+        </div>
+
+        <!-- Listings Grid -->
+        {% if properties %}
+        <div style="padding: 1.5rem;">
+            <div id="properties-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.2rem;">
+                {% for property in properties %}
+                <div class="property-card" data-status="{{ property.status }}" data-id="{{ property.id }}" 
+                     style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; {{ 'opacity: 0.5; filter: grayscale(0.5);' if property.status == 'occupied' }}">
+                    
+                    <!-- Property Image -->
+                    <div style="height: 160px; background: #e2e8f0; position: relative;">
+                        {% if property.images and property.images != '[]' %}
+                            {% set images = property.images|from_json %}
+                            {% if images and images|length > 0 %}
+                                <img src="{{ images[0] }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-building" style="font-size: 2rem; color: #94a3b8;"></i>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-home" style="font-size: 2rem; color: #94a3b8;"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Status Badge -->
+                        <span class="badge 
+                            {% if property.status == 'available' %}badge-available
+                            {% elif property.status == 'rented' %}badge-rented
+                            {% elif property.status == 'occupied' %}badge-occupied
+                            {% else %}badge-sold{% endif %}"
+                            style="position: absolute; top: 0.5rem; right: 0.5rem;">
+                            {{ property.status }}
+                        </span>
+                    </div>
+
+                    <!-- Property Info -->
+                    <div style="padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.3rem;">
+                            <h3 style="font-size: 0.95rem; font-weight: 600; color: #0a1e3c; margin: 0;">{{ property.title[:25] }}</h3>
+                            <span style="font-weight: 700; color: #1e4a7a;">{{ property.price|format_ksh }}</span>
+                        </div>
+                        
+                        <p style="color: #2c3e5c; font-size: 0.7rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.2rem;">
+                            <i class="fas fa-map-marker-alt" style="color: #1e4a7a;"></i>
+                            {{ property.estate or property.city }}
+                        </p>
+
+                        <!-- Stats with Real Data -->
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.65rem; color: #2c3e5c;">
+                            <span><i class="fas fa-bed" style="color: #1e4a7a;"></i> {{ property.bedrooms }}</span>
+                            <span><i class="fas fa-bath" style="color: #1e4a7a;"></i> {{ property.bathrooms }}</span>
+                            <span title="{{ property.views|length }} views"><i class="fas fa-eye" style="color: #1e4a7a;"></i> {{ property.views|length }}</span>
+                            <span title="{{ property.saves|length }} saves"><i class="fas fa-heart" style="color: #1e4a7a;"></i> {{ property.saves|length }}</span>
+                        </div>
+
+                        <!-- Occupied Checkbox -->
+                        <div style="margin-bottom: 1rem; padding: 0.5rem; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="occupied-{{ property.id }}" class="occupancy-toggle" 
+                                   onchange="toggleOccupied({{ property.id }}, this.checked)"
+                                   {% if property.status == 'occupied' %}checked{% endif %}>
+                            <label for="occupied-{{ property.id }}" style="font-size: 0.7rem; color: #2c3e5c; cursor: pointer;">
+                                <i class="fas fa-eye-slash"></i> Mark as Occupied (Hide from search)
+                            </label>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <a href="/property/{{ property.id }}" class="btn btn-outline" style="flex: 1; padding: 0.4rem; font-size: 0.7rem;">
+                                <i class="fas fa-eye"></i> View
+                            </a>
+                            <a href="/property/edit/{{ property.id }}" class="btn btn-outline" style="flex: 1; padding: 0.4rem; font-size: 0.7rem;">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <!-- WhatsApp Share Button -->
+                            <button onclick="shareProperty('{{ property.title|escape }}', '{{ property.price|format_ksh }}', '{{ property.estate or property.address }}', '{{ property.id }}')" 
+                                    class="btn btn-outline" style="padding: 0.4rem; font-size: 0.7rem; background: #25D366; color: white; border-color: #25D366;" 
+                                    title="Share on WhatsApp">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                            <form method="POST" action="/property/delete/{{ property.id }}" style="flex: 1;" onsubmit="return confirm('Delete this property?');">
+                                <button type="submit" class="btn btn-outline" style="width: 100%; padding: 0.4rem; font-size: 0.7rem; color: #dc2626; border-color: #dc2626;">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div style="text-align: center; padding: 3rem 1.5rem;">
+            <i class="fas fa-building" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem;">No listings yet</h3>
+            <p style="color: #2c3e5c; font-size: 0.8rem; margin-bottom: 1.5rem;">Start by adding your first property</p>
+            <a href="/property/add" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Your First Property
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // WhatsApp Share Function
+    function shareProperty(title, price, location, id) {
+        const url = window.location.origin + '/property/' + id;
+        const message = `🏠 *${title}*\n💰 ${price}\n📍 ${location}\n\nCheck it out on PataCrib:\n${url}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        return false;
+    }
+
+    // Toggle Occupied Status
+    function toggleOccupied(propertyId, isOccupied) {
+        const status = isOccupied ? 'occupied' : 'available';
+        
+        fetch(`/property/status/${propertyId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update card appearance
+                const card = document.querySelector(`.property-card[data-id="${propertyId}"]`);
+                const badge = card.querySelector('.badge');
+                
+                if (isOccupied) {
+                    card.style.opacity = '0.5';
+                    card.style.filter = 'grayscale(0.5)';
+                    badge.className = 'badge badge-occupied';
+                    badge.textContent = 'occupied';
+                    showToast('Property marked as occupied and hidden from search');
+                } else {
+                    card.style.opacity = '1';
+                    card.style.filter = 'none';
+                    badge.className = 'badge badge-available';
+                    badge.textContent = 'available';
+                    showToast('Property is now visible in search');
+                }
+                
+                // Update data attribute
+                card.dataset.status = status;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to update property status');
+        });
+    }
+
+    // Toast Notification
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1e4a7a;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            animation: slideIn 0.3s;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Filter Properties
+    function filterProperties(status) {
+        // Update active tab
+        document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        // Filter cards
+        const cards = document.querySelectorAll('.property-card');
+        cards.forEach(card => {
+            if (status === 'all' || card.dataset.status === status) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

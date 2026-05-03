@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  ADMIN
+  SEEKER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  userType  UserType @default(SEEKER)
+  createdAt DateTime @default(now())
+
+  properties            Property[]
+  savedProperties       SavedProperty[]
+  propertyViews         PropertyView[]
+  seekerConversations   Conversation[]  @relation("SeekerConversations")
+  landlordConversations Conversation[]  @relation("LandlordConversations")
+  sentMessages          Message[]
+}
+
+model Property {
+  id           String  @id @default(cuid())
+  title        String
+  description  String
+  price        Float
+  priceType    String  @default("month")
+  bedrooms     Int     @default(1)
+  bathrooms    Int     @default(1)
+  propertyType String  @default("bedsitter")
+  address      String
+  estate       String?
+  city         String  @default("Nairobi")
+
+  // GPS — default to Nairobi CBD
+  latitude  Float @default(-1.286389)
+  longitude Float @default(36.817223)
+
+  // Media
+  images   String[] @default([])
+  videoUrl String?
+
+  features  String[] @default([])
+  amenities String[] @default([])
+
+  // Kenya-specific fields
+  waterSchedule String?
+  matatuRoutes  String[] @default([])
+  safetyScore   Float?
+  powerBackup   Boolean  @default(false)
+  borehole      Boolean  @default(false)
+
+  status    String   @default("available") // available | taken | maintenance
+  createdAt DateTime @default(now())
+  adminId   String
+
+  admin         User           @relation(fields: [adminId], references: [id])
+  savedBy       SavedProperty[]
+  views         PropertyView[]
+  conversations Conversation[]
+}
+
+model SavedProperty {
+  id         String   @id @default(cuid())
+  userId     String
+  propertyId String
+  savedAt    DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+}
+
+model PropertyView {
+  id         String   @id @default(cuid())
+  propertyId String
+  userId     String?
+  viewedAt   DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Conversation {
+  id         String   @id @default(cuid())
+  propertyId String
+  seekerId   String
+  landlordId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  property Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  seeker   User      @relation("SeekerConversations", fields: [seekerId], references: [id])
+  landlord User      @relation("LandlordConversations", fields: [landlordId], references: [id])
+  messages Message[]
+
+  @@unique([propertyId, seekerId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  createdAt      DateTime @default(now())
+  read           Boolean  @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+}

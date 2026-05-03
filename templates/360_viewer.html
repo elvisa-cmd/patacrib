@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>360° Virtual Tour · Patacrib</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0a;
+        }
+        #viewer {
+            width: 100%;
+            height: 100%;
+        }
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            padding: 0.8rem 1.5rem;
+            border-radius: 100px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 1rem;
+            z-index: 1000;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .close-btn {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(10px);
+            color: #0a1e3c;
+            padding: 0.6rem 1.2rem;
+            border-radius: 100px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .close-btn:hover {
+            background: white;
+        }
+        .room-indicator {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: #1e4a7a;
+            color: white;
+            padding: 0.6rem 1.5rem;
+            border-radius: 100px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        .nav-btn {
+            background: #1e4a7a;
+            color: white;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 100px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:hover {
+            background: #2a6bb0;
+        }
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .counter {
+            align-self: center;
+            color: #0a1e3c;
+            font-weight: 600;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+</head>
+<body>
+    <a href="javascript:window.close()" class="close-btn"><i class="fas fa-times"></i> Close Tour</a>
+    <div class="room-indicator" id="roomIndicator">360° View</div>
+    
+    <div class="controls">
+        <button class="nav-btn" id="prevBtn" onclick="prevPhoto()"><i class="fas fa-chevron-left"></i> Previous</button>
+        <span class="counter" id="photoCounter">1 / <span id="totalPhotos">1</span></span>
+        <button class="nav-btn" id="nextBtn" onclick="nextPhoto()">Next <i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div id="viewer"></div>
+
+    <script>
+        // Get photos from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const photos = JSON.parse(decodeURIComponent(urlParams.get('photos')));
+        const photoIndex = parseInt(urlParams.get('index')) || 0;
+        
+        let currentIndex = photoIndex;
+        let scene, camera, renderer, sphere;
+        
+        document.getElementById('totalPhotos').innerText = photos.length;
+        document.getElementById('photoCounter').innerHTML = `${currentIndex + 1} / <span>${photos.length}</span>`;
+        
+        // Room names based on index
+        const roomNames = ['Living Room', 'Kitchen', 'Master Bedroom', 'Bedroom', 'Bathroom', 'Balcony', 'Dining Room', 'Exterior', 'Garden', 'Office'];
+        
+        function updateRoomIndicator() {
+            document.getElementById('roomIndicator').innerText = roomNames[currentIndex % roomNames.length] || `Room ${currentIndex + 1}`;
+        }
+        updateRoomIndicator();
+        
+        function initViewer(imageUrl) {
+            // Remove old scene
+            if (renderer) {
+                document.getElementById('viewer').innerHTML = '';
+            }
+            
+            scene = new THREE.Scene();
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.target = new THREE.Vector3(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('viewer').appendChild(renderer.domElement);
+            
+            const geometry = new THREE.SphereGeometry(500, 60, 40);
+            geometry.scale(-1, 1, 1);
+            
+            const texture = new THREE.TextureLoader().load(imageUrl);
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            
+            animate();
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        
+        function nextPhoto() {
+            if (currentIndex < photos.length - 1) {
+                currentIndex++;
+                loadCurrentPhoto();
+            }
+        }
+        
+        function prevPhoto() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadCurrentPhoto();
+            }
+        }
+        
+        function loadCurrentPhoto() {
+            initViewer(photos[currentIndex]);
+            document.getElementById('photoCounter').innerHTML = `${currentIndex + 1} / ${photos.length}`;
+            updateRoomIndicator();
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === photos.length - 1;
+        }
+        
+        // Initialize with first photo
+        if (photos && photos.length > 0) {
+            initViewer(photos[currentIndex]);
+            document.getElementById('prevBtn').disabled = currentIndex === 0;
+            document.getElementById('nextBtn').disabled = currentIndex === photos.length - 1;
+        }
+        
+        // Mouse drag to look around
+        let isMouseDown = false;
+        let lat = 0;
+        let lon = 0;
+        
+        document.addEventListener('mousedown', () => isMouseDown = true);
+        document.addEventListener('mouseup', () => isMouseDown = false);
+        
+        document.addEventListener('mousemove', (e) => {
+            if (isMouseDown && camera) {
+                lon += e.movementX * 0.2;
+                lat += e.movementY * 0.2;
+                
+                lat = Math.max(-85, Math.min(85, lat));
+                
+                camera.rotation.x = lat * Math.PI / 180;
+                camera.rotation.y = lon * Math.PI / 180;
+            }
+        });
+        
+        // Touch support for mobile
+        let touchStartX, touchStartY;
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (camera) {
+                const dx = e.touches[0].clientX - touchStartX;
+                const dy = e.touches[0].clientY - touchStartY;
+                
+                lon += dx * 0.2;
+                lat += dy * 0.2;
+                
+                lat = Math.max(-85, Math.min(85, lat));
+                
+                camera.rotation.x = lat * Math.PI / 180;
+                camera.rotation.y = lon * Math.PI / 180;
+                
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+    </script>
+</body>
+</html>

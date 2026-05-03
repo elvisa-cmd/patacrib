@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Search Properties · Patacrib{% endblock %}
+
+{% block content %}
+<!-- Search Header -->
+<section style="background: #f0f7ff; padding: 1.5rem 0; border-bottom: 1px solid #e2e8f0;">
+    <div class="container">
+        <h1 style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.2rem; color: #0a1e3c;">Search properties</h1>
+        <p style="color: #2c3e5c; font-size: 0.8rem; margin-bottom: 1rem;">Find your perfect home in Kenya</p>
+        
+        <!-- Search Bar -->
+        <form action="/search" method="GET" style="display: flex; gap: 0.5rem; max-width: 500px;">
+            <input type="text" name="q" value="{{ query or '' }}" placeholder="Search by location, estate..." 
+                   style="flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 50px; padding: 0.5rem 1.2rem; color: #0a1e3c; font-size: 0.8rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1.5rem;">Search</button>
+        </form>
+    </div>
+</section>
+
+<div class="container">
+    <!-- Filters -->
+    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 1rem; margin: 1.5rem 0;">
+        <form action="/search" method="GET" style="display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end;">
+            <input type="hidden" name="q" value="{{ query or '' }}">
+            
+            <div style="flex: 1; min-width: 140px;">
+                <label style="display: block; color: #2c3e5c; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem;">City</label>
+                <select name="city" style="width: 100%; padding: 0.4rem 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.75rem;">
+                    <option value="">All cities</option>
+                    {% for c in cities %}
+                        <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="flex: 1; min-width: 140px;">
+                <label style="display: block; color: #2c3e5c; font-size: 0.6rem; font-weight: 600; text-transform: uppercase; margin-bottom: 0.2rem;">Type</label>
+                <select name="type" style="width: 100%; padding: 0.4rem 0.8rem; border: 1px solid #e2e8f0; border-radius: 12px; font-size: 0.75rem;">
+                    <option value="">All types</option>
+                    <option value="bedsitter" {% if property_type == 'bedsitter' %}selected{% endif %}>Bedsitter</option>
+                    <option value="1bedroom" {% if property_type == '1bedroom' %}selected{% endif %}>1 Bedroom</option>
+                    <option value="2bedroom" {% if property_type == '2bedroom' %}selected{% endif %}>2 Bedroom</option>
+                    <option value="3bedroom" {% if property_type == '3bedroom' %}selected{% endif %}>3 Bedroom</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.4rem 1.2rem;">Apply</button>
+                <a href="/search" class="btn btn-outline" style="padding: 0.4rem 1.2rem;">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Results Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="font-size: 1rem; font-weight: 600; color: #0a1e3c;">Results</h2>
+        <span style="color: #2c3e5c; font-size: 0.7rem;"><strong style="color: #1e4a7a;">{{ properties|length }}</strong> properties found</span>
+    </div>
+
+    <!-- Property Grid -->
+    {% if properties %}
+    <div class="search-grid">
+        {% for property in properties %}
+        <div class="property-card-wrapper">
+            <a href="/property/{{ property.id }}" class="search-card" 
+               style="animation: fadeIn 0.3s ease forwards; animation-delay: {{ 0.02 + loop.index0 * 0.02 }}s; opacity: 0;">
+                
+                <div class="card-image">
+                    {% if property.images and property.images != '[]' %}
+                        {% set images = property.images|from_json %}
+                        {% if images and images|length > 0 %}
+                            <img src="{{ images[0] }}" alt="{{ property.title }}" loading="lazy">
+                        {% else %}
+                            <i class="fas fa-building" style="color: #a0b8cc;"></i>
+                        {% endif %}
+                    {% else %}
+                        <i class="fas fa-home" style="color: #a0b8cc;"></i>
+                    {% endif %}
+                    
+                    <!-- Price Badge -->
+                    <span class="price-badge">{{ property.price|format_ksh }}</span>
+                </div>
+                
+                <div class="card-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 class="card-title">{{ property.title[:35] }}{% if property.title|length > 35 %}…{% endif %}</h3>
+                        <!-- WhatsApp Share Button on each card -->
+                        <button onclick="shareProperty('{{ property.title|escape }}', '{{ property.price|format_ksh }}', '{{ property.estate or property.address }}', '{{ property.id }}'); event.preventDefault();" 
+                                class="whatsapp-mini-btn" title="Share on WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                        </button>
+                    </div>
+                    <div class="card-location">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ property.estate or property.address[:20] }}, {{ property.city }}</span>
+                    </div>
+                    <div class="card-features">
+                        <span><i class="fas fa-bed"></i> {{ property.bedrooms }} bed</span>
+                        <span><i class="fas fa-bath"></i> {{ property.bathrooms }} bath</span>
+                        <span><i class="fas fa-arrows-alt"></i> {{ property.property_type|replace('bedroom', 'br')|replace('bedsitter', 'bs') }}</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div style="text-align: center; padding: 3rem; background: white; border: 1px solid #e2e8f0; border-radius: 24px;">
+        <i class="fas fa-search" style="font-size: 2rem; color: #cbd5e1; margin-bottom: 0.8rem;"></i>
+        <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.2rem;">No properties found</h3>
+        <p style="color: #64748b; font-size: 0.75rem;">Try adjusting your filters</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .search-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .search-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        transition: 0.2s;
+        text-decoration: none;
+        color: #0a1e3c;
+        display: block;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        position: relative;
+    }
+
+    .search-card:hover {
+        transform: translateY(-3px);
+        border-color: #1e4a7a;
+        box-shadow: 0 8px 16px rgba(30,74,122,0.08);
+    }
+
+    .card-image {
+        height: 140px;
+        background: #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 2rem;
+        position: relative;
+    }
+
+    .card-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: 0.3s;
+    }
+
+    .search-card:hover .card-image img {
+        transform: scale(1.05);
+    }
+
+    .price-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        background: #1e4a7a;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 50px;
+        font-size: 0.65rem;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .card-content {
+        padding: 0.75rem;
+    }
+
+    .card-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+        color: #0a1e3c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+    }
+
+    .card-location {
+        color: #2c3e5c;
+        font-size: 0.65rem;
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        margin-bottom: 0.4rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .card-location i {
+        color: #1e4a7a;
+        font-size: 0.55rem;
+    }
+
+    .card-features {
+        display: flex;
+        gap: 0.6rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid #e2e8f0;
+        color: #2c3e5c;
+        font-size: 0.6rem;
+    }
+
+    .card-features i {
+        color: #1e4a7a;
+        margin-right: 0.15rem;
+        font-size: 0.5rem;
+    }
+
+    /* WhatsApp Mini Button */
+    .whatsapp-mini-btn {
+        background: #25D366;
+        color: white;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .whatsapp-mini-btn:hover {
+        background: #128C7E;
+        transform: scale(1.1);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-primary {
+        background: #1e4a7a;
+        color: white;
+        border: none;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-primary:hover {
+        background: #2a6bb0;
+    }
+    .btn-outline {
+        background: transparent;
+        border: 1px solid #1e4a7a;
+        color: #1e4a7a;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-outline:hover {
+        background: #1e4a7a;
+        color: white;
+    }
+
+    @media (max-width: 768px) {
+        .search-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.8rem;
+        }
+        .card-image {
+            height: 110px;
+        }
+        .card-content {
+            padding: 0.6rem;
+        }
+        .card-title {
+            font-size: 0.7rem;
+        }
+    }
+</style>
+
+<script>
+    // WhatsApp Share Function for Search Results
+    function shareProperty(title, price, location, id) {
+        const url = window.location.origin + '/property/' + id;
+        const message = `🏠 *${title}*\n💰 ${price}\n📍 ${location}\n\n${url}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+        return false; // Prevent event bubbling
+    }
+</script>
+{% endblock %}

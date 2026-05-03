@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}My Dashboard - Patacrib{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3rem 0;">
+    <!-- Welcome Banner -->
+    <div style="background: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+        <h1 style="margin-bottom: 0.5rem; color: var(--primary);">Welcome, {{ current_user.name }}</h1>
+        <p style="color: var(--gray);">Find your perfect home in Kenya</p>
+        <a href="/search" class="btn btn-primary" style="margin-top: 1rem;">
+            <i class="fas fa-search"></i> Search Properties
+        </a>
+    </div>
+    
+    <!-- Saved Properties -->
+    <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 3rem;">
+        <div style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);">
+            <h2 style="margin: 0;">Saved Properties</h2>
+        </div>
+        
+        {% if saved_properties %}
+        <div style="padding: 2rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                {% for property in saved_properties %}
+                <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+                    <a href="/property/{{ property.id }}" style="text-decoration: none; color: inherit;">
+                        <div style="height: 150px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400" 
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <h3 style="font-size: 1.1rem; margin: 0;">{{ property.title }}</h3>
+                                <span style="background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                                    {{ format_price(property.price) }}
+                                </span>
+                            </div>
+                            <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 1rem;">
+                                <i class="fas fa-map-marker-alt"></i> {{ property.city }}
+                            </p>
+                            <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: var(--gray);">
+                                <span><i class="fas fa-bed"></i> {{ property.bedrooms }} BR</span>
+                                <span><i class="fas fa-bath"></i> {{ property.bathrooms }} BA</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 4rem; color: var(--gray);">
+            <i class="fas fa-heart" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+            <h3>No Saved Properties</h3>
+            <p>Save properties you like to find them easily later</p>
+            <a href="/search" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-search"></i> Browse Properties
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Recommendations -->
+    {% if recommendations %}
+    <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+        <div style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">Recommended For You</h2>
+                <a href="/search" class="btn btn-outline" style="padding: 0.5rem 1rem;">View All</a>
+            </div>
+        </div>
+        
+        <div style="padding: 2rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                {% for property in recommendations %}
+                <div style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: transform 0.3s;">
+                    <a href="/property/{{ property.id }}" style="text-decoration: none; color: inherit;">
+                        <div style="height: 150px; overflow: hidden;">
+                            <img src="https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=400" 
+                                 style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div style="padding: 1rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                                <h3 style="font-size: 1.1rem; margin: 0;">{{ property.title }}</h3>
+                                <span style="background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem;">
+                                    {{ format_price(property.price) }}
+                                </span>
+                            </div>
+                            <p style="color: var(--gray); font-size: 0.9rem; margin-bottom: 1rem;">
+                                <i class="fas fa-map-marker-alt"></i> {{ property.city }}
+                            </p>
+                            <div style="display: flex; gap: 1rem; font-size: 0.9rem; color: var(--gray);">
+                                <span><i class="fas fa-bed"></i> {{ property.bedrooms }} BR</span>
+                                <span><i class="fas fa-bath"></i> {{ property.bathrooms }} BA</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Map View - PataCrib{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map { height: calc(100vh - 200px); width: 100%; border-radius: 20px; margin: 20px 0; }
+    .property-popup img { width: 200px; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+    .property-popup h6 { margin: 5px 0; font-weight: bold; }
+    .property-popup p { margin: 3px 0; }
+    .price-tag { color: #1e4a7a; font-weight: bold; font-size: 1.1em; }
+    .view-btn { display: inline-block; margin-top: 8px; padding: 5px 10px; background: #1e4a7a; color: white; text-decoration: none; border-radius: 5px; }
+    .filters-panel { background: white; padding: 15px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 style="font-size: 1.8rem; margin: 1.5rem 0;">🗺️ Property Map View</h1>
+    
+    <!-- Filters Panel -->
+    <div class="filters-panel">
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <select id="type-filter" style="padding: 0.5rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <option value="">All Types</option>
+                <option value="Apartment">Apartments</option>
+                <option value="House">Houses</option>
+                <option value="Bedsitter">Bedsitters</option>
+                <option value="Studio">Studios</option>
+            </select>
+            
+            <select id="bedrooms-filter" style="padding: 0.5rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <option value="">Any Bedrooms</option>
+                <option value="1">1 Bedroom</option>
+                <option value="2">2 Bedrooms</option>
+                <option value="3">3 Bedrooms</option>
+                <option value="4">4+ Bedrooms</option>
+            </select>
+            
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                <span>Max Price: KSh</span>
+                <input type="range" id="price-range" min="0" max="200000" step="5000" value="200000" style="flex: 1;">
+                <span id="price-value" style="min-width: 60px;">200K</span>
+            </div>
+            
+            <button id="apply-filters" class="btn btn-primary">Apply</button>
+            <button id="reset-filters" class="btn btn-outline">Reset</button>
+        </div>
+    </div>
+    
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- Property Count -->
+    <p id="property-count" style="margin-top: 1rem; color: #64748b;"></p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    // Properties data from Flask
+    const allProperties = {{ properties|safe }};
+    let map;
+    let markers = [];
+    let currentBounds = null;
+
+    // Initialize map
+    function initMap() {
+        // Default to Nairobi center
+        map = L.map('map').setView([-1.2864, 36.8172], 12);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Add all properties to map
+        addMarkers(allProperties);
+        updatePropertyCount(allProperties.length);
+    }
+
+    // Add markers to map
+    function addMarkers(properties) {
+        // Clear existing markers
+        markers.forEach(marker => map.removeLayer(marker));
+        markers = [];
+
+        properties.forEach(prop => {
+            if (prop.latitude && prop.longitude) {
+                // Choose icon color based on property type
+                const colors = {
+                    'Apartment': '#FF6B6B',
+                    'House': '#4ECDC4',
+                    'Bedsitter': '#FFD93D',
+                    'Studio': '#6B5B95'
+                };
+                const color = colors[prop.property_type] || '#1e4a7a';
+                
+                // Create custom icon
+                const icon = L.divIcon({
+                    html: `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">🏠</div>`,
+                    className: 'custom-marker',
+                    iconSize: [30, 30]
+                });
+
+                // Create popup content
+                const popupContent = `
+                    <div class="property-popup">
+                        <img src="${prop.image}" alt="${prop.title}" onerror="this.src='https://via.placeholder.com/200x120?text=No+Image'">
+                        <h6>${prop.title || prop.address}</h6>
+                        <p>📍 ${prop.estate || prop.city}</p>
+                        <p>🛏️ ${prop.bedrooms} bed • 🚽 ${prop.bathrooms} bath</p>
+                        <p class="price-tag">KSh ${prop.price.toLocaleString()}/${prop.price_type}</p>
+                        <a href="${prop.url}" class="view-btn" target="_blank">View Details →</a>
+                    </div>
+                `;
+
+                // Create and add marker
+                const marker = L.marker([prop.latitude, prop.longitude], { icon })
+                    .bindPopup(popupContent);
+                
+                marker.addTo(map);
+                markers.push(marker);
+            }
+        });
+
+        // Fit map to show all markers
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+    }
+
+    // Filter properties
+    function filterProperties() {
+        const type = document.getElementById('type-filter').value;
+        const bedrooms = document.getElementById('bedrooms-filter').value;
+        const maxPrice = parseInt(document.getElementById('price-range').value);
+
+        const filtered = allProperties.filter(prop => {
+            if (type && prop.property_type !== type) return false;
+            if (bedrooms) {
+                if (bedrooms === '4' && prop.bedrooms < 4) return false;
+                if (bedrooms !== '4' && prop.bedrooms !== parseInt(bedrooms)) return false;
+            }
+            if (prop.price > maxPrice) return false;
+            return true;
+        });
+
+        addMarkers(filtered);
+        updatePropertyCount(filtered.length);
+    }
+
+    // Update property count
+    function updatePropertyCount(count) {
+        document.getElementById('property-count').textContent = `Showing ${count} properties on map`;
+    }
+
+    // Update price display
+    document.getElementById('price-range').addEventListener('input', function(e) {
+        const val = e.target.value;
+        document.getElementById('price-value').textContent = val >= 1000 ? Math.round(val/1000) + 'K' : val;
+    });
+
+    // Event listeners
+    document.getElementById('apply-filters').addEventListener('click', filterProperties);
+    document.getElementById('reset-filters').addEventListener('click', function() {
+        document.getElementById('type-filter').value = '';
+        document.getElementById('bedrooms-filter').value = '';
+        document.getElementById('price-range').value = 200000;
+        document.getElementById('price-value').textContent = '200K';
+        addMarkers(allProperties);
+        updatePropertyCount(allProperties.length);
+    });
+
+    // Initialize on load
+    window.onload = initMap;
+</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Inbox · Patacrib{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 1rem; max-width: 800px;">
+    <h1 style="font-size: 1.8rem; font-weight: 700; color: #0a1e3c; margin-bottom: 2rem;">Inbox</h1>
+
+    {% if conversations %}
+        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 20px; overflow: hidden;">
+            {% for conv in conversations %}
+            <a href="/chat/{{ conv.room.id }}" style="text-decoration: none; display: block;">
+                <div style="padding: 1.2rem; border-bottom: 1px solid #e2e8f0; transition: 0.2s; {% if not loop.last %}border-bottom: 1px solid #e2e8f0;{% endif %}" 
+                     onmouseover="this.style.backgroundColor='#f8fafc'" 
+                     onmouseout="this.style.backgroundColor='white'">
+                    
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <!-- Avatar -->
+                        <div style="width: 50px; height: 50px; background: #1e4a7a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+                            {{ conv.other_user.name[0]|upper if conv.other_user else '?' }}
+                        </div>
+                        
+                        <!-- Conversation Info -->
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                                <h3 style="font-size: 1rem; font-weight: 600; color: #0a1e3c; margin: 0;">
+                                    {{ conv.other_user.name if conv.other_user else 'Agent' }}
+                                    {% if conv.unread_count > 0 %}
+                                    <span style="background: #dc2626; color: white; padding: 0.1rem 0.4rem; border-radius: 50px; font-size: 0.6rem; margin-left: 0.5rem;">
+                                        {{ conv.unread_count }} new
+                                    </span>
+                                    {% endif %}
+                                </h3>
+                                {% if conv.last_message %}
+                                <span style="font-size: 0.65rem; color: #64748b;">
+                                    {{ conv.last_message.created_at.strftime('%d %b, %H:%M') }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            
+                            {% if conv.property %}
+                            <p style="font-size: 0.7rem; color: #1e4a7a; margin-bottom: 0.2rem;">
+                                <i class="fas fa-home"></i> {{ conv.property.title[:30] }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if conv.last_message %}
+                            <p style="font-size: 0.8rem; color: #2c3e5c; margin: 0;">
+                                {% if conv.last_message.sender_id == current_user.id %}
+                                <span style="color: #64748b;">You:</span>
+                                {% endif %}
+                                {{ conv.last_message.message[:50] }}{% if conv.last_message.message|length > 50 %}...{% endif %}
+                            </p>
+                            {% else %}
+                            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">No messages yet</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div style="text-align: center; padding: 4rem 2rem; background: white; border-radius: 20px;">
+            <i class="fas fa-inbox" style="font-size: 3rem; color: #cbd5e1; margin-bottom: 1rem;"></i>
+            <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.3rem;">No conversations yet</h3>
+            <p style="color: #2c3e5c; font-size: 0.8rem; margin-bottom: 1.5rem;">
+                When you start chatting with agents or seekers, they'll appear here.
+            </p>
+            <a href="/search" class="btn btn-primary" style="padding: 0.8rem 2rem;">
+                Browse Properties
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .btn-primary {
+        background: #1e4a7a;
+        color: white;
+        border: none;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-primary:hover {
+        background: #2a6bb0;
+    }
+</style>
+{% endblock %}

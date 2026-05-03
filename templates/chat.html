@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Chat · Patacrib{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2rem 1rem; max-width: 800px;">
+    <!-- Chat Header -->
+    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;">
+        <a href="/inbox" style="color: #1e4a7a; font-size: 1.2rem;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div style="width: 40px; height: 40px; background: #1e4a7a; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600;">
+            {{ other_user.name[0]|upper if other_user else '?' }}
+        </div>
+        <div>
+            <h2 style="font-size: 1.1rem; font-weight: 600; color: #0a1e3c; margin: 0;">{{ other_user.name if other_user else 'Agent' }}</h2>
+            {% if property %}
+            <p style="font-size: 0.7rem; color: #1e4a7a; margin: 0;">
+                <i class="fas fa-home"></i> {{ property.title }}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div id="chat-messages" style="background: #f8fafc; border-radius: 20px; padding: 1.5rem; height: 400px; overflow-y: auto; margin-bottom: 1rem;">
+        {% for msg in messages %}
+        <div style="display: flex; {% if msg.sender_id == current_user.id %}justify-content: flex-end;{% endif %} margin-bottom: 1rem;">
+            <div style="max-width: 70%; {% if msg.sender_id == current_user.id %}background: #1e4a7a; color: white;{% else %}background: white; color: #0a1e3c;{% endif %} padding: 0.8rem 1rem; border-radius: 20px; {% if msg.sender_id == current_user.id %}border-bottom-right-radius: 4px;{% else %}border-bottom-left-radius: 4px;{% endif %}">
+                <p style="margin: 0; font-size: 0.9rem;">{{ msg.message }}</p>
+                <p style="margin: 0; font-size: 0.6rem; {% if msg.sender_id == current_user.id %}color: rgba(255,255,255,0.7);{% else %}color: #64748b;{% endif %} margin-top: 0.2rem;">
+                    {{ msg.created_at.strftime('%H:%M') }}
+                    {% if msg.sender_id == current_user.id and msg.is_read %}
+                    <i class="fas fa-check-double" style="margin-left: 0.2rem;"></i>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Message Input -->
+    <div style="display: flex; gap: 0.5rem; background: white; border: 1px solid #e2e8f0; border-radius: 100px; padding: 0.3rem;">
+        <input type="text" id="message-input" placeholder="Type your message..." 
+               style="flex: 1; background: transparent; border: none; padding: 0.8rem 1.2rem; border-radius: 100px; outline: none;">
+        <button onclick="sendMessage()" class="btn-primary" style="padding: 0.8rem 1.5rem;">
+            <i class="fas fa-paper-plane"></i> Send
+        </button>
+    </div>
+</div>
+
+<style>
+    .btn-primary {
+        background: #1e4a7a;
+        color: white;
+        border: none;
+        border-radius: 100px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-primary:hover {
+        background: #2a6bb0;
+    }
+    #chat-messages::-webkit-scrollbar {
+        width: 6px;
+    }
+    #chat-messages::-webkit-scrollbar-track {
+        background: #f1f5f9;
+    }
+    #chat-messages::-webkit-scrollbar-thumb {
+        background: #94a3b8;
+        border-radius: 10px;
+    }
+</style>
+
+<script>
+    const roomId = {{ room.id }};
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Scroll to bottom on load
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        fetch(`/chat/send/${roomId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageInput.value = '';
+                // Reload to show new message (or you can add SocketIO for real-time)
+                location.reload();
+            }
+        });
+    }
+
+    // Send on Enter key
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+{% endblock %}

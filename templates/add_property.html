@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Property - Patacrib</title>
+    <style>
+        #webcam { width: 100%; max-width: 400px; border: 2px solid #ddd; }
+        .captured-img { width: 100px; height: 100px; object-fit: cover; margin: 5px; border-radius: 5px; }
+        .video-preview { width: 100%; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <!-- Navigation (keep your existing navigation) -->
+    
+    <div class="container mt-4">
+        <h2>Add New Property</h2>
+        
+        <!-- Webcam Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4><i class="fas fa-camera"></i> Capture Photos & Video</h4>
+            </div>
+            <div class="card-body">
+                <!-- Live Webcam -->
+                <div class="mb-4">
+                    <h5>Live Camera</h5>
+                    <video id="webcam" autoplay></video>
+                    <div class="mt-2">
+                        <button id="captureBtn" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> Take Photo
+                        </button>
+                        <button id="videoBtn" class="btn btn-success">
+                            <i class="fas fa-video"></i> Start Video
+                        </button>
+                        <button id="stopVideoBtn" class="btn btn-danger" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop Video
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Captured Images -->
+                <div class="mb-4">
+                    <h5>Captured Photos</h5>
+                    <div id="capturedImages" class="d-flex flex-wrap"></div>
+                </div>
+                
+                <!-- Recorded Video -->
+                <div id="videoSection" style="display: none;">
+                    <h5>Recorded Video</h5>
+                    <video id="recordedVideo" controls class="video-preview"></video>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Property Form -->
+        <form method="POST" enctype="multipart/form-data">
+            <!-- Hidden inputs for webcam data -->
+            <input type="hidden" name="webcam_images[]" id="webcamImagesInput">
+            <input type="hidden" name="webcam_video" id="webcamVideoInput">
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Property Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Title *</label>
+                                <input type="text" name="title" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Price *</label>
+                                <input type="number" name="price" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Price Type</label>
+                                <select name="price_type" class="form-control">
+                                    <option value="month">Per Month</option>
+                                    <option value="day">Per Day</option>
+                                    <option value="year">Per Year</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Bedrooms</label>
+                                        <input type="number" name="bedrooms" class="form-control" value="1" min="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>Bathrooms</label>
+                                        <input type="number" name="bathrooms" class="form-control" value="1" min="0">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Property Type</label>
+                                <select name="property_type" class="form-control">
+                                    <option value="bedsitter">Bedsitter</option>
+                                    <option value="apartment">Apartment</option>
+                                    <option value="house">House</option>
+                                    <option value="studio">Studio</option>
+                                    <option value="commercial">Commercial</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Address *</label>
+                                <input type="text" name="address" class="form-control" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>City</label>
+                                <input type="text" name="city" class="form-control" value="Nairobi">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Estate/Area</label>
+                                <input type="text" name="estate" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea name="description" class="form-control" rows="4" required></textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Features Section -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Features & Amenities</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Property Features</h5>
+                            <div class="form-check">
+                                <input type="checkbox" name="features" value="Furnished" class="form-check-input">
+                                <label class="form-check-label">Furnished</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="features" value="Parking" class="form-check-input">
+                                <label class="form-check-label">Parking</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="features" value="Security" class="form-check-input">
+                                <label class="form-check-label">Security</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="features" value="Water 24/7" class="form-check-input">
+                                <label class="form-check-label">Water 24/7</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="features" value="Balcony" class="form-check-input">
+                                <label class="form-check-label">Balcony</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h5>Nearby Amenities</h5>
+                            <div class="form-check">
+                                <input type="checkbox" name="amenities" value="Supermarket" class="form-check-input">
+                                <label class="form-check-label">Supermarket</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="amenities" value="School" class="form-check-input">
+                                <label class="form-check-label">School</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="amenities" value="Hospital" class="form-check-input">
+                                <label class="form-check-label">Hospital</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="amenities" value="Public Transport" class="form-check-input">
+                                <label class="form-check-label">Public Transport</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" name="amenities" value="Restaurants" class="form-check-input">
+                                <label class="form-check-label">Restaurants</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- File Uploads -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Additional Media</h4>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Upload Additional Images</label>
+                        <input type="file" name="images" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">Select multiple images if needed</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Upload Video</label>
+                        <input type="file" name="video" class="form-control" accept="video/*">
+                        <small class="text-muted">MP4, MOV, or WebM format</small>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-plus"></i> Add Property
+            </button>
+        </form>
+    </div>
+
+    <script>
+        let webcamStream;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let capturedImages = [];
+        
+        // Initialize webcam
+        async function initWebcam() {
+            try {
+                webcamStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: true,
+                    audio: true  // For video recording
+                });
+                document.getElementById('webcam').srcObject = webcamStream;
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+                alert('Unable to access camera. Please check permissions.');
+            }
+        }
+        
+        // Capture photo
+        document.getElementById('captureBtn').addEventListener('click', () => {
+            const video = document.getElementById('webcam');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const imgData = canvas.toDataURL('image/jpeg');
+            capturedImages.push(imgData);
+            
+            // Display preview
+            const img = document.createElement('img');
+            img.src = imgData;
+            img.className = 'captured-img';
+            document.getElementById('capturedImages').appendChild(img);
+            
+            // Update hidden input
+            document.getElementById('webcamImagesInput').value = JSON.stringify(capturedImages);
+        });
+        
+        // Video recording
+        const videoBtn = document.getElementById('videoBtn');
+        const stopVideoBtn = document.getElementById('stopVideoBtn');
+        
+        videoBtn.addEventListener('click', startRecording);
+        stopVideoBtn.addEventListener('click', stopRecording);
+        
+        function startRecording() {
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(webcamStream);
+            
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const videoURL = URL.createObjectURL(blob);
+                const recordedVideo = document.getElementById('recordedVideo');
+                recordedVideo.src = videoURL;
+                document.getElementById('videoSection').style.display = 'block';
+                
+                // Convert to base64 for form submission
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    document.getElementById('webcamVideoInput').value = reader.result;
+                };
+                reader.readAsDataURL(blob);
+                
+                // Reset buttons
+                videoBtn.style.display = 'inline-block';
+                stopVideoBtn.style.display = 'none';
+            };
+            
+            mediaRecorder.start();
+            videoBtn.style.display = 'none';
+            stopVideoBtn.style.display = 'inline-block';
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+        
+        // Initialize on page load
+        window.onload = initWebcam;
+    </script>
+</body>
+</html>

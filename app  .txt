@@ -1,0 +1,947 @@
+import os
+import json
+import uuid
+import base64
+from datetime import datetime
+from functools import wraps
+
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, current_user, login_required
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+from PIL import Image
+import io
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = os.urandom(24).hex()
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///patacrib.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov', 'webm', 'avi'}
+
+db = SQLAlchemy(app)
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'properties'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos', 'temp'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'webcam'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'tours'), exist_ok=True)  # NEW: for 360° photos
+
+####################################################################
+# MODELS
+####################################################################
+
+class User(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    user_type = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    is_verified = db.Column(db.Boolean, default=False)
+    verified_at = db.Column(db.DateTime)
+    response_rate = db.Column(db.Integer, default=100)
+    response_time = db.Column(db.String(20), default='< 1 hour')
+    member_since = db.Column(db.DateTime, default=datetime.utcnow)
+    total_listings = db.Column(db.Integer, default=0)
+    last_active = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    properties = db.relationship('Property', backref='owner', lazy=True)
+    saved = db.relationship('SavedProperty', backref='saver', lazy=True)
+    saved_searches = db.relationship('SavedSearch', backref='user', lazy=True)
+
+class Property(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    price_type = db.Column(db.String(20), default='month')
+    bedrooms = db.Column(db.Integer, default=0)
+    bathrooms = db.Column(db.Integer, default=0)
+    property_type = db.Column(db.String(50), nullable=False)
+    
+    address = db.Column(db.String(200), nullable=False)
+    city = db.Column(db.String(100), nullable=False)
+    estate = db.Column(db.String(100))
+    
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+    gps_accuracy = db.Column(db.Float)
+    
+    water_supplier = db.Column(db.String(100), default='Nairobi Water')
+    water_schedule_today = db.Column(db.String(50))
+    water_schedule_tomorrow = db.Column(db.String(50))
+    has_borehole = db.Column(db.Boolean, default=False)
+    has_water_tank = db.Column(db.Boolean, default=False)
+    
+    matatu_routes = db.Column(db.Text, default='[]')
+    nearest_stage = db.Column(db.String(100))
+    stage_distance = db.Column(db.Integer)
+    cbd_travel_time = db.Column(db.Integer)
+    
+    safety_score = db.Column(db.Integer)
+    police_distance = db.Column(db.Float)
+    street_lights = db.Column(db.Boolean, default=True)
+    night_safety = db.Column(db.String(20))
+    neighbor_reviews = db.Column(db.Integer, default=0)
+    safety_percentage = db.Column(db.Integer)
+    
+    images = db.Column(db.Text, default='[]')
+    video = db.Column(db.String(500))
+    tour_photos = db.Column(db.Text, default='[]')  # NEW: 360° virtual tour photos
+    
+    features = db.Column(db.Text, default='[]')
+    amenities = db.Column(db.Text, default='[]')
+    status = db.Column(db.String(20), default='available')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    saves = db.relationship('SavedProperty', backref='property', lazy=True, cascade='all, delete-orphan')
+    views = db.relationship('PropertyView', backref='property', lazy=True, cascade='all, delete-orphan')
+
+class SavedProperty(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    property_id = db.Column(db.Integer, db.ForeignKey('property.id'), nullable=False)
+    saved_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class PropertyView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    property_id = db.Column(db.Integer, db.ForeignKey('property.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class MatatuRoute(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    route_number = db.Column(db.String(20), nullable=False)
+    sacco = db.Column(db.String(100))
+    from_area = db.Column(db.String(100))
+    to_area = db.Column(db.String(100))
+    via = db.Column(db.String(200))
+    stage_coordinates = db.Column(db.String(100))
+
+class WaterSchedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    city = db.Column(db.String(100))
+    estate = db.Column(db.String(100))
+    supplier = db.Column(db.String(100))
+    schedule_today = db.Column(db.String(50))
+    schedule_tomorrow = db.Column(db.String(50))
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class NeighborhoodSafety(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    city = db.Column(db.String(100))
+    estate = db.Column(db.String(100))
+    safety_score = db.Column(db.Integer)
+    police_distance = db.Column(db.Float)
+    street_lights = db.Column(db.Boolean)
+    night_safety = db.Column(db.String(20))
+    total_reviews = db.Column(db.Integer, default=0)
+    safe_percentage = db.Column(db.Integer)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class SavedSearch(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    city = db.Column(db.String(100))
+    estate = db.Column(db.String(100))
+    min_price = db.Column(db.Float)
+    max_price = db.Column(db.Float)
+    bedrooms = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_notified = db.Column(db.DateTime)
+    
+    @property
+    def url(self):
+        url = '/search?'
+        if self.city:
+            url += f'city={self.city}&'
+        if self.estate:
+            url += f'q={self.estate}&'
+        if self.bedrooms:
+            url += f'bedrooms={self.bedrooms}&'
+        if self.min_price:
+            url += f'min_price={self.min_price}&'
+        if self.max_price:
+            url += f'max_price={self.max_price}&'
+        return url
+    
+    @property
+    def new_count(self):
+        query = Property.query.filter_by(status='available')
+        if self.city:
+            query = query.filter_by(city=self.city)
+        if self.estate:
+            query = query.filter(Property.estate.contains(self.estate))
+        if self.bedrooms:
+            query = query.filter(Property.bedrooms >= self.bedrooms)
+        if self.min_price:
+            query = query.filter(Property.price >= self.min_price)
+        if self.max_price:
+            query = query.filter(Property.price <= self.max_price)
+        if self.last_notified:
+            query = query.filter(Property.created_at > self.last_notified)
+        return query.count()
+
+####################################################################
+# TEMPLATE FILTERS
+####################################################################
+
+@app.template_filter('from_json')
+def from_json_filter(value):
+    if value:
+        try:
+            return json.loads(value)
+        except:
+            return []
+    return []
+
+@app.template_filter('format_ksh')
+def format_ksh_filter(amount):
+    try:
+        if amount >= 1000000:
+            return f"KSh {amount/1000000:.1f}M"
+        elif amount >= 1000:
+            return f"KSh {amount/1000:.0f}K"
+        else:
+            return f"KSh {amount:,.0f}"
+    except:
+        return f"KSh {amount}"
+
+####################################################################
+# HELPERS
+####################################################################
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def save_image(file, subfolder='properties'):
+    try:
+        filename = secure_filename(file.filename)
+        ext = filename.rsplit('.', 1)[1].lower()
+        new_filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, new_filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        file.save(filepath)
+        return f'/static/uploads/{subfolder}/{new_filename}'
+    except:
+        return None
+
+def save_base64_image(base64_str, subfolder='webcam'):
+    try:
+        if 'base64,' in base64_str:
+            base64_str = base64_str.split('base64,')[1]
+        img_data = base64.b64decode(base64_str)
+        img = Image.open(io.BytesIO(img_data))
+        filename = f"{uuid.uuid4().hex}.jpg"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        img.save(filepath, 'JPEG', quality=85)
+        return f'/static/uploads/{subfolder}/{filename}'
+    except:
+        return None
+
+def save_video(file):
+    try:
+        filename = secure_filename(file.filename)
+        ext = filename.rsplit('.', 1)[1].lower()
+        new_filename = f"{uuid.uuid4().hex}.{ext}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'videos', new_filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        file.save(filepath)
+        return f'/static/uploads/videos/{new_filename}'
+    except:
+        return None
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.user_type != 'admin':
+            flash('Admin access required', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def get_neighborhood_safety(city, estate):
+    safety = NeighborhoodSafety.query.filter_by(city=city, estate=estate).first()
+    if safety:
+        return {
+            'score': safety.safety_score,
+            'police_distance': safety.police_distance,
+            'street_lights': safety.street_lights,
+            'night_safety': safety.night_safety,
+            'reviews': safety.total_reviews,
+            'safe_percentage': safety.safe_percentage
+        }
+    return {
+        'score': 75,
+        'police_distance': 1.5,
+        'street_lights': True,
+        'night_safety': 'Moderate',
+        'reviews': 18,
+        'safe_percentage': 78
+    }
+
+def get_water_schedule(city, estate):
+    water = WaterSchedule.query.filter_by(city=city, estate=estate).first()
+    if water:
+        return {
+            'supplier': water.supplier,
+            'today': water.schedule_today,
+            'tomorrow': water.schedule_tomorrow
+        }
+    return {
+        'supplier': 'Nairobi Water',
+        'today': '8am - 12pm',
+        'tomorrow': '2pm - 6pm'
+    }
+
+def get_matatu_routes(estate):
+    routes = MatatuRoute.query.filter(
+        (MatatuRoute.from_area.contains(estate)) | 
+        (MatatuRoute.to_area.contains(estate)) |
+        (MatatuRoute.via.contains(estate))
+    ).limit(3).all()
+    
+    if routes:
+        return [{'number': r.route_number, 'sacco': r.sacco} for r in routes]
+    
+    return [{'number': '44', 'sacco': 'KBS'}, {'number': '105', 'sacco': 'Eastlands'}, {'number': '33C', 'sacco': 'Ngong Rd'}]
+
+####################################################################
+# PUBLIC ROUTES
+####################################################################
+
+@app.route('/')
+def index():
+    properties = Property.query.filter_by(status='available').order_by(Property.created_at.desc()).all()
+    return render_template('index.html', properties=properties)
+
+@app.route('/relocation')
+def relocation():
+    return render_template('relocation.html')
+
+@app.route('/property/<int:property_id>')
+def property_detail(property_id):
+    property = Property.query.get_or_404(property_id)
+    
+    if current_user.is_authenticated:
+        view = PropertyView(property_id=property_id, user_id=current_user.id)
+        db.session.add(view)
+        db.session.commit()
+        
+        if property.owner:
+            property.owner.last_active = datetime.utcnow()
+            db.session.commit()
+    
+    images = json.loads(property.images) if property.images else []
+    tour_photos = json.loads(property.tour_photos) if property.tour_photos else []
+    features = json.loads(property.features) if property.features else []
+    amenities = json.loads(property.amenities) if property.amenities else []
+    
+    avg_price = db.session.query(db.func.avg(Property.price)).filter(
+        Property.city == property.city,
+        Property.property_type == property.property_type,
+        Property.status == 'available',
+        Property.id != property_id
+    ).scalar() or property.price
+    
+    safety_data = get_neighborhood_safety(property.city, property.estate)
+    water_data = get_water_schedule(property.city, property.estate)
+    matatu_routes = get_matatu_routes(property.estate)
+    stage_distance = property.stage_distance or 300
+    cbd_time = property.cbd_travel_time or 25
+    
+    is_saved = False
+    if current_user.is_authenticated:
+        saved = SavedProperty.query.filter_by(user_id=current_user.id, property_id=property_id).first()
+        is_saved = saved is not None
+    
+    return render_template('property_detail.html',
+                         property=property,
+                         images=images,
+                         tour_photos=tour_photos,
+                         features=features,
+                         amenities=amenities,
+                         is_saved=is_saved,
+                         avg_price=avg_price,
+                         safety=safety_data,
+                         water=water_data,
+                         matatu_routes=matatu_routes,
+                         stage_distance=stage_distance,
+                         cbd_time=cbd_time)
+
+@app.route('/360-viewer')
+def tour_viewer():
+    """360° Virtual Tour Viewer"""
+    photos = request.args.get('photos')
+    index = request.args.get('index', 0, type=int)
+    return render_template('360_viewer.html', photos=photos, index=index)
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    city = request.args.get('city', '')
+    property_type = request.args.get('type', '')
+    
+    properties = Property.query.filter_by(status='available')
+    
+    if query:
+        properties = properties.filter(
+            db.or_(
+                Property.title.contains(query),
+                Property.description.contains(query),
+                Property.address.contains(query),
+                Property.estate.contains(query)
+            )
+        )
+    if city:
+        properties = properties.filter_by(city=city)
+    if property_type:
+        properties = properties.filter_by(property_type=property_type)
+    
+    properties = properties.order_by(Property.created_at.desc()).all()
+    cities = db.session.query(Property.city).distinct().all()
+    cities = [c[0] for c in cities if c[0]]
+    
+    return render_template('search.html',
+                         properties=properties,
+                         cities=cities,
+                         query=query,
+                         city=city,
+                         property_type=property_type)
+
+####################################################################
+# AUTH ROUTES
+####################################################################
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            flash(f'Welcome back, {user.name}!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid email or password', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        name = request.form.get('name')
+        phone = request.form.get('phone')
+        user_type = request.form.get('user_type')
+        
+        if not email or not password or not name or not phone or not user_type:
+            flash('All fields are required', 'error')
+            return redirect(url_for('signup'))
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'error')
+            return redirect(url_for('signup'))
+        
+        user = User(
+            email=email,
+            password=generate_password_hash(password),
+            name=name,
+            phone=phone,
+            user_type=user_type
+        )
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        login_user(user)
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('signup.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('index'))
+
+####################################################################
+# DASHBOARD ROUTES
+####################################################################
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.user_type == 'admin':
+        return redirect(url_for('admin_dashboard'))
+    else:
+        return redirect(url_for('seeker_dashboard'))
+
+@app.route('/dashboard/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    properties = Property.query.filter_by(admin_id=current_user.id).order_by(Property.created_at.desc()).all()
+    
+    current_user.total_listings = len(properties)
+    db.session.commit()
+    
+    total = len(properties)
+    available = len([p for p in properties if p.status == 'available'])
+    rented = len([p for p in properties if p.status == 'rented'])
+    total_views = sum(len(p.views) for p in properties)
+    total_saves = sum(len(p.saves) for p in properties)
+    
+    stats = {
+        'total': total,
+        'available': available,
+        'rented': rented,
+        'views': total_views,
+        'saves': total_saves
+    }
+    
+    return render_template('admin_dashboard.html', properties=properties, stats=stats)
+
+@app.route('/dashboard/seeker')
+@login_required
+def seeker_dashboard():
+    saved_props = SavedProperty.query.filter_by(user_id=current_user.id).order_by(SavedProperty.saved_at.desc()).all()
+    saved_properties = [sp.property for sp in saved_props]
+    
+    saved_searches = SavedSearch.query.filter_by(user_id=current_user.id).order_by(SavedSearch.created_at.desc()).all()
+    
+    recommendations = Property.query.filter_by(status='available').order_by(Property.created_at.desc()).limit(6).all()
+    
+    return render_template('seeker_dashboard.html',
+                         saved_properties=saved_properties,
+                         saved_searches=saved_searches,
+                         recommendations=recommendations)
+
+@app.route('/create-alert', methods=['POST'])
+@login_required
+def create_alert():
+    try:
+        search = SavedSearch(
+            user_id=current_user.id,
+            city=request.form.get('city'),
+            estate=request.form.get('estate'),
+            min_price=float(request.form.get('min_price')) if request.form.get('min_price') else None,
+            max_price=float(request.form.get('max_price')) if request.form.get('max_price') else None,
+            bedrooms=int(request.form.get('bedrooms')) if request.form.get('bedrooms') else None
+        )
+        db.session.add(search)
+        db.session.commit()
+        flash('✅ Alert created!', 'success')
+    except Exception as e:
+        flash('❌ Error creating alert', 'error')
+    return redirect(url_for('seeker_dashboard'))
+
+@app.route('/delete-search/<int:search_id>', methods=['POST'])
+@login_required
+def delete_search(search_id):
+    search = SavedSearch.query.get_or_404(search_id)
+    if search.user_id != current_user.id:
+        flash('Unauthorized', 'error')
+        return redirect(url_for('index'))
+    
+    db.session.delete(search)
+    db.session.commit()
+    flash('Alert deleted', 'success')
+    return redirect(url_for('seeker_dashboard'))
+
+@app.route('/verify-account', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def verify_account():
+    if request.method == 'POST':
+        current_user.is_verified = True
+        current_user.verified_at = datetime.utcnow()
+        db.session.commit()
+        flash('✅ Your account has been verified!', 'success')
+        return redirect(url_for('admin_dashboard'))
+    
+    return render_template('verify_account.html')
+
+####################################################################
+# PROPERTY MANAGEMENT
+####################################################################
+
+@app.route('/property/add', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def add_property():
+    if request.method == 'POST':
+        try:
+            title = request.form.get('title')
+            description = request.form.get('description')
+            price = float(request.form.get('price', 0))
+            price_type = request.form.get('price_type', 'month')
+            bedrooms = int(request.form.get('bedrooms', 0))
+            bathrooms = int(request.form.get('bathrooms', 0))
+            property_type = request.form.get('property_type')
+            
+            address = request.form.get('address', '')
+            city = request.form.get('city', '')
+            estate = request.form.get('estate')
+            
+            gps_latitude = request.form.get('latitude')
+            gps_longitude = request.form.get('longitude')
+            gps_accuracy = request.form.get('gps_accuracy')
+            
+            if not gps_latitude or not gps_longitude:
+                flash('❌ You must capture your exact GPS location first!', 'error')
+                return redirect(url_for('add_property'))
+            
+            latitude = float(gps_latitude)
+            longitude = float(gps_longitude)
+            accuracy = float(gps_accuracy) if gps_accuracy else None
+            
+            safety_data = get_neighborhood_safety(city, estate)
+            water_data = get_water_schedule(city, estate)
+            matatu_routes = get_matatu_routes(estate)
+            
+            images = []
+            
+            if 'images' in request.files:
+                files = request.files.getlist('images')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        path = save_image(file)
+                        if path:
+                            images.append(path)
+            
+            webcam_images = request.form.getlist('webcam_images[]')
+            for img_data in webcam_images:
+                if img_data:
+                    path = save_base64_image(img_data)
+                    if path:
+                        images.append(path)
+            
+            video = None
+            if 'video' in request.files:
+                video_file = request.files['video']
+                if video_file and allowed_file(video_file.filename):
+                    video = save_video(video_file)
+            
+            if 'recorded_video' in request.form and request.form['recorded_video']:
+                recorded_video_url = request.form['recorded_video']
+                if recorded_video_url.startswith('/static/uploads/videos/'):
+                    video = recorded_video_url
+            
+            # NEW: Handle 360° tour photos
+            tour_photos = []
+            if 'tour_photos' in request.files:
+                files = request.files.getlist('tour_photos')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        path = save_image(file, 'tours')
+                        if path:
+                            tour_photos.append(path)
+            
+            features = request.form.getlist('features[]')
+            amenities = request.form.getlist('amenities[]')
+            
+            property = Property(
+                title=title,
+                description=description,
+                price=price,
+                price_type=price_type,
+                bedrooms=bedrooms,
+                bathrooms=bathrooms,
+                property_type=property_type,
+                address=address,
+                city=city,
+                estate=estate,
+                latitude=latitude,
+                longitude=longitude,
+                gps_accuracy=accuracy,
+                water_supplier=water_data['supplier'],
+                water_schedule_today=water_data['today'],
+                water_schedule_tomorrow=water_data['tomorrow'],
+                has_borehole=False,
+                has_water_tank=False,
+                matatu_routes=json.dumps(matatu_routes),
+                nearest_stage=estate,
+                stage_distance=300,
+                cbd_travel_time=25,
+                safety_score=safety_data['score'],
+                police_distance=safety_data['police_distance'],
+                street_lights=safety_data['street_lights'],
+                night_safety=safety_data['night_safety'],
+                neighbor_reviews=safety_data['reviews'],
+                safety_percentage=safety_data['safe_percentage'],
+                images=json.dumps(images),
+                video=video,
+                tour_photos=json.dumps(tour_photos),
+                features=json.dumps(features),
+                amenities=json.dumps(amenities),
+                admin_id=current_user.id
+            )
+            
+            db.session.add(property)
+            current_user.total_listings += 1
+            current_user.last_active = datetime.utcnow()
+            db.session.commit()
+            
+            flash(f'✅ Property added successfully! GPS Accuracy: ±{int(accuracy)} meters', 'success')
+            return redirect(url_for('property_detail', property_id=property.id))
+            
+        except Exception as e:
+            flash(f'Error adding property: {str(e)}', 'error')
+            return redirect(url_for('add_property'))
+    
+    return render_template('add_property.html')
+
+@app.route('/property/edit/<int:property_id>', methods=['GET', 'POST'])
+@login_required
+@admin_required
+def edit_property(property_id):
+    property = Property.query.get_or_404(property_id)
+    
+    if property.admin_id != current_user.id:
+        flash('Unauthorized', 'error')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        try:
+            property.title = request.form.get('title')
+            property.description = request.form.get('description')
+            property.price = float(request.form.get('price', 0))
+            property.price_type = request.form.get('price_type')
+            property.bedrooms = int(request.form.get('bedrooms', 0))
+            property.bathrooms = int(request.form.get('bathrooms', 0))
+            property.property_type = request.form.get('property_type')
+            property.status = request.form.get('status', 'available')
+            
+            property.address = request.form.get('address', '')
+            property.city = request.form.get('city', '')
+            property.estate = request.form.get('estate')
+            
+            gps_latitude = request.form.get('latitude')
+            gps_longitude = request.form.get('longitude')
+            gps_accuracy = request.form.get('gps_accuracy')
+            
+            if gps_latitude and gps_longitude and gps_latitude != '' and gps_longitude != '':
+                property.latitude = float(gps_latitude)
+                property.longitude = float(gps_longitude)
+                property.gps_accuracy = float(gps_accuracy) if gps_accuracy else None
+            
+            current_images = json.loads(property.images) if property.images else []
+            
+            if 'images' in request.files:
+                files = request.files.getlist('images')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        path = save_image(file)
+                        if path:
+                            current_images.append(path)
+            
+            webcam_images = request.form.getlist('webcam_images[]')
+            for img_data in webcam_images:
+                if img_data:
+                    path = save_base64_image(img_data)
+                    if path:
+                        current_images.append(path)
+            
+            property.images = json.dumps(current_images)
+            
+            # NEW: Handle 360° tour photos for edit
+            current_tour_photos = json.loads(property.tour_photos) if property.tour_photos else []
+            if 'tour_photos' in request.files:
+                files = request.files.getlist('tour_photos')
+                for file in files:
+                    if file and allowed_file(file.filename):
+                        path = save_image(file, 'tours')
+                        if path:
+                            current_tour_photos.append(path)
+            property.tour_photos = json.dumps(current_tour_photos)
+            
+            if 'video' in request.files:
+                video_file = request.files['video']
+                if video_file and allowed_file(video_file.filename):
+                    property.video = save_video(video_file)
+            
+            property.features = json.dumps(request.form.getlist('features[]'))
+            property.amenities = json.dumps(request.form.getlist('amenities[]'))
+            
+            db.session.commit()
+            flash('Property updated successfully!', 'success')
+            return redirect(url_for('property_detail', property_id=property.id))
+        except Exception as e:
+            flash(f'Error updating property: {str(e)}', 'error')
+    
+    images = json.loads(property.images) if property.images else []
+    tour_photos = json.loads(property.tour_photos) if property.tour_photos else []
+    features = json.loads(property.features) if property.features else []
+    amenities = json.loads(property.amenities) if property.amenities else []
+    
+    return render_template('edit_property.html',
+                         property=property,
+                         images=images,
+                         tour_photos=tour_photos,
+                         features=features,
+                         amenities=amenities)
+
+@app.route('/property/delete/<int:property_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_property(property_id):
+    property = Property.query.get_or_404(property_id)
+    
+    if property.admin_id != current_user.id:
+        flash('Unauthorized', 'error')
+        return redirect(url_for('index'))
+    
+    try:
+        db.session.delete(property)
+        current_user.total_listings -= 1
+        db.session.commit()
+        flash('Property deleted successfully', 'success')
+    except:
+        flash('Error deleting property', 'error')
+    
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/property/save/<int:property_id>', methods=['POST'])
+@login_required
+def save_property(property_id):
+    saved = SavedProperty.query.filter_by(user_id=current_user.id, property_id=property_id).first()
+    
+    if saved:
+        db.session.delete(saved)
+        db.session.commit()
+        return jsonify({'saved': False})
+    else:
+        saved = SavedProperty(user_id=current_user.id, property_id=property_id)
+        db.session.add(saved)
+        db.session.commit()
+        return jsonify({'saved': True})
+
+@app.route('/property/status/<int:property_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_status(property_id):
+    property = Property.query.get_or_404(property_id)
+    
+    if property.admin_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    data = request.get_json()
+    new_status = data.get('status')
+    
+    if new_status in ['available', 'rented', 'sold']:
+        property.status = new_status
+        db.session.commit()
+        return jsonify({'success': True, 'status': new_status})
+    
+    return jsonify({'error': 'Invalid status'}), 400
+
+####################################################################
+# VIDEO UPLOAD ENDPOINT
+####################################################################
+
+@app.route('/upload-video', methods=['POST'])
+@login_required
+@admin_required
+def upload_video():
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video file'}), 400
+    
+    video_file = request.files['video']
+    if video_file and allowed_file(video_file.filename):
+        path = save_video(video_file)
+        if path:
+            return jsonify({'url': path, 'success': True})
+    
+    return jsonify({'error': 'Failed to save video'}), 500
+
+####################################################################
+# DATABASE INITIALIZATION
+####################################################################
+
+def init_database():
+    with app.app_context():
+        db.create_all()
+        
+        if MatatuRoute.query.count() == 0:
+            routes = [
+                MatatuRoute(route_number='44', sacco='KBS', from_area='Kilimani', to_area='CBD', via='Valley Rd'),
+                MatatuRoute(route_number='105', sacco='Eastlands', from_area='Kilimani', to_area='CBD', via='Ngong Rd'),
+                MatatuRoute(route_number='33C', sacco='Ngong Rd', from_area='Kilimani', to_area='Ngong', via='Ngong Rd'),
+                MatatuRoute(route_number='23', sacco='KBS', from_area='Westlands', to_area='CBD', via='Westlands Rd'),
+                MatatuRoute(route_number='48', sacco='City Hoppa', from_area='Westlands', to_area='CBD', via='Waiyaki Way'),
+                MatatuRoute(route_number='11', sacco='Kenya Bus', from_area='Westlands', to_area='CBD', via='University Way'),
+                MatatuRoute(route_number='33', sacco='Ngong Rd', from_area='South B', to_area='CBD', via='Mombasa Rd'),
+                MatatuRoute(route_number='125', sacco='Eastlands', from_area='South B', to_area='CBD', via='Mombasa Rd'),
+            ]
+            for route in routes:
+                db.session.add(route)
+            db.session.commit()
+            print('✅ Default matatu routes added')
+        
+        if WaterSchedule.query.count() == 0:
+            schedules = [
+                WaterSchedule(city='Nairobi', estate='Kilimani', supplier='Nairobi Water', schedule_today='8am - 12pm', schedule_tomorrow='2pm - 6pm'),
+                WaterSchedule(city='Nairobi', estate='Westlands', supplier='Nairobi Water', schedule_today='6am - 10am', schedule_tomorrow='4pm - 8pm'),
+                WaterSchedule(city='Nairobi', estate='South B', supplier='Nairobi Water', schedule_today='10am - 2pm', schedule_tomorrow='6am - 10am'),
+                WaterSchedule(city='Nairobi', estate='South C', supplier='Nairobi Water', schedule_today='2pm - 6pm', schedule_tomorrow='8am - 12pm'),
+                WaterSchedule(city='Nairobi', estate='Eastlands', supplier='Nairobi Water', schedule_today='Alternate days', schedule_tomorrow='6am - 10am'),
+                WaterSchedule(city='Nairobi', estate='Karen', supplier='Nairobi Water', schedule_today='6am - 10am', schedule_tomorrow='6am - 10am'),
+            ]
+            for ws in schedules:
+                db.session.add(ws)
+            db.session.commit()
+            print('✅ Default water schedules added')
+        
+        if NeighborhoodSafety.query.count() == 0:
+            safety_data = [
+                NeighborhoodSafety(city='Nairobi', estate='Kilimani', safety_score=82, police_distance=1.2, street_lights=True, night_safety='Moderate', total_reviews=23, safe_percentage=82),
+                NeighborhoodSafety(city='Nairobi', estate='Westlands', safety_score=85, police_distance=0.8, street_lights=True, night_safety='High', total_reviews=31, safe_percentage=85),
+                NeighborhoodSafety(city='Nairobi', estate='South B', safety_score=75, police_distance=1.5, street_lights=True, night_safety='Moderate', total_reviews=18, safe_percentage=75),
+                NeighborhoodSafety(city='Nairobi', estate='South C', safety_score=78, police_distance=1.3, street_lights=True, night_safety='Moderate', total_reviews=15, safe_percentage=78),
+                NeighborhoodSafety(city='Nairobi', estate='Eastlands', safety_score=70, police_distance=1.8, street_lights=True, night_safety='Moderate', total_reviews=22, safe_percentage=70),
+                NeighborhoodSafety(city='Nairobi', estate='Karen', safety_score=90, police_distance=2.0, street_lights=True, night_safety='High', total_reviews=27, safe_percentage=90),
+            ]
+            for safety in safety_data:
+                db.session.add(safety)
+            db.session.commit()
+            print('✅ Default safety data added')
+        
+        print('✅ Database ready')
+
+####################################################################
+# RUN
+####################################################################
+
+if __name__ == '__main__':
+    with app.app_context():
+        init_database()
+    app.run(debug=True, host='0.0.0.0', port=5000)
