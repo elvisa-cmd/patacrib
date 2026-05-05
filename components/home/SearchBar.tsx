@@ -24,9 +24,9 @@ export default function SearchBar() {
   }
 
   return (
-    <section className="px-16 pb-7">
-      <div className="max-w-[820px] bg-surface border border-border flex">
-        <div className="flex-1 px-5 py-3 border-r border-border">
+    <section className="px-4 md:px-16 pb-7">
+      <div className="max-w-[820px] bg-surface border border-border flex flex-col md:flex-row">
+        <div className="flex-1 px-5 py-3 border-b md:border-b-0 md:border-r border-border">
           <p className="font-sans text-[8px] uppercase tracking-[1.2px] text-muted2 mb-1">
             Location
           </p>
@@ -41,7 +41,7 @@ export default function SearchBar() {
           />
         </div>
 
-        <div className="px-5 py-3 border-r border-border min-w-[150px]">
+        <div className="px-5 py-3 border-b md:border-b-0 md:border-r border-border">
           <p className="font-sans text-[8px] uppercase tracking-[1.2px] text-muted2 mb-1">
             Type
           </p>
@@ -63,7 +63,7 @@ export default function SearchBar() {
           </select>
         </div>
 
-        <div className="px-5 py-3 border-r border-border min-w-[150px]">
+        <div className="px-5 py-3 border-b md:border-b-0 md:border-r border-border">
           <p className="font-sans text-[8px] uppercase tracking-[1.2px] text-muted2 mb-1">
             Max rent
           </p>
@@ -82,7 +82,7 @@ export default function SearchBar() {
           </select>
         </div>
 
-        <div className="px-5 py-3 border-r border-border min-w-[120px]">
+        <div className="px-5 py-3 border-b md:border-b-0 md:border-r border-border">
           <p className="font-sans text-[8px] uppercase tracking-[1.2px] text-muted2 mb-1">
             Bedrooms
           </p>
@@ -104,7 +104,7 @@ export default function SearchBar() {
         <button
           onClick={handleSearch}
           aria-label="Search properties"
-          className="px-8 bg-accent text-white font-sans font-bold text-[12px] uppercase tracking-[1px] hover:bg-accent-d transition-colors whitespace-nowrap"
+          className="px-8 py-4 md:py-0 bg-accent text-white font-sans font-bold text-[12px] uppercase tracking-[1px] hover:bg-accent-d transition-colors whitespace-nowrap"
         >
           Search
         </button>

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import UserMenu from './UserMenu'
+import NavMobileMenu from './NavMobileMenu'
 
 const GUEST_LINKS = [
   { label: 'Browse',       href: '/browse' },
@@ -23,7 +24,7 @@ export default async function Nav() {
   const links    = session ? AUTH_LINKS : GUEST_LINKS
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[500] h-[60px] border-b border-border flex items-center justify-between px-16 bg-bg/[0.92] backdrop-blur-md">
+    <nav className="fixed top-0 left-0 right-0 z-[500] h-[60px] border-b border-border flex items-center justify-between px-4 md:px-16 bg-bg/[0.92] backdrop-blur-md relative">
 
       {/* Logo */}
       <Link href="/" className="font-sans font-black text-[18px] tracking-tight flex-shrink-0">
@@ -31,8 +32,8 @@ export default async function Nav() {
         <span className="text-accent">Crib</span>
       </Link>
 
-      {/* Center links */}
-      <div className="flex items-center gap-11">
+      {/* Center links — hidden on mobile */}
+      <div className="hidden md:flex items-center gap-11">
         {links.map(({ label, href }) => (
           <Link
             key={label}
@@ -59,7 +60,7 @@ export default async function Nav() {
             {isAdmin && (
               <Link
                 href="/dashboard/add"
-                className="font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
+                className="hidden md:inline-flex font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
               >
                 List property
               </Link>
@@ -73,19 +74,21 @@ export default async function Nav() {
           <>
             <Link
               href="/login"
-              className="font-sans font-normal text-[13px] text-muted hover:text-ink transition-colors"
+              className="hidden md:inline font-sans font-normal text-[13px] text-muted hover:text-ink transition-colors"
             >
               Sign in
             </Link>
-            <div className="w-px h-5 bg-border" />
+            <div className="hidden md:block w-px h-5 bg-border" />
             <Link
               href="/login"
-              className="font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
+              className="hidden md:inline-flex font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
             >
               List property
             </Link>
           </>
         )}
+        {/* Mobile hamburger */}
+        <NavMobileMenu links={links} dashHref={dashHref} hasSession={!!session} isAdmin={isAdmin} />
       </div>
 
     </nav>

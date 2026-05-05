@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import PropertyCard from '@/components/shared/PropertyCard'
 import { useCarousel } from '@/lib/hooks/useCarousel'
@@ -10,36 +10,51 @@ interface FeaturedStripProps {
   properties: SerializedProperty[]
 }
 
-function stepPx(container: HTMLElement) {
-  return (container.offsetWidth - 32) / 3 + 16
+function stepPx(container: HTMLElement, n: number) {
+  const gap = 16
+  return (container.offsetWidth + gap) / n
+}
+
+function cardFlex(n: number) {
+  const gap = 16
+  return `0 0 calc(${100 / n}% - ${gap * (n - 1) / n}px)`
 }
 
 export default function FeaturedStrip({ properties }: FeaturedStripProps) {
-  const { current, goTo, next, prev, isPaused, setIsPaused, totalSlides } =
-    useCarousel(properties.length)
+  const [visibleCards, setVisibleCards] = useState(3)
+
+  useEffect(() => {
+    const update = () => setVisibleCards(window.innerWidth < 768 ? 1 : 3)
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
+
+  const { current, goTo, next, prev, setIsPaused, totalSlides } =
+    useCarousel(properties.length, visibleCards)
 
   const trackRef    = useRef<HTMLDivElement>(null)
   const dragStartX  = useRef(0)
   const isDragging  = useRef(false)
   const touchStartX = useRef(0)
 
-  // Apply transform whenever current changes
+  // Apply transform whenever current or visibleCards changes
   useEffect(() => {
     const track = trackRef.current
     if (!track?.parentElement) return
-    track.style.transform = `translateX(-${current * stepPx(track.parentElement)}px)`
-  }, [current])
+    track.style.transform = `translateX(-${current * stepPx(track.parentElement, visibleCards)}px)`
+  }, [current, visibleCards])
 
   // Recalculate on resize without changing slide
   useEffect(() => {
     const onResize = () => {
       const track = trackRef.current
       if (!track?.parentElement) return
-      track.style.transform = `translateX(-${current * stepPx(track.parentElement)}px)`
+      track.style.transform = `translateX(-${current * stepPx(track.parentElement, visibleCards)}px)`
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [current])
+  }, [current, visibleCards])
 
   function onMouseDown(e: React.MouseEvent) {
     isDragging.current  = true
@@ -56,7 +71,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
     if (Math.abs(diff) > 80) {
       diff > 0 ? next() : prev()
     } else if (track?.parentElement) {
-      track.style.transform = `translateX(-${current * stepPx(track.parentElement)}px)`
+      track.style.transform = `translateX(-${current * stepPx(track.parentElement, visibleCards)}px)`
     }
   }
 
@@ -72,10 +87,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   const canNav = totalSlides > 1
 
   return (
-    <section
-      className="bg-white border-t border-b border-border"
-      style={{ padding: '60px 64px 56px' }}
-    >
+    <section className="bg-white border-t border-b border-border px-4 md:px-16 pt-10 md:pt-[60px] pb-9 md:pb-[56px]">
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-end justify-between mb-8">
 
@@ -149,7 +161,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
           onTouchEnd={onTouchEnd}
         >
           {properties.map(p => (
-            <div key={p.id} style={{ flex: '0 0 calc(33.333% - 11px)' }}>
+            <div key={p.id} style={{ flex: cardFlex(visibleCards) }}>
               <PropertyCard property={p} mode="grid" showSave />
             </div>
           ))}

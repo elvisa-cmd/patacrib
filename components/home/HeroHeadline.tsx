@@ -1,13 +1,13 @@
 export default function HeroHeadline() {
   return (
-    <section className="pt-[72px] px-16 pb-10 grid grid-cols-2 gap-16 items-start">
+    <section className="pt-[72px] px-4 md:px-16 pb-10 grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-start">
       <div>
         <div className="inline-flex items-center gap-2 bg-accent-l text-accent px-3 py-1.5 text-[11px] font-sans font-medium uppercase tracking-[1px] mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
           Nairobi · GPS verified
         </div>
 
-        <h1 className="font-serif text-[64px] leading-[1.08] font-normal text-ink">
+        <h1 className="font-serif text-[40px] md:text-[64px] leading-[1.08] font-normal text-ink">
           Find your
           <br />
           <em className="text-accent" style={{ fontStyle: 'italic' }}>exact</em> home
@@ -16,7 +16,7 @@ export default function HeroHeadline() {
         </h1>
       </div>
 
-      <div className="flex flex-col justify-center pt-[60px]">
+      <div className="flex flex-col justify-center pt-0 md:pt-[60px]">
         <p className="font-sans font-light text-[14px] text-muted leading-[1.8] max-w-[320px] mb-8">
           Every listing pinned to the metre. See the real location, matatu
           routes, water schedule, and safety score — before you visit.

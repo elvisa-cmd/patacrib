@@ -17,7 +17,7 @@ const INPUT = [
 
 const LABEL   = 'block font-sans text-[11px] uppercase tracking-[0.8px] text-muted mb-1.5'
 const FIELD   = 'mb-5'
-const GRID2   = 'grid grid-cols-2 gap-4 mb-5'
+const GRID2   = 'grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5'
 const SECTION = 'mb-10 pb-10 border-b border-border last:border-0 last:mb-0 last:pb-0'
 
 // ── Property types ───────────────────────────────────────────────────────────
@@ -104,13 +104,6 @@ function TagInput({
   )
 }
 
-function accuracyTier(acc: number): { color: string; dotClass: string; label: string; showRetry: boolean } {
-  if (acc <= 10)  return { color: 'text-green', dotClass: 'bg-green animate-pulse', label: `±${Math.round(acc)}m · Excellent`,    showRetry: false }
-  if (acc <= 50)  return { color: 'text-gold',  dotClass: 'bg-gold',                label: `±${Math.round(acc)}m · Good`,          showRetry: false }
-  if (acc <= 100) return { color: 'text-gold',  dotClass: 'bg-gold',                label: `±${Math.round(acc)}m · Acceptable`,    showRetry: true  }
-  return           { color: 'text-red',  dotClass: 'bg-red',                label: `±${Math.round(acc)}m · Poor accuracy`, showRetry: true  }
-}
-
 // ── Main form ────────────────────────────────────────────────────────────────
 
 export default function AddPropertyForm() {
@@ -167,9 +160,7 @@ export default function AddPropertyForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
+  const doSubmit = async () => {
     if (title.length < 5)            { setError('Title must be at least 5 characters'); return }
     if (description.length < 20)     { setError('Description must be at least 20 characters'); return }
     if (!price || Number(price) <= 0) { setError('Price must be a positive number'); return }
@@ -238,6 +229,8 @@ export default function AddPropertyForm() {
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); void doSubmit() }
+
   const gpsState = lat !== null ? 'captured'
     : gps.loading      ? 'loading'
     : gps.error !== null ? 'error'
@@ -246,16 +239,16 @@ export default function AddPropertyForm() {
   return (
     <div>
       {/* Page header */}
-      <div className="px-16 py-8 border-b border-border">
+      <div className="px-4 py-5 md:px-16 md:py-8 border-b border-border">
         <p className="font-sans text-[11px] uppercase tracking-[1.2px] text-muted mb-1">
           Landlord dashboard
         </p>
-        <h1 className="font-serif text-[36px] text-ink">List a new property</h1>
+        <h1 className="font-serif text-[32px] md:text-[36px] text-ink">List a new property</h1>
       </div>
 
       {/* Two-column layout */}
       <form onSubmit={handleSubmit}>
-        <div className="px-16 py-10 flex gap-12 items-start">
+        <div className="px-4 py-6 md:px-16 md:py-10 flex flex-col md:flex-row gap-8 md:gap-12 items-start pb-28 md:pb-10">
 
           {/* Left — form sections */}
           <div className="flex-1 min-w-0">
@@ -808,8 +801,8 @@ export default function AddPropertyForm() {
 
           </div>
 
-          {/* Right — sticky live preview */}
-          <div className="w-[320px] flex-shrink-0 sticky top-24 py-2">
+          {/* Right — sticky live preview (desktop only) */}
+          <div className="hidden md:block w-[320px] flex-shrink-0 sticky top-24 py-2">
             <ListingPreview
               title={title}
               price={price}
@@ -828,6 +821,18 @@ export default function AddPropertyForm() {
 
         </div>
       </form>
+
+      {/* Mobile sticky submit bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-bg border-t border-border px-4 py-3">
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() => void doSubmit()}
+          className="w-full bg-accent text-white font-sans font-bold text-[13px] uppercase tracking-[0.8px] py-4 hover:bg-accent-d transition-colors disabled:opacity-60"
+        >
+          {submitting ? 'Publishing…' : 'Publish listing'}
+        </button>
+      </div>
     </div>
   )
 }

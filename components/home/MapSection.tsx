@@ -20,8 +20,8 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
 
 export default function MapSection(props: MapSectionProps) {
   return (
-    <section className="mx-16 mb-0">
-      <div className="relative border border-border2" style={{ aspectRatio: '16 / 6' }}>
+    <section className="mx-4 md:mx-16 mb-0">
+      <div className="relative border border-border2 aspect-[4/3] md:aspect-[16/6]">
         <LeafletMap {...props} />
       </div>
     </section>

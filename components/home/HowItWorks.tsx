@@ -18,8 +18,8 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="border-t border-border grid grid-cols-4">
-      <div className="bg-accent px-9 py-12">
+    <section id="how-it-works" className="border-t border-border grid grid-cols-1 md:grid-cols-4">
+      <div className="bg-accent px-9 py-12 border-b md:border-b-0 md:border-r border-border">
         <p className="font-sans font-medium text-[8px] uppercase tracking-[2px] text-white/50 mb-6">
           How it works
         </p>
@@ -41,7 +41,7 @@ export default function HowItWorks() {
         <div
           key={step.num}
           className={`px-9 py-12 bg-surface hover:bg-surface2 transition-colors ${
-            i < 2 ? 'border-r border-border' : ''
+            i < steps.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''
           }`}
         >
           <p className="font-serif text-[52px] text-ink opacity-[0.06] leading-none mb-6 select-none">

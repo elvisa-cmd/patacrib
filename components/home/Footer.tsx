@@ -47,7 +47,7 @@ function LinkColumn({
 export default function Footer() {
   return (
     <footer className="bg-ink">
-      <div className="px-16 pt-14 pb-8 grid grid-cols-[2fr_1fr_1fr_1fr] gap-16">
+      <div className="px-4 md:px-16 pt-14 pb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-8 md:gap-16">
         <div>
           <p className="font-sans font-black text-[18px] tracking-tight mb-3">
             <span className="text-white">Pata</span>
@@ -65,7 +65,7 @@ export default function Footer() {
       </div>
 
       <div
-        className="flex items-center justify-between px-16 py-4"
+        className="flex items-center justify-between px-4 md:px-16 py-4"
         style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
       >
         <p className="font-sans font-light text-[11px] text-white/30">
