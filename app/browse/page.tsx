@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
 import FilterSidebar from '@/components/browse/FilterSidebar'
 import ResultsArea from '@/components/browse/ResultsArea'
+import MobileFilterSheet from '@/components/browse/MobileFilterSheet'
 import { buildPropertyFilter, buildPropertyOrderBy } from '@/lib/filters'
 import type { SearchFilters } from '@/lib/filters'
 import type { BrowseProperty } from '@/types/property'
@@ -65,14 +66,31 @@ export default async function BrowsePage({
   return (
     <div className="h-screen overflow-hidden bg-bg flex flex-col">
       <Nav />
-      <div className="flex flex-1 overflow-hidden" style={{ paddingTop: '60px' }}>
-        <FilterSidebar />
-        <ResultsArea
-          properties={serialized}
-          totalCount={totalCount}
-          filters={filters}
-          savedIds={savedIds}
-        />
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden" style={{ paddingTop: '60px' }}>
+
+        {/* Sidebar — hidden on mobile */}
+        <div className="hidden md:flex md:flex-col w-[280px] flex-shrink-0 border-r border-border overflow-y-auto">
+          <FilterSidebar />
+        </div>
+
+        {/* Results column */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Mobile filter bar */}
+          <div className="md:hidden flex-shrink-0 border-b border-border px-4 py-3 flex items-center justify-between bg-surface">
+            <span className="font-sans font-bold text-[14px] text-ink">
+              {totalCount} {totalCount === 1 ? 'property' : 'properties'}
+            </span>
+            <MobileFilterSheet totalCount={totalCount} />
+          </div>
+
+          <ResultsArea
+            properties={serialized}
+            totalCount={totalCount}
+            filters={filters}
+            savedIds={savedIds}
+          />
+        </div>
+
       </div>
     </div>
   )

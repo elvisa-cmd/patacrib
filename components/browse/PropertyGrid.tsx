@@ -51,8 +51,8 @@ export default function PropertyGrid({
     <div className="flex-1 flex flex-col overflow-hidden">
 
       {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="flex-shrink-0 bg-surface border-b border-border px-5 py-3.5 flex items-center justify-between gap-4">
-        <div className="min-w-0">
+      <div className="flex-shrink-0 bg-surface border-b border-border px-4 md:px-5 py-3 md:py-3.5 flex items-center justify-between gap-4">
+        <div className="min-w-0 hidden md:block">
           <p className="font-serif text-[18px] text-ink leading-tight">
             {totalCount.toLocaleString('en-KE')} {totalCount === 1 ? 'property' : 'properties'} in Nairobi
           </p>
@@ -108,7 +108,7 @@ export default function PropertyGrid({
       ) : (
         <div className="flex-1 overflow-y-auto p-5">
           {view === 'grid' ? (
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {properties.map(p => (
                 <PropertyCard key={p.id} property={p} mode="grid" isSaved={savedIds.includes(p.id)} />
               ))}
