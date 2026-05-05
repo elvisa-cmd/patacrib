@@ -8,6 +8,7 @@ import PropertyInfo from '@/components/property/PropertyInfo'
 import KenyaDetails from '@/components/property/KenyaDetails'
 import PropertyMap from '@/components/property/PropertyMap'
 import PriceCard from '@/components/property/PriceCard'
+import MobilePropertyBar from '@/components/property/MobilePropertyBar'
 import NearbyProperties from '@/components/property/NearbyProperties'
 import type { DetailedProperty, SerializedProperty } from '@/types/property'
 
@@ -136,11 +137,29 @@ export default async function PropertyDetailPage({
           isLoggedIn={!!session}
         />
 
-        {/* Two-column layout */}
-        <div className="px-16 py-0 flex gap-10 items-start">
+        {/* Two-column layout — single column on mobile */}
+        <div className="px-4 md:px-16 py-0 flex flex-col md:flex-row gap-6 md:gap-10 items-start pb-24 md:pb-0">
+
+          {/* Right — price card (shows FIRST on mobile) */}
+          <div className="w-full md:w-[340px] md:flex-shrink-0 md:sticky md:top-20 md:py-8 order-1 md:order-2 hidden md:block">
+            <PriceCard
+              price={detailedProperty.price}
+              priceType={detailedProperty.priceType}
+              propertyId={detailedProperty.id}
+              adminId={detailedProperty.adminId}
+              adminName={detailedProperty.admin.name}
+              isSaved={isSaved}
+              isLoggedIn={!!session}
+              lat={detailedProperty.latitude}
+              lng={detailedProperty.longitude}
+              address={detailedProperty.address}
+              title={detailedProperty.title}
+              totalListings={totalListings}
+            />
+          </div>
 
           {/* Left — scrollable details */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 order-2 md:order-1">
             <PropertyInfo property={detailedProperty} />
             <KenyaDetails
               waterSchedule={detailedProperty.waterSchedule}
@@ -166,25 +185,19 @@ export default async function PropertyDetailPage({
             />
           </div>
 
-          {/* Right — sticky sidebar */}
-          <div className="w-[340px] flex-shrink-0 sticky top-20 py-8">
-            <PriceCard
-              price={detailedProperty.price}
-              priceType={detailedProperty.priceType}
-              propertyId={detailedProperty.id}
-              adminId={detailedProperty.adminId}
-              adminName={detailedProperty.admin.name}
-              isSaved={isSaved}
-              isLoggedIn={!!session}
-              lat={detailedProperty.latitude}
-              lng={detailedProperty.longitude}
-              address={detailedProperty.address}
-              title={detailedProperty.title}
-              totalListings={totalListings}
-            />
-          </div>
-
         </div>
+
+        {/* Sticky mobile bar — shown instead of sidebar */}
+        <MobilePropertyBar
+          lat={detailedProperty.latitude}
+          lng={detailedProperty.longitude}
+          title={detailedProperty.title}
+          price={detailedProperty.price}
+          priceType={detailedProperty.priceType}
+          isLoggedIn={!!session}
+          adminId={detailedProperty.adminId}
+          propertyId={detailedProperty.id}
+        />
       </main>
     </div>
   )

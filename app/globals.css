@@ -60,3 +60,13 @@ body {
 .animate-float {
   animation: float 4s ease-in-out infinite;
 }
+
+@keyframes progress-bar {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 450ms ease-out forwards;
+  transform-origin: left;
+}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { formatPrice } from '@/lib/price'
+import { openDirections } from '@/lib/utils'
 
 const MiniMap = dynamic(() => import('./PropertyMapInner'), {
   ssr: false,
@@ -74,11 +75,16 @@ export default function PriceCard({
     }
   }
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href).then(() => {
+  const handleShare = async () => {
+    const url  = window.location.href
+    const text = `Check out this property on PataKrib: ${title} — ${formatPrice(price)}/mo`
+    if (navigator.share) {
+      try { await navigator.share({ title, text, url }) } catch { /* cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    })
+    }
   }
 
   const priceLabel =
@@ -114,6 +120,15 @@ export default function PriceCard({
           >
             📅 Book a Viewing
           </a>
+
+          <button
+            type="button"
+            onClick={() => openDirections(lat, lng, title)}
+            aria-label="Get directions to this property"
+            className="w-full border-2 border-accent text-accent font-sans font-bold text-[13px] uppercase tracking-[0.8px] py-3 mb-3 flex items-center justify-center gap-2 hover:bg-accent hover:text-white transition-all"
+          >
+            🗺 Get Directions
+          </button>
 
           <div className="grid grid-cols-3 gap-2">
             <a

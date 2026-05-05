@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Instrument_Serif } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
+import { PageLoader } from '@/components/shared/PageLoader'
 
 const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
@@ -59,6 +60,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={instrumentSerif.variable}>
       <body className="bg-bg text-ink font-sans antialiased">
+        <PageLoader />
         <Providers>{children}</Providers>
       </body>
     </html>

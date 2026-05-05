@@ -39,7 +39,7 @@ export default async function HomePage() {
   }))
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen bg-bg overflow-x-hidden">
       <Nav />
       <main>
         <HeroHeadline />
