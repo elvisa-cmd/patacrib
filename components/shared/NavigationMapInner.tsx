@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { getRealRoute } from '@/lib/routing'
 
 interface NavProperty {
   title:     string
@@ -9,20 +10,23 @@ interface NavProperty {
   longitude: number
 }
 
-interface Route {
-  distMetres: number
-  distKm:     string
-  walkMin:    number
-  driveMin:   number
-  matatuMin:  number
-  rawKm:      number
+export interface NavRoute {
+  distMetres:          number
+  distKm:              string
+  walkMin:             number
+  driveMin:            number
+  matatuMin:           number
+  walkDurationText?:   string
+  driveDurationText?:  string
+  matatuDurationText?: string
+  rawKm:               number
 }
 
 export interface NavigationMapInnerProps {
-  property:           NavProperty
-  onRouteCalculated:  (route: Route) => void
-  onLocationUpdate:   (loc: { lat: number; lng: number; heading?: number; speed?: number }) => void
-  travelMode:         'walking' | 'driving'
+  property:          NavProperty
+  onRouteCalculated: (route: NavRoute) => void
+  onLocationUpdate:  (loc: { lat: number; lng: number; heading?: number; speed?: number }) => void
+  travelMode:        'walking' | 'driving' | 'matatu'
 }
 
 const C = {
@@ -78,16 +82,30 @@ function buildUserIcon(L: typeof import('leaflet'), heading?: number) {
   })
 }
 
+/** Inline Haversine — used for arrival detection only, no API call needed. */
+function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R    = 6_371_000
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lng2 - lng1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * (Math.PI / 180)) *
+    Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 export default function NavigationMapInner({
   property,
   onRouteCalculated,
   onLocationUpdate,
 }: NavigationMapInnerProps) {
-  const mapRef         = useRef<HTMLDivElement>(null)
-  const mapInstRef     = useRef<import('leaflet').Map | null>(null)
-  const userMarkerRef  = useRef<import('leaflet').Marker | null>(null)
-  const routeLineRef   = useRef<import('leaflet').Polyline | null>(null)
-  const watchIdRef     = useRef<number | null>(null)
+  const mapRef          = useRef<HTMLDivElement>(null)
+  const mapInstRef      = useRef<import('leaflet').Map | null>(null)
+  const userMarkerRef   = useRef<import('leaflet').Marker | null>(null)
+  const routeLineRef    = useRef<import('leaflet').Layer | null>(null)
+  const watchIdRef      = useRef<number | null>(null)
+  const lastOsrmLocRef  = useRef<[number, number] | null>(null)
   const [arrived, setArrived] = useState(false)
 
   useEffect(() => {
@@ -149,7 +167,7 @@ export default function NavigationMapInner({
           const { latitude, longitude, heading, speed } = pos.coords
           const userLoc: [number, number] = [latitude, longitude]
 
-          // Update or create user marker
+          // ── 1. Update user marker ──────────────────────────────────────
           if (userMarkerRef.current) {
             userMarkerRef.current.setLatLng(userLoc)
             userMarkerRef.current.setIcon(buildUserIcon(L, heading ?? undefined))
@@ -158,52 +176,81 @@ export default function NavigationMapInner({
               icon: buildUserIcon(L, heading ?? undefined),
               zIndexOffset: 1000,
             }).addTo(map)
-
-            // First fix — fit both points in view
             map.fitBounds(
               L.latLngBounds([userLoc, [property.latitude, property.longitude]]),
               { padding: [80, 80] },
             )
           }
 
-          // Redraw route line
-          routeLineRef.current?.remove()
-          routeLineRef.current = L.polyline(
-            [userLoc, [property.latitude, property.longitude]],
-            { color: C.blue, weight: 5, dashArray: '12, 8', opacity: 0.8, lineCap: 'round' },
-          ).addTo(map)
-
-          // Keep map centred on user
+          // ── 2. Keep map centred on user ────────────────────────────────
           map.panTo(userLoc, { animate: true })
 
-          // Haversine distance
-          const R    = 6_371_000
-          const dLat = (property.latitude  - latitude)  * (Math.PI / 180)
-          const dLon = (property.longitude - longitude) * (Math.PI / 180)
-          const a =
-            Math.sin(dLat / 2) ** 2 +
-            Math.cos(latitude  * (Math.PI / 180)) *
-            Math.cos(property.latitude * (Math.PI / 180)) *
-            Math.sin(dLon / 2) ** 2
-          const distMetres = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-          const rawKm      = distMetres / 1000
-
-          onRouteCalculated({
-            distMetres: Math.round(distMetres),
-            distKm:     distMetres < 1000 ? `${Math.round(distMetres)}m` : `${rawKm.toFixed(1)}km`,
-            walkMin:    Math.max(1, Math.round((rawKm / 4)  * 60)),
-            driveMin:   Math.max(1, Math.round((rawKm / 30) * 60)),
-            matatuMin:  Math.max(1, Math.round((rawKm / 25) * 60)),
-            rawKm,
-          })
+          // ── 3. Haversine for fast arrival check ────────────────────────
+          const distMetres = haversineM(latitude, longitude, property.latitude, property.longitude)
 
           onLocationUpdate({ lat: latitude, lng: longitude, heading: heading ?? undefined, speed: speed ?? undefined })
 
-          // Arrival — within 50 m
+          // ── 4. Arrival at ≤ 50 m ──────────────────────────────────────
           if (distMetres <= 50) {
             setArrived(true)
             navigator.geolocation.clearWatch(watchIdRef.current!)
             watchIdRef.current = null
+            return
+          }
+
+          // ── 5. OSRM call — throttled to once per ~50 m moved ──────────
+          const last = lastOsrmLocRef.current
+          const movedEnough = !last || Math.hypot(latitude - last[0], longitude - last[1]) > 0.00045
+
+          if (movedEnough) {
+            lastOsrmLocRef.current = [latitude, longitude]
+
+            // Emit Haversine estimate immediately so the UI isn't blank
+            const rawKm = distMetres / 1000
+            onRouteCalculated({
+              distMetres: Math.round(distMetres),
+              distKm:     distMetres < 1000 ? `${Math.round(distMetres)}m` : `${rawKm.toFixed(1)}km`,
+              walkMin:    Math.max(1, Math.round((rawKm / 4)  * 60)),
+              driveMin:   Math.max(1, Math.round((rawKm / 30) * 60)),
+              matatuMin:  Math.max(1, Math.round((rawKm / 25) * 60)),
+              rawKm,
+            })
+
+            // Show straight-line route while waiting for OSRM
+            routeLineRef.current?.remove()
+            routeLineRef.current = L.polyline(
+              [userLoc, [property.latitude, property.longitude]],
+              { color: C.blue, weight: 4, dashArray: '10 8', opacity: 0.6, lineCap: 'round' },
+            ).addTo(map)
+
+            // Async OSRM fetch — replaces straight line once it arrives
+            void (async () => {
+              const result = await getRealRoute(
+                latitude, longitude,
+                property.latitude, property.longitude,
+              )
+              if (!result || cancelled) return
+
+              // Replace straight line with real road polyline
+              routeLineRef.current?.remove()
+              routeLineRef.current = L.geoJSON(
+                result.geometry as Parameters<typeof L.geoJSON>[0],
+                { style: { color: C.blue, weight: 5, opacity: 0.85, lineCap: 'round', lineJoin: 'round' } },
+              ).addTo(map)
+
+              // Emit accurate OSRM-based route info
+              onRouteCalculated({
+                distMetres:         result.distanceMetres,
+                distKm:             result.distanceText,
+                walkMin:            Math.max(1, Math.round(result.durationSeconds      / 60)),
+                driveMin:           Math.max(1, Math.round(result.driveDurationSeconds / 60)),
+                matatuMin:          Math.max(1, Math.round((result.driveDurationSeconds + 300) / 60)),
+                walkDurationText:   result.walkDurationText,
+                driveDurationText:  result.driveDurationText,
+                matatuDurationText: result.matatuDurationText,
+                rawKm:              result.distanceMetres / 1000,
+              })
+            })()
           }
         },
         (err) => { console.warn('GPS error:', err.message) },
@@ -222,7 +269,6 @@ export default function NavigationMapInner({
       mapInstRef.current?.remove()
       mapInstRef.current = null
     }
-    // intentionally run once — property coords are stable for the lifetime of this modal
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

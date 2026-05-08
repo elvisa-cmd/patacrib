@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import NavigationMap from './NavigationMap'
+import type { NavRoute } from './NavigationMapInner'
 
 export interface NavProperty {
   title:        string
@@ -19,18 +20,20 @@ export interface NavigationModalProps {
   property: NavProperty | null
 }
 
-interface Route {
-  distMetres: number
-  distKm:     string
-  walkMin:    number
-  driveMin:   number
-  matatuMin:  number
-  rawKm:      number
-}
+type TravelMode = 'walking' | 'matatu' | 'driving'
 
 export default function NavigationModal({ isOpen, onClose, property }: NavigationModalProps) {
-  const [route,      setRoute]      = useState<Route | null>(null)
-  const [travelMode, setTravelMode] = useState<'walking' | 'driving'>('walking')
+  const [route,      setRoute]      = useState<NavRoute | null>(null)
+  const [travelMode, setTravelMode] = useState<TravelMode>('walking')
+
+  const getETA = (): string => {
+    if (!route) return '--'
+    switch (travelMode) {
+      case 'walking': return route.walkDurationText  ?? `${route.walkMin} min`
+      case 'driving': return route.driveDurationText ?? `${route.driveMin} min`
+      case 'matatu':  return route.matatuDurationText ?? `${route.matatuMin} min`
+    }
+  }
 
   const getInstruction = (): string => {
     if (!route || !property) return 'Getting your location…'
@@ -42,14 +45,23 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     return 'You have arrived at your destination!'
   }
 
-  const getETA = (): string => {
-    if (!route) return '--'
-    const mins = travelMode === 'walking' ? route.walkMin : route.driveMin
-    if (mins < 1) return '< 1 min'
-    return `${mins} min`
-  }
-
   if (!isOpen || !property) return null
+
+  const modeBtn = (mode: TravelMode, emoji: string, label: string, time?: string) => (
+    <button
+      key={mode}
+      onClick={() => setTravelMode(mode)}
+      className={`flex-1 px-3 py-3 text-center transition-colors ${
+        travelMode === mode ? 'bg-white/15' : 'hover:bg-white/8'
+      }`}
+      aria-label={`${label} mode`}
+    >
+      <span className="text-xl block">{emoji}</span>
+      <span className="font-sans text-white/60 text-[11px] leading-none mt-1 block">
+        {time ?? '--'}
+      </span>
+    </button>
+  )
 
   return (
     <div
@@ -58,10 +70,10 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
       aria-modal="true"
       aria-label="In-app navigation"
     >
-      {/* ── Top bar (dark, Uber-style) ─────────────────────────────────────── */}
+      {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <div className="bg-ink text-white flex-shrink-0">
 
-        {/* Back button + property title */}
+        {/* Back + title */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           <button
             onClick={onClose}
@@ -80,35 +92,28 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           </div>
         </div>
 
-        {/* ETA · Distance · Mode toggle */}
+        {/* ETA (selected mode) + road distance */}
         <div className="flex items-center border-t border-white/10">
           <div className="flex-1 px-4 py-3 text-center border-r border-white/10">
             <p className="font-sans font-black text-2xl text-white leading-none">{getETA()}</p>
-            <p className="font-sans text-white/40 text-xs mt-0.5">
-              {travelMode === 'walking' ? 'walking' : 'driving'}
-            </p>
+            <p className="font-sans text-white/40 text-xs mt-0.5 capitalize">{travelMode}</p>
           </div>
-
-          <div className="flex-1 px-4 py-3 text-center border-r border-white/10">
+          <div className="flex-1 px-4 py-3 text-center">
             <p className="font-sans font-black text-2xl text-white leading-none">
               {route?.distKm ?? '--'}
             </p>
-            <p className="font-sans text-white/40 text-xs mt-0.5">remaining</p>
-          </div>
-
-          <div className="flex-1 px-4 py-3 text-center">
-            <button
-              onClick={() => setTravelMode(m => m === 'walking' ? 'driving' : 'walking')}
-              className="text-2xl block mx-auto mb-0.5"
-              aria-label="Switch travel mode"
-            >
-              {travelMode === 'walking' ? '🚶' : '🚗'}
-            </button>
-            <p className="font-sans text-white/40 text-xs">switch</p>
+            <p className="font-sans text-white/40 text-xs mt-0.5">road distance</p>
           </div>
         </div>
 
-        {/* Current instruction banner */}
+        {/* Travel mode selector — walk | matatu | drive */}
+        <div className="flex border-t border-white/10 divide-x divide-white/10">
+          {modeBtn('walking', '🚶', 'Walk',   route?.walkDurationText  ?? (route ? `${route.walkMin} min`   : undefined))}
+          {modeBtn('matatu',  '🚌', 'Matatu', route?.matatuDurationText ?? (route ? `${route.matatuMin} min` : undefined))}
+          {modeBtn('driving', '🚗', 'Drive',  route?.driveDurationText  ?? (route ? `${route.driveMin} min`  : undefined))}
+        </div>
+
+        {/* Current instruction */}
         <div className="px-4 py-3 bg-accent flex items-center gap-3">
           <span className="text-xl flex-shrink-0" aria-hidden="true">
             {route && route.distMetres <= 200 ? '🎯' : '↑'}
@@ -119,7 +124,7 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
         </div>
       </div>
 
-      {/* ── Live map (fills remaining space) ──────────────────────────────── */}
+      {/* ── Live map ──────────────────────────────────────────────────────── */}
       <div className="flex-1 relative min-h-0">
         <NavigationMap
           property={property}
@@ -132,13 +137,13 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
       {/* ── Bottom panel ──────────────────────────────────────────────────── */}
       <div className="bg-white border-t border-border flex-shrink-0">
 
-        {/* Walk / Drive / Distance stats */}
-        <div className="px-4 py-3 flex items-center border-b border-border">
-          <div className="flex items-center gap-3 flex-1">
-            <span className="text-2xl" aria-hidden="true">🚶</span>
+        {/* Walk / Matatu / Drive stats */}
+        <div className="flex items-center px-4 py-3 border-b border-border">
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-xl" aria-hidden="true">🚶</span>
             <div>
-              <p className="font-sans font-black text-lg text-ink leading-none">
-                {route?.walkMin ?? '–'} min
+              <p className="font-sans font-black text-base text-ink leading-none">
+                {route?.walkDurationText ?? (route ? `${route.walkMin} min` : '– min')}
               </p>
               <p className="font-sans text-[11px] text-muted">Walking</p>
             </div>
@@ -146,25 +151,25 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
 
           <div className="w-px h-10 bg-border flex-shrink-0" />
 
-          <div className="flex items-center gap-3 flex-1 px-4">
-            <span className="text-2xl" aria-hidden="true">🚗</span>
+          <div className="flex items-center gap-2 flex-1 px-4">
+            <span className="text-xl" aria-hidden="true">🚌</span>
             <div>
-              <p className="font-sans font-black text-lg text-ink leading-none">
-                {route?.driveMin ?? '–'} min
+              <p className="font-sans font-black text-base text-ink leading-none">
+                {route?.matatuDurationText ?? (route ? `${route.matatuMin} min` : '– min')}
               </p>
-              <p className="font-sans text-[11px] text-muted">Drive</p>
+              <p className="font-sans text-[11px] text-muted">Matatu</p>
             </div>
           </div>
 
           <div className="w-px h-10 bg-border flex-shrink-0" />
 
-          <div className="flex items-center gap-3 flex-1 px-4">
-            <span className="text-2xl" aria-hidden="true">🚌</span>
+          <div className="flex items-center gap-2 flex-1 px-4">
+            <span className="text-xl" aria-hidden="true">🚗</span>
             <div>
-              <p className="font-sans font-black text-lg text-ink leading-none">
-                {route?.matatuMin ?? '–'} min
+              <p className="font-sans font-black text-base text-ink leading-none">
+                {route?.driveDurationText ?? (route ? `${route.driveMin} min` : '– min')}
               </p>
-              <p className="font-sans text-[11px] text-muted">Matatu</p>
+              <p className="font-sans text-[11px] text-muted">Drive</p>
             </div>
           </div>
         </div>
