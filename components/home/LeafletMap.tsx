@@ -1,13 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import type { SerializedProperty } from '@/types/property'
+import { calculateRoute, openDirections } from '@/lib/utils'
 
-// Prevents webpack from failing to resolve leaflet's default icon asset paths.
-// We use only custom divIcon markers so default icons are never rendered.
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl
 L.Icon.Default.mergeOptions({ iconUrl: '', iconRetinaUrl: '', shadowUrl: '' })
 
@@ -17,84 +16,141 @@ export interface LeafletMapProps {
   onSelectProperty: (id: string) => void
 }
 
-const NAIROBI_LAT = -1.2921
-const NAIROBI_LNG = 36.8219
-const NAIROBI_CENTER = [NAIROBI_LAT, NAIROBI_LNG] as [number, number]
+const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219]
 
-const OSM_TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-const OSM_ATTRIBUTION =
-  '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+const OSM_TILE        = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const OSM_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 
-const FILTERS = ['All', 'Under 30K', 'Near stage', 'GPS verified']
-
-// Mirror of tailwind.config.ts tokens — used only in imperative Leaflet
-// divIcon HTML, which cannot receive Tailwind classes.
-const COLORS = {
+// Mirror of tailwind tokens — used only in imperative divIcon HTML.
+const C = {
   accent:  '#1a6b4a',
-  surface: '#ffffff',
+  white:   '#ffffff',
   ink:     '#0f0e0c',
-  border2: 'rgba(15,14,12,0.13)',
+  border:  'rgba(15,14,12,0.13)',
   blue:    '#2563eb',
+  blueA:   'rgba(37,99,235,0.18)',
 } as const
 
-// ── Pure utility functions ─────────────────────────────────────────────────
+const FILTER_OPTIONS = [
+  { key: 'all',       label: 'All' },
+  { key: 'under30k',  label: 'Under 30K' },
+  { key: 'near-stage',label: 'Near stage' },
+  { key: 'gps',       label: 'GPS verified' },
+] as const
 
-function formatPrice(price: number): string {
-  if (price >= 1000) return `KSh ${Math.round(price / 1000)}K`
-  return `KSh ${price}`
-}
+type FilterKey = (typeof FILTER_OPTIONS)[number]['key']
 
-function distanceKm(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number,
-): number {
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
+// ── Pure icon factories ────────────────────────────────────────────────────
 
-function getPriceIcon(price: number, isSelected: boolean): L.DivIcon {
-  const bg    = isSelected ? COLORS.accent  : COLORS.surface
-  const color = isSelected ? COLORS.surface : COLORS.ink
-  const bdr   = isSelected ? COLORS.accent  : COLORS.border2
+function pricePin(price: number, selected: boolean): L.DivIcon {
+  const bg    = selected ? C.accent : C.white
+  const color = selected ? C.white  : C.ink
+  const bdr   = selected ? C.accent : C.border
+  const label = price >= 1_000_000
+    ? `KSh ${(price / 1_000_000).toFixed(1)}M`
+    : price >= 1_000
+    ? `KSh ${Math.round(price / 1_000)}K`
+    : `KSh ${price}`
+
   return L.divIcon({
     className: '',
-    html: `<div style="background:${bg};color:${color};padding:3px 8px;font-family:'Cabinet Grotesk',sans-serif;font-size:11px;font-weight:600;border:1px solid ${bdr};box-shadow:0 2px 8px rgba(0,0,0,0.12);white-space:nowrap;cursor:pointer;line-height:1.4;">${formatPrice(price)}</div>`,
-    iconAnchor: [0, 14],
+    html: `
+      <div style="
+        background:${bg};color:${color};
+        border:1.5px solid ${bdr};
+        padding:4px 10px;
+        font-family:sans-serif;font-size:11px;font-weight:700;
+        white-space:nowrap;
+        box-shadow:0 2px 8px rgba(0,0,0,0.14);
+        transform:${selected ? 'scale(1.08)' : 'scale(1)'};
+        transition:all 0.15s;
+        cursor:pointer;
+      ">${label}</div>
+      <div style="
+        width:0;height:0;
+        border-left:5px solid transparent;
+        border-right:5px solid transparent;
+        border-top:7px solid ${selected ? C.accent : C.white};
+        margin:0 auto;
+      "></div>`,
+    iconSize:   [90, 34],
+    iconAnchor: [45, 34],
   })
 }
 
-const USER_ICON = L.divIcon({
+// Pulsing blue dot — same markup structure as Uber's location indicator
+const USER_PIN = L.divIcon({
   className: '',
-  html: `<div style="width:14px;height:14px;border-radius:50%;background:${COLORS.blue};border:2px solid ${COLORS.surface};animation:pulse-blue 2s infinite;"></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
+  html: `
+    <style>
+      @keyframes pk-ring {
+        0%   { transform:translate(-50%,-50%) scale(1);   opacity:0.55; }
+        100% { transform:translate(-50%,-50%) scale(2.6); opacity:0; }
+      }
+    </style>
+    <div style="position:relative;width:20px;height:20px;">
+      <div style="
+        position:absolute;top:50%;left:50%;
+        width:40px;height:40px;
+        background:${C.blueA};border-radius:50%;
+        animation:pk-ring 2s infinite;
+      "></div>
+      <div style="
+        position:absolute;top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        width:20px;height:20px;
+        background:${C.white};border-radius:50%;
+        box-shadow:0 2px 8px rgba(0,0,0,0.28);
+      "></div>
+      <div style="
+        position:absolute;top:50%;left:50%;
+        transform:translate(-50%,-50%);
+        width:12px;height:12px;
+        background:${C.blue};border-radius:50%;
+      "></div>
+    </div>`,
+  iconSize:   [20, 20],
+  iconAnchor: [10, 10],
 })
 
-// ── Internal helper components (must be children of MapContainer) ──────────
+// ── Internal map helpers (must be children of <MapContainer>) ─────────────
 
-function MapController({
-  onReady,
-}: {
-  onReady: (map: L.Map) => void
-}) {
+function MapReady({ onReady }: { onReady: (m: L.Map) => void }) {
   const map = useMap()
   useEffect(() => { onReady(map) }, [map, onReady])
   return null
 }
 
-function DragListener({ onDrag }: { onDrag: () => void }) {
+function DragHider({ onDrag }: { onDrag: () => void }) {
   const map = useMap()
   useEffect(() => {
     map.on('dragstart', onDrag)
     return () => void map.off('dragstart', onDrag)
   }, [map, onDrag])
+  return null
+}
+
+/** Fits map to both user location and selected property. */
+function BoundsFitter({
+  userLocation,
+  property,
+}: {
+  userLocation: [number, number] | null
+  property: SerializedProperty | null
+}) {
+  const map = useMap()
+  useEffect(() => {
+    if (!property) return
+    if (!userLocation) {
+      map.flyTo([property.latitude, property.longitude], 15, { duration: 1.2 })
+      return
+    }
+    const bounds = L.latLngBounds([
+      userLocation,
+      [property.latitude, property.longitude],
+    ])
+    map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 })
+  }, [map, userLocation, property])
   return null
 }
 
@@ -105,61 +161,90 @@ export default function LeafletMap({
   selectedId,
   onSelectProperty,
 }: LeafletMapProps) {
-  const mapRef             = useRef<L.Map | null>(null)
-  const [showDragHint, setShowDragHint]   = useState(true)
-  const [activeFilter, setActiveFilter]   = useState('All')
-  const [userLocation, setUserLocation]   = useState<[number, number] | null>(null)
-  const [geoError, setGeoError]           = useState<string | null>(null)
+  const mapRef              = useRef<L.Map | null>(null)
+  const [showDragHint, setShowDragHint] = useState(true)
+  const [activeFilter, setActiveFilter] = useState<FilterKey>('all')
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
+  const [locationLabel, setLocationLabel] = useState('Locating you…')
 
   const selectedProperty = properties.find((p) => p.id === selectedId) ?? null
 
-  const routeEstimate = selectedProperty
-    ? (() => {
-        const km = distanceKm(
-          NAIROBI_LAT, NAIROBI_LNG,
-          selectedProperty.latitude,
-          selectedProperty.longitude,
-        )
-        return {
-          km:         km.toFixed(1),
-          walkMin:    Math.max(1, Math.round((km / 4) * 60)),
-          matatuMin:  Math.max(3, Math.round((km / 25) * 60)),
-        }
-      })()
-    : null
+  // ── Client-side property filtering ────────────────────────────────────────
+  const visibleProperties = useMemo(() => {
+    switch (activeFilter) {
+      case 'under30k':   return properties.filter((p) => p.price <= 30_000)
+      case 'near-stage': return properties.filter((p) => p.matatuRoutes.length > 0)
+      case 'gps':        return properties                  // all have GPS
+      default:           return properties
+    }
+  }, [properties, activeFilter])
 
+  // ── Route estimate (uses actual user location, not Nairobi CBD) ───────────
+  const route = useMemo(() => {
+    if (!selectedProperty || !userLocation) return null
+    return calculateRoute(userLocation, [
+      selectedProperty.latitude,
+      selectedProperty.longitude,
+    ])
+  }, [selectedProperty, userLocation])
+
+  // ── Drag hint auto-hide ────────────────────────────────────────────────────
   useEffect(() => {
-    const timer = setTimeout(() => setShowDragHint(false), 4000)
-    return () => clearTimeout(timer)
+    const t = setTimeout(() => setShowDragHint(false), 4000)
+    return () => clearTimeout(t)
   }, [])
 
+  // ── Real-time GPS: watchPosition (updates ~every 5–10 s) ──────────────────
   useEffect(() => {
     if (!navigator.geolocation) {
-      setGeoError('Geolocation not supported by this browser')
+      setLocationLabel('Location unavailable')
+      setUserLocation(NAIROBI_CENTER)
       return
     }
+
+    // Initial quick fix
     navigator.geolocation.getCurrentPosition(
-      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
-      () => setGeoError('Location access denied'),
+      (pos) => {
+        const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude]
+        setUserLocation(loc)
+        setLocationLabel('Your location')
+        mapRef.current?.setView(loc, 13)
+      },
+      () => {
+        setUserLocation(NAIROBI_CENTER)
+        setLocationLabel('Nairobi CBD (default)')
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
     )
+
+    // Continuous watch — mirrors Uber's live location updates
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setUserLocation([pos.coords.latitude, pos.coords.longitude])
+        setLocationLabel('Your location')
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 10_000 },
+    )
+
+    return () => navigator.geolocation.clearWatch(watchId)
   }, [])
 
-  useEffect(() => {
-    if (!mapRef.current || !selectedId) return
-    const property = properties.find((p) => p.id === selectedId)
-    if (!property) return
-    mapRef.current.flyTo([property.latitude, property.longitude], 15, {
-      duration: 1.2,
-    })
-  }, [selectedId, properties])
+  const handleMapReady = useCallback((m: L.Map) => { mapRef.current = m }, [])
+  const handleDrag     = useCallback(() => setShowDragHint(false), [])
 
-  const handleMapReady = useCallback((map: L.Map) => {
-    mapRef.current = map
-  }, [])
+  const zoomIn    = () => mapRef.current?.zoomIn()
+  const zoomOut   = () => mapRef.current?.zoomOut()
+  const recenter  = () => {
+    if (userLocation) mapRef.current?.flyTo(userLocation, 13)
+    else mapRef.current?.flyTo(NAIROBI_CENTER, 12)
+  }
 
-  const handleZoomIn   = () => mapRef.current?.zoomIn()
-  const handleZoomOut  = () => mapRef.current?.zoomOut()
-  const handleRecenter = () => mapRef.current?.flyTo(NAIROBI_CENTER, 12)
+  // Route line points: [userLocation, property] — only render when both exist
+  const routeLine: [number, number][] =
+    selectedProperty && userLocation
+      ? [userLocation, [selectedProperty.latitude, selectedProperty.longitude]]
+      : []
 
   return (
     <div className="absolute inset-0">
@@ -169,56 +254,68 @@ export default function LeafletMap({
         zoomControl={false}
         style={{ height: '100%', width: '100%' }}
       >
-        <MapController onReady={handleMapReady} />
-        <DragListener onDrag={() => setShowDragHint(false)} />
+        <MapReady  onReady={handleMapReady} />
+        <DragHider onDrag={handleDrag} />
+        <BoundsFitter userLocation={userLocation} property={selectedProperty} />
 
         <TileLayer url={OSM_TILE} attribution={OSM_ATTRIBUTION} />
 
-        {properties.map((property) => (
+        {/* ── Route line: dashed blue from user to property ── */}
+        {routeLine.length === 2 && (
+          <Polyline
+            positions={routeLine}
+            pathOptions={{ color: C.blue, weight: 3, dashArray: '8 8', opacity: 0.75 }}
+          />
+        )}
+
+        {/* ── Property pins ── */}
+        {visibleProperties.map((p) => (
           <Marker
-            key={property.id}
-            position={[property.latitude, property.longitude]}
-            icon={getPriceIcon(property.price, selectedId === property.id)}
-            eventHandlers={{ click: () => onSelectProperty(property.id) }}
+            key={p.id}
+            position={[p.latitude, p.longitude]}
+            icon={pricePin(p.price, p.id === selectedId)}
+            eventHandlers={{ click: () => onSelectProperty(p.id) }}
           />
         ))}
 
-        {userLocation && <Marker position={userLocation} icon={USER_ICON} />}
+        {/* ── User location (pulsing dot) ── */}
+        {userLocation && <Marker position={userLocation} icon={USER_PIN} />}
       </MapContainer>
 
-      {/* ── Overlays (z-[1000] clears all Leaflet pane z-indices) ── */}
+      {/* ── Overlays ── */}
 
+      {/* Location badge */}
       <div className="absolute top-3 left-3 z-[1000]">
         <div className="bg-surface border border-border flex items-center gap-2 px-3 py-1.5 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-blue animate-pulse" aria-hidden="true" />
-          <span className="font-sans font-medium text-[11px] text-ink">
-            {geoError ?? 'Your location · Nairobi CBD'}
-          </span>
+          <span className="font-sans font-medium text-[11px] text-ink">{locationLabel}</span>
         </div>
       </div>
 
-      <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1.5">
-        {FILTERS.map((f) => (
+      {/* Filter chips */}
+      <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1">
+        {FILTER_OPTIONS.map(({ key, label }) => (
           <button
-            key={f}
-            onClick={() => setActiveFilter(f)}
-            aria-label={`Filter: ${f}`}
+            key={key}
+            onClick={() => setActiveFilter(key)}
+            aria-label={`Filter: ${label}`}
             className={`font-sans font-medium text-[10px] uppercase tracking-[0.5px] px-3 py-1.5 border transition-colors ${
-              activeFilter === f
+              activeFilter === key
                 ? 'bg-accent text-white border-accent'
                 : 'bg-surface text-muted border-border hover:border-border2 hover:text-ink'
             }`}
           >
-            {f}
+            {label}
           </button>
         ))}
       </div>
 
+      {/* Zoom / recenter controls */}
       <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[1000] flex flex-col gap-1">
         {[
-          { icon: '+', label: 'Zoom in',      action: handleZoomIn },
-          { icon: '−', label: 'Zoom out',     action: handleZoomOut },
-          { icon: '◎', label: 'Recenter map', action: handleRecenter },
+          { icon: '+', label: 'Zoom in',      action: zoomIn },
+          { icon: '−', label: 'Zoom out',     action: zoomOut },
+          { icon: '◎', label: 'Recenter map', action: recenter },
         ].map(({ icon, label, action }) => (
           <button
             key={label}
@@ -231,42 +328,78 @@ export default function LeafletMap({
         ))}
       </div>
 
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[1000] min-w-[280px]">
-        <div className="bg-surface border border-border shadow-lg px-5 py-3">
-          {selectedProperty && routeEstimate ? (
-            <>
-              <p className="font-sans font-bold text-[13px] text-ink truncate">
-                {selectedProperty.title}
-              </p>
-              <p className="font-sans text-[11px] text-muted mt-0.5">
-                {selectedProperty.address}
-              </p>
-              <div className="flex items-center gap-4 mt-2 mb-2.5">
-                <span className="font-sans text-[10px] text-muted">
-                  {routeEstimate.km} km · Walk ~{routeEstimate.walkMin} min
-                </span>
-                <span className="font-sans text-[10px] text-muted">
-                  Matatu ~{routeEstimate.matatuMin} min
-                </span>
+      {/* Route card */}
+      <div className="absolute bottom-3 left-3 right-3 md:left-1/2 md:right-auto md:-translate-x-1/2 z-[1000] md:min-w-[340px] md:max-w-[420px]">
+        <div className="bg-surface border border-border shadow-lg px-4 py-3">
+          {selectedProperty && route ? (
+            <div className="flex items-center gap-3">
+              {/* Property title + address */}
+              <div className="flex-1 min-w-0">
+                <p className="font-sans font-bold text-[13px] text-ink truncate leading-snug">
+                  {selectedProperty.title}
+                </p>
+                <p className="font-sans text-[11px] text-muted truncate mt-0.5">
+                  {selectedProperty.address}
+                </p>
               </div>
-              <a
-                href={`/property/${selectedProperty.id}`}
-                aria-label={`Get directions to ${selectedProperty.title}`}
-                className="block text-center bg-accent text-white font-sans font-bold text-[11px] uppercase tracking-[0.8px] py-2 hover:bg-accent-d transition-colors"
+
+              {/* Distance stats */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="text-center">
+                  <p className="font-sans font-black text-[13px] text-ink leading-none">
+                    {route.distKm}
+                  </p>
+                  <p className="font-sans text-[8px] uppercase tracking-[0.8px] text-muted mt-0.5">
+                    Away
+                  </p>
+                </div>
+                <div className="w-px h-6 bg-border2" />
+                <div className="text-center">
+                  <p className="font-sans font-black text-[13px] text-ink leading-none">
+                    {route.walkMin}m
+                  </p>
+                  <p className="font-sans text-[8px] uppercase tracking-[0.8px] text-muted mt-0.5">
+                    Walk
+                  </p>
+                </div>
+                <div className="w-px h-6 bg-border2" />
+                <div className="text-center">
+                  <p className="font-sans font-black text-[13px] text-ink leading-none">
+                    {route.matatuMin}m
+                  </p>
+                  <p className="font-sans text-[8px] uppercase tracking-[0.8px] text-muted mt-0.5">
+                    Matatu
+                  </p>
+                </div>
+              </div>
+
+              {/* Directions CTA */}
+              <button
+                onClick={() =>
+                  openDirections(
+                    selectedProperty.latitude,
+                    selectedProperty.longitude,
+                    selectedProperty.title,
+                  )
+                }
+                className="flex-shrink-0 bg-accent text-white font-sans font-bold text-[10px] uppercase tracking-[0.8px] px-3 py-2.5 hover:bg-accent-d transition-colors"
+                aria-label={`Get driving directions to ${selectedProperty.title}`}
               >
-                Get Directions →
-              </a>
-            </>
+                <span className="hidden md:inline">Directions</span>
+                <span className="md:hidden">🗺</span>
+              </button>
+            </div>
           ) : (
-            <p className="font-sans text-[12px] text-muted text-center py-1">
-              Click a pin to see route details
+            <p className="font-sans text-[12px] text-muted text-center py-0.5">
+              Tap a pin to see route details
             </p>
           )}
         </div>
       </div>
 
+      {/* Drag hint */}
       {showDragHint && (
-        <div className="absolute bottom-3 right-3 z-[1000] font-sans text-[11px] text-muted bg-surface border border-border px-3 py-1.5 shadow-sm">
+        <div className="absolute bottom-3 right-3 z-[1000] font-sans text-[11px] text-muted bg-surface border border-border px-3 py-1.5 shadow-sm pointer-events-none">
           ✋ Drag to explore
         </div>
       )}
