@@ -76,14 +76,14 @@ export default function ImageGallery({
 
   return (
     <div className="w-full">
-      {/* Main image */}
-      <div className="relative h-[400px] bg-surface2 overflow-hidden">
+      {/* Main image — 16:9 aspect ratio, max 480px tall on desktop */}
+      <div className="relative w-full bg-surface2 overflow-hidden" style={{ aspectRatio: '16/9', maxHeight: '480px' }}>
         {hasImages ? (
           <Image
             src={images[activeIdx]}
             alt={title}
             fill
-            className="object-cover"
+            className="object-cover object-center transition-all duration-500"
             sizes="100vw"
             priority
           />
@@ -131,29 +131,30 @@ export default function ImageGallery({
 
       {/* Thumbnail strip */}
       {hasImages && (
-        <div className="flex gap-1.5 px-6 py-3 bg-surface border-b border-border overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 px-6 py-3 bg-surface border-b border-border overflow-x-auto scrollbar-none">
           {thumbs.map((img, i) => (
             <button
               key={i}
               onClick={() => setActiveIdx(i)}
               aria-label={`View photo ${i + 1}`}
-              className={`flex-shrink-0 w-16 h-12 relative overflow-hidden border transition-colors ${
+              className={`flex-shrink-0 w-20 h-14 relative overflow-hidden border-2 transition-all ${
                 activeIdx === i
                   ? 'border-accent'
-                  : 'border-border hover:border-border2'
+                  : 'border-transparent hover:border-border2'
               }`}
             >
               <Image
                 src={img}
                 alt={`Photo ${i + 1}`}
                 fill
-                className="object-cover"
-                sizes="64px"
+                className="object-cover object-center"
+                sizes="80px"
+                loading="lazy"
               />
             </button>
           ))}
           {extra > 0 && (
-            <div className="flex-shrink-0 w-16 h-12 bg-surface2 border border-border flex items-center justify-center">
+            <div className="flex-shrink-0 w-20 h-14 bg-surface2 border border-border flex items-center justify-center">
               <span className="font-sans font-semibold text-[10px] text-muted">
                 +{extra}
               </span>

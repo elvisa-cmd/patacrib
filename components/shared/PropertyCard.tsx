@@ -131,7 +131,8 @@ function CompactCard({ property, isSelected, onClick }: PropertyCardProps) {
 // ── Grid card ─────────────────────────────────────────────────────────────────
 
 function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, className = '' }: PropertyCardProps) {
-  const [isSaved, setIsSaved] = useState(initialIsSaved)
+  const [isSaved,   setIsSaved]   = useState(initialIsSaved)
+  const [imgLoaded, setImgLoaded] = useState(false)
   const router = useRouter()
   const dist = property.latitude != null && property.longitude != null
     ? distanceToCBD(property.latitude, property.longitude)
@@ -163,16 +164,39 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
       className={`bg-surface border border-border flex flex-col group hover:-translate-y-1 hover:shadow-md transition-all duration-200 ${className}`}
     >
       {/* Image */}
-      <div className="h-[180px] relative overflow-hidden flex-shrink-0" style={{ background: PLACEHOLDER_GRADIENT }}>
-        {property.images[0] && (
-          <Image src={property.images[0]} alt={property.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 1200px) 33vw, 380px" />
+      <div className="relative aspect-[16/10] overflow-hidden flex-shrink-0" style={{ background: PLACEHOLDER_GRADIENT }}>
+        {/* Loading skeleton */}
+        {!imgLoaded && property.images[0] && (
+          <div
+            className="absolute inset-0 z-10"
+            style={{
+              background: 'linear-gradient(90deg, #f3f1ec 25%, #e6f2ec 50%, #f3f1ec 75%)',
+              backgroundSize: '200% 100%',
+              animation: 'shimmer 1.6s ease-in-out infinite',
+            }}
+          />
+        )}
+        {property.images[0] ? (
+          <Image
+            src={property.images[0]}
+            alt={property.title}
+            fill
+            className={`object-cover object-center group-hover:scale-105 transition-all duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 380px"
+            onLoad={() => setImgLoaded(true)}
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-5xl opacity-20" aria-hidden="true">🏠</span>
+          </div>
         )}
         <StatusBadge status={property.status} />
-        {/* GPS badge */}
-        <span className="absolute bottom-2 right-2 bg-black/50 text-white text-[8px] font-sans font-semibold uppercase tracking-[0.6px] px-1.5 py-0.5 flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-green inline-block" />
-          GPS
-        </span>
+        {/* Photo count badge */}
+        {property.images.length > 1 && (
+          <span className="absolute bottom-2 right-2 bg-black/60 text-white font-sans font-bold text-[8px] px-1.5 py-0.5 flex items-center gap-1">
+            📷 {property.images.length}
+          </span>
+        )}
         {/* Save button */}
         {showSave && (
           <button

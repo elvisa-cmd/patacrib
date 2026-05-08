@@ -93,20 +93,20 @@ export default function PropertiesTable({ properties }: { properties: PropertyRo
         >
           {/* Property */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 relative flex-shrink-0 border border-border overflow-hidden bg-surface2">
+            <div className="w-12 h-9 relative flex-shrink-0 border border-border overflow-hidden bg-surface2">
               {p.images[0] ? (
                 <Image
                   src={p.images[0]}
                   alt=""
                   fill
-                  className="object-cover"
-                  sizes="40px"
+                  className="object-cover object-center"
+                  sizes="48px"
+                  loading="lazy"
                 />
               ) : (
-                <div
-                  className="absolute inset-0"
-                  style={{ background: 'linear-gradient(135deg, #d4e8dd 0%, #1a6b4a33 100%)' }}
-                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-base" aria-hidden="true">🏠</span>
+                </div>
               )}
             </div>
             <div className="min-w-0">
