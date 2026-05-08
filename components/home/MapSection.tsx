@@ -4,9 +4,10 @@ import dynamic from 'next/dynamic'
 import type { SerializedProperty } from '@/types/property'
 
 interface MapSectionProps {
-  properties: SerializedProperty[]
-  selectedId: string | null
+  properties:       SerializedProperty[]
+  selectedId:       string | null
   onSelectProperty: (id: string) => void
+  onNavigate:       (property: SerializedProperty) => void
 }
 
 const LeafletMap = dynamic(() => import('./LeafletMap'), {

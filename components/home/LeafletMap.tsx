@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
 import type { SerializedProperty } from '@/types/property'
-import { calculateRoute, openDirections } from '@/lib/utils'
+import { calculateRoute } from '@/lib/utils'
 
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl
 L.Icon.Default.mergeOptions({ iconUrl: '', iconRetinaUrl: '', shadowUrl: '' })
@@ -14,6 +14,7 @@ export interface LeafletMapProps {
   properties: SerializedProperty[]
   selectedId: string | null
   onSelectProperty: (id: string) => void
+  onNavigate?: (property: SerializedProperty) => void
 }
 
 const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219]
@@ -160,6 +161,7 @@ export default function LeafletMap({
   properties,
   selectedId,
   onSelectProperty,
+  onNavigate,
 }: LeafletMapProps) {
   const mapRef              = useRef<L.Map | null>(null)
   const [showDragHint, setShowDragHint] = useState(true)
@@ -375,13 +377,7 @@ export default function LeafletMap({
 
               {/* Directions CTA */}
               <button
-                onClick={() =>
-                  openDirections(
-                    selectedProperty.latitude,
-                    selectedProperty.longitude,
-                    selectedProperty.title,
-                  )
-                }
+                onClick={() => onNavigate?.(selectedProperty)}
                 className="flex-shrink-0 bg-accent text-white font-sans font-bold text-[10px] uppercase tracking-[0.8px] px-3 py-2.5 hover:bg-accent-d transition-colors"
                 aria-label={`Get driving directions to ${selectedProperty.title}`}
               >

@@ -7,6 +7,12 @@ export function timeAgo(date: Date): string {
   return new Date(date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })
 }
 
+export interface DirectionStep {
+  instruction: string
+  distance: string
+  arrow: string
+}
+
 export interface RouteEstimate {
   distKm: string   // "1.4km" or "350m"
   walkMin: number

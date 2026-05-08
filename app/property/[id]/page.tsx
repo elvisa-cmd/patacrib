@@ -155,6 +155,8 @@ export default async function PropertyDetailPage({
               address={detailedProperty.address}
               title={detailedProperty.title}
               totalListings={totalListings}
+              estate={detailedProperty.estate}
+              matatuRoutes={detailedProperty.matatuRoutes}
             />
           </div>
 
@@ -192,11 +194,14 @@ export default async function PropertyDetailPage({
           lat={detailedProperty.latitude}
           lng={detailedProperty.longitude}
           title={detailedProperty.title}
+          address={detailedProperty.address}
           price={detailedProperty.price}
           priceType={detailedProperty.priceType}
           isLoggedIn={!!session}
           adminId={detailedProperty.adminId}
           propertyId={detailedProperty.id}
+          estate={detailedProperty.estate}
+          matatuRoutes={detailedProperty.matatuRoutes}
         />
       </main>
     </div>
