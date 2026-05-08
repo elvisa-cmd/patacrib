@@ -32,6 +32,15 @@ const config: Config = {
       aspectRatio: {
         '16/6': '16 / 6',
       },
+      animation: {
+        slideUp: 'slideUp 0.4s cubic-bezier(0.32,0.72,0,1)',
+      },
+      keyframes: {
+        slideUp: {
+          '0%':   { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],

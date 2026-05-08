@@ -14,11 +14,12 @@ export interface DirectionStep {
 }
 
 export interface RouteEstimate {
-  distKm: string   // "1.4km" or "350m"
-  walkMin: number
-  matatuMin: number
-  driveMin: number
-  rawKm: number
+  distKm:     string   // "1.4km" or "350m"
+  distMetres: number
+  walkMin:    number
+  matatuMin:  number
+  driveMin:   number
+  rawKm:      number
 }
 
 /** Haversine distance + travel time estimates. Pure function — no side effects. */
@@ -34,13 +35,15 @@ export function calculateRoute(
     Math.cos((from[0] * Math.PI) / 180) *
       Math.cos((to[0] * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2
-  const rawKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const rawKm     = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  const distMetres = Math.round(rawKm * 1000)
 
   return {
-    distKm:    rawKm < 1 ? `${Math.round(rawKm * 1000)}m` : `${rawKm.toFixed(1)}km`,
-    walkMin:   Math.max(1, Math.round((rawKm / 4) * 60)),
-    matatuMin: Math.max(2, Math.round((rawKm / 25) * 60)),
-    driveMin:  Math.max(1, Math.round((rawKm / 30) * 60)),
+    distKm:     rawKm < 1 ? `${distMetres}m` : `${rawKm.toFixed(1)}km`,
+    distMetres,
+    walkMin:    Math.max(1, Math.round((rawKm / 4) * 60)),
+    matatuMin:  Math.max(2, Math.round((rawKm / 25) * 60)),
+    driveMin:   Math.max(1, Math.round((rawKm / 30) * 60)),
     rawKm,
   }
 }
