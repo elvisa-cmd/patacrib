@@ -8,7 +8,7 @@ export interface NavProperty {
   address:      string
   latitude:     number
   longitude:    number
-  price:        number
+  price?:       number
   estate:       string | null
   matatuRoutes: string[]
 }

@@ -169,7 +169,7 @@ export default function PriceCard({
 
       {/* ── Mini map ───────────────────────────────────────────── */}
       <div className="bg-surface border border-border overflow-hidden relative">
-        <MiniMap lat={lat} lng={lng} title={title} height="160px" />
+        <MiniMap lat={lat} lng={lng} title={title} height="160px" onNavigate={() => setNavOpen(true)} />
         <a
           href={`/browse?highlight=${propertyId}`}
           className="absolute bottom-2 right-2 z-[1000] bg-surface border border-border font-sans font-medium text-[10px] uppercase tracking-[0.5px] text-muted px-2 py-1 hover:text-ink transition-colors"

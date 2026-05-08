@@ -4,16 +4,17 @@ import { useEffect, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet'
-import { calculateRoute, openDirections, openWalkingDirections } from '@/lib/utils'
+import { calculateRoute } from '@/lib/utils'
 
 delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl
 L.Icon.Default.mergeOptions({ iconUrl: '', iconRetinaUrl: '', shadowUrl: '' })
 
 export interface PropertyMapInnerProps {
-  lat:    number
-  lng:    number
-  title:  string
-  height: string
+  lat:        number
+  lng:        number
+  title:      string
+  height:     string
+  onNavigate?: () => void
 }
 
 const OSM_TILE        = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -115,6 +116,7 @@ export default function PropertyMapInner({
   lng,
   title,
   height,
+  onNavigate,
 }: PropertyMapInnerProps) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
 
@@ -172,14 +174,14 @@ export default function PropertyMapInner({
       {/* Action buttons */}
       <div className="grid grid-cols-2 gap-2 mt-3">
         <button
-          onClick={() => openDirections(lat, lng, title)}
+          onClick={() => onNavigate?.()}
           className="flex items-center justify-center gap-2 bg-accent text-white font-sans font-bold text-[11px] uppercase tracking-[0.8px] py-3 hover:bg-accent-d transition-colors"
           aria-label={`Driving directions to ${title}`}
         >
           🚗 Drive there
         </button>
         <button
-          onClick={() => openWalkingDirections(lat, lng)}
+          onClick={() => onNavigate?.()}
           className="flex items-center justify-center gap-2 border border-accent text-accent font-sans font-bold text-[11px] uppercase tracking-[0.8px] py-3 hover:bg-accent/10 transition-colors"
           aria-label={`Walking directions to ${title}`}
         >

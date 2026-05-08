@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import NavigationModal from '@/components/shared/NavigationModal'
 
 const MapInner = dynamic(() => import('./PropertyMapInner'), {
   ssr: false,
@@ -15,11 +17,13 @@ const MapInner = dynamic(() => import('./PropertyMapInner'), {
 })
 
 interface PropertyMapProps {
-  lat:        number
-  lng:        number
-  address:    string
-  title:      string
-  propertyId: string
+  lat:           number
+  lng:           number
+  address:       string
+  title:         string
+  propertyId:    string
+  estate?:       string | null
+  matatuRoutes?: string[]
 }
 
 export default function PropertyMap({
@@ -28,7 +32,11 @@ export default function PropertyMap({
   address,
   title,
   propertyId,
+  estate       = null,
+  matatuRoutes = [],
 }: PropertyMapProps) {
+  const [navOpen, setNavOpen] = useState(false)
+
   return (
     <div className="mb-8">
       <p className="font-sans font-medium text-[11px] uppercase tracking-[1.2px] text-muted mb-3">
@@ -36,7 +44,13 @@ export default function PropertyMap({
       </p>
 
       <div className="relative border border-border overflow-hidden">
-        <MapInner lat={lat} lng={lng} title={title} height="200px" />
+        <MapInner
+          lat={lat}
+          lng={lng}
+          title={title}
+          height="200px"
+          onNavigate={() => setNavOpen(true)}
+        />
         <a
           href={`/browse?highlight=${propertyId}`}
           className="absolute bottom-2 right-2 z-[1000] bg-surface border border-border font-sans font-medium text-[10px] uppercase tracking-[0.5px] text-muted px-2.5 py-1.5 hover:text-ink transition-colors"
@@ -83,6 +97,12 @@ export default function PropertyMap({
           <p className="font-sans text-[10px] text-white/30 mt-0.5">Nairobi, Kenya</p>
         </div>
       </div>
+
+      <NavigationModal
+        isOpen={navOpen}
+        onClose={() => setNavOpen(false)}
+        property={{ title, address, latitude: lat, longitude: lng, estate, matatuRoutes }}
+      />
     </div>
   )
 }
