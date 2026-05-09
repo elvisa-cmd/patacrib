@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PropertyCard from '@/components/shared/PropertyCard'
+import { BrowseMap } from './BrowseMap'
 import type { BrowseProperty } from '@/types/property'
-
-const BrowseMap = dynamic(() => import('./BrowseMap'), { ssr: false })
 
 interface PropertyGridProps {
   properties:    BrowseProperty[]
@@ -120,7 +118,7 @@ export default function PropertyGrid({
 
       {/* ── Map view ───────────────────────────────────────────────── */}
       {view === 'map' && (
-        <div className="flex-1 relative min-h-0">
+        <div className="h-[calc(100vh-180px)] min-h-[500px]">
           <BrowseMap properties={properties} />
         </div>
       )}
