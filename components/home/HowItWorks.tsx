@@ -1,18 +1,21 @@
 const steps = [
   {
-    num: '01',
+    num:   '01',
     title: 'Search your area',
-    desc: 'Filter by estate, price, type, and distance from your location',
+    desc:  'Filter by estate, price, type, and distance from your location',
+    href:  '/browse',
   },
   {
-    num: '02',
+    num:   '02',
     title: 'See the exact pin',
-    desc: 'Every property is GPS-pinned to the metre — not just a neighbourhood',
+    desc:  'Every property is GPS-pinned to the metre — not just a neighbourhood',
+    href:  '/browse?view=map',
   },
   {
-    num: '03',
+    num:   '03',
     title: 'Book and move in',
-    desc: 'Message the landlord, book a viewing, and secure your home',
+    desc:  'Message the landlord, book a viewing, and secure your home',
+    href:  '/signup',
   },
 ]
 
@@ -38,9 +41,10 @@ export default function HowItWorks() {
       </div>
 
       {steps.map((step, i) => (
-        <div
+        <a
           key={step.num}
-          className={`px-9 py-12 bg-surface hover:bg-surface2 transition-colors ${
+          href={step.href}
+          className={`px-9 py-12 bg-surface hover:bg-surface2 transition-colors group ${
             i < steps.length - 1 ? 'border-b md:border-b-0 md:border-r border-border' : ''
           }`}
         >
@@ -49,7 +53,10 @@ export default function HowItWorks() {
           </p>
           <p className="font-sans font-bold text-[13px] text-ink mb-3">{step.title}</p>
           <p className="font-sans font-light text-[11px] text-muted leading-[1.7]">{step.desc}</p>
-        </div>
+          <p className="font-sans text-[11px] text-accent mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            {i === 0 ? 'Browse listings →' : i === 1 ? 'View on map →' : 'Sign up free →'}
+          </p>
+        </a>
       ))}
     </section>
   )

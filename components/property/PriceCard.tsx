@@ -4,6 +4,7 @@ import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { formatPrice } from '@/lib/price'
 import NavigationModal from '@/components/shared/NavigationModal'
+import ViewingModal    from '@/components/property/ViewingModal'
 
 const MiniMap = dynamic(() => import('./PropertyMapInner'), {
   ssr: false,
@@ -59,10 +60,11 @@ export default function PriceCard({
   estate,
   matatuRoutes,
 }: PriceCardProps) {
-  const [saved,   setSaved]   = useState(initialSaved)
-  const [saving,  setSaving]  = useState(false)
-  const [copied,  setCopied]  = useState(false)
-  const [navOpen, setNavOpen] = useState(false)
+  const [saved,        setSaved]        = useState(initialSaved)
+  const [saving,       setSaving]       = useState(false)
+  const [copied,       setCopied]       = useState(false)
+  const [navOpen,      setNavOpen]      = useState(false)
+  const [viewingOpen,  setViewingOpen]  = useState(false)
 
   const handleSave = async () => {
     if (!isLoggedIn) { window.location.href = '/login'; return }
@@ -118,13 +120,17 @@ export default function PriceCard({
         </div>
 
         <div className="px-5 py-4">
-          <a
-            href={messageHref}
+          <button
+            type="button"
+            onClick={() => {
+              if (!isLoggedIn) { window.location.href = '/login'; return }
+              setViewingOpen(true)
+            }}
             aria-label="Book a viewing for this property"
             className="block w-full text-center bg-accent text-white font-sans font-bold text-[13px] uppercase tracking-[0.8px] py-3 mb-3 hover:bg-accent-d hover:-translate-y-px transition-all"
           >
             📅 Book a Viewing
-          </a>
+          </button>
 
           {/* Get Directions — opens in-app NavigationModal */}
           <button
@@ -268,6 +274,14 @@ export default function PriceCard({
           </a>
         </div>
       </div>
+
+      {/* ── Viewing request modal ─────────────────────────────── */}
+      <ViewingModal
+        isOpen={viewingOpen}
+        onClose={() => setViewingOpen(false)}
+        propertyId={propertyId}
+        propertyTitle={title}
+      />
 
       {/* ── In-app navigation modal ────────────────────────────── */}
       <NavigationModal

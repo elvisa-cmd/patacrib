@@ -8,7 +8,7 @@ const GUEST_LINKS = [
   { label: 'Browse',       href: '/browse' },
   { label: 'Map',          href: '/browse?view=map' },
   { label: 'Estates',      href: '/browse?view=estates' },
-  { label: 'Landlords',    href: '/dashboard' },
+  { label: 'Landlords',    href: '/signup' },
   { label: 'How it works', href: '/#how-it-works' },
 ]
 

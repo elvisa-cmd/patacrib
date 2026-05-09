@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { formatPrice } from '@/lib/price'
 import NavigationModal from '@/components/shared/NavigationModal'
+import ViewingModal    from '@/components/property/ViewingModal'
 
 interface Props {
   lat:          number
@@ -21,7 +22,8 @@ interface Props {
 export default function MobilePropertyBar({
   lat, lng, title, address, price, priceType, isLoggedIn, adminId, propertyId, estate, matatuRoutes,
 }: Props) {
-  const [navOpen, setNavOpen] = useState(false)
+  const [navOpen,     setNavOpen]     = useState(false)
+  const [viewingOpen, setViewingOpen] = useState(false)
 
   const messageHref = isLoggedIn
     ? `/dashboard/messages?property=${propertyId}&landlord=${adminId}`
@@ -49,14 +51,26 @@ export default function MobilePropertyBar({
           >
             🗺 Directions
           </button>
-          <a
-            href={messageHref}
+          <button
+            type="button"
+            onClick={() => {
+              if (!isLoggedIn) { window.location.href = '/login'; return }
+              setViewingOpen(true)
+            }}
             className="flex-1 bg-accent text-white font-sans font-bold text-[11px] uppercase tracking-wide py-3 flex items-center justify-center hover:bg-accent-d transition-colors"
           >
             Book Viewing
-          </a>
+          </button>
         </div>
       </div>
+
+      {/* Viewing request modal */}
+      <ViewingModal
+        isOpen={viewingOpen}
+        onClose={() => setViewingOpen(false)}
+        propertyId={propertyId}
+        propertyTitle={title}
+      />
 
       {/* In-app navigation modal */}
       <NavigationModal
