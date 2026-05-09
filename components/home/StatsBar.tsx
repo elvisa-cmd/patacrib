@@ -12,7 +12,14 @@ interface StatsProps {
   gpsVerified:    number
 }
 
-export default function StatsBar({ stats }: { stats: StatsProps }) {
+const DEFAULT_STATS: StatsProps = {
+  totalListings:  0,
+  totalLandlords: 0,
+  estatesCovered: 0,
+  gpsVerified:    100,
+}
+
+export default function StatsBar({ stats = DEFAULT_STATS }: { stats?: StatsProps }) {
   const items = [
     { number: stats.totalListings.toLocaleString(), label: 'Active listings',    sub: 'Across Nairobi'      },
     { number: '100%',                               label: 'GPS verified',       sub: 'Precise to 3 metres' },
