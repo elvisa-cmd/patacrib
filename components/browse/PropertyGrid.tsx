@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter, useSearchParams } from 'next/navigation'
 import PropertyCard from '@/components/shared/PropertyCard'
 import type { BrowseProperty } from '@/types/property'
+
+const BrowseMap = dynamic(() => import('./BrowseMap'), { ssr: false })
 
 interface PropertyGridProps {
   properties:    BrowseProperty[]
@@ -36,7 +39,7 @@ export default function PropertyGrid({
   currentSort,
   savedIds = [],
 }: PropertyGridProps) {
-  const [view, setView] = useState<'grid' | 'list'>('grid')
+  const [view, setView] = useState<'grid' | 'list' | 'map'>('grid')
   const router  = useRouter()
   const params  = useSearchParams()
 
@@ -62,19 +65,21 @@ export default function PropertyGrid({
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Sort */}
-          <select
-            value={currentSort}
-            onChange={e => setSort(e.target.value)}
-            className="font-sans text-[12px] text-ink border border-border bg-surface px-3 py-1.5 focus:outline-none focus:border-border2 transition-colors"
-          >
-            <option value="newest">Newest first</option>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-            <option value="oldest">Oldest first</option>
-          </select>
+          {/* Sort — hidden in map view */}
+          {view !== 'map' && (
+            <select
+              value={currentSort}
+              onChange={e => setSort(e.target.value)}
+              className="font-sans text-[12px] text-ink border border-border bg-surface px-3 py-1.5 focus:outline-none focus:border-border2 transition-colors"
+            >
+              <option value="newest">Newest first</option>
+              <option value="price-asc">Price: low to high</option>
+              <option value="price-desc">Price: high to low</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          )}
 
-          {/* View toggle */}
+          {/* View toggle: grid / list / map */}
           <div className="flex border border-border">
             <button
               type="button"
@@ -98,29 +103,49 @@ export default function PropertyGrid({
             >
               ≡
             </button>
+            <button
+              type="button"
+              onClick={() => setView('map')}
+              aria-label="Map view"
+              title="Map view"
+              className={`px-2.5 py-1.5 font-sans text-[14px] border-l border-border transition-colors ${
+                view === 'map' ? 'bg-accent text-white' : 'text-muted hover:text-ink'
+              }`}
+            >
+              🗺
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── Results ────────────────────────────────────────────────── */}
-      {properties.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="flex-1 overflow-y-auto p-5">
-          {view === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {properties.map(p => (
-                <PropertyCard key={p.id} property={p} mode="grid" isSaved={savedIds.includes(p.id)} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {properties.map(p => (
-                <PropertyCard key={p.id} property={p} mode="list" isSaved={savedIds.includes(p.id)} />
-              ))}
-            </div>
-          )}
+      {/* ── Map view ───────────────────────────────────────────────── */}
+      {view === 'map' && (
+        <div className="flex-1 relative min-h-0">
+          <BrowseMap properties={properties} />
         </div>
+      )}
+
+      {/* ── Grid / List view ───────────────────────────────────────── */}
+      {view !== 'map' && (
+        properties.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="flex-1 overflow-y-auto p-5">
+            {view === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {properties.map(p => (
+                  <PropertyCard key={p.id} property={p} mode="grid" isSaved={savedIds.includes(p.id)} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {properties.map(p => (
+                  <PropertyCard key={p.id} property={p} mode="list" isSaved={savedIds.includes(p.id)} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
       )}
 
     </div>
