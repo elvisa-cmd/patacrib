@@ -60,6 +60,7 @@ export default function SearchBar() {
             <option value="4br">4 Bedrooms</option>
             <option value="maisonette">Maisonette</option>
             <option value="bungalow">Bungalow</option>
+            <option value="commercial">Commercial</option>
           </select>
         </div>
 

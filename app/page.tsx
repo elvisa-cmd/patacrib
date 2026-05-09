@@ -10,11 +10,27 @@ import Footer from '@/components/home/Footer'
 import type { SerializedProperty } from '@/types/property'
 
 export default async function HomePage() {
-  const raw = await prisma.property.findMany({
-    where: { status: 'available' },
-    orderBy: { createdAt: 'desc' },
-    take: 12,
-  })
+  const [raw, totalListings, totalLandlords, estateRows] = await Promise.all([
+    prisma.property.findMany({
+      where: { status: 'available' },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+    }),
+    prisma.property.count({ where: { status: 'available' } }),
+    prisma.user.count({ where: { userType: 'ADMIN' } }),
+    prisma.property.findMany({
+      where: { status: 'available' },
+      select: { estate: true },
+      distinct: ['estate'],
+    }),
+  ])
+
+  const stats = {
+    totalListings,
+    totalLandlords,
+    estatesCovered: estateRows.filter(e => e.estate !== null).length,
+    gpsVerified:    100,
+  }
 
   const properties: SerializedProperty[] = raw.map((p) => ({
     id: p.id,
@@ -45,7 +61,7 @@ export default async function HomePage() {
         <HeroHeadline />
         <SearchBar />
         <HomeContent properties={properties} />
-        <StatsBar />
+        <StatsBar stats={stats} />
         <FeaturesStrip />
         <HowItWorks />
       </main>

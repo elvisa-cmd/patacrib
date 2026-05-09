@@ -84,7 +84,8 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
     if (Math.abs(diff) > 50) diff > 0 ? next() : prev()
   }
 
-  const canNav = totalSlides > 1
+  const showControls = properties.length > 3
+  const canNav = showControls && totalSlides > 1
 
   return (
     <section className="bg-white border-t border-b border-border px-4 md:px-16 pt-10 md:pt-[60px] pb-9 md:pb-[56px]">
@@ -106,30 +107,34 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
 
         {/* Right — counter + arrows + link */}
         <div className="flex items-center gap-4">
-          <p className="font-serif text-[14px] text-muted whitespace-nowrap">
-            <span className="text-[18px] text-ink">{current + 1}</span>{' '}of {totalSlides}
-          </p>
+          {showControls && (
+            <p className="font-serif text-[14px] text-muted whitespace-nowrap">
+              <span className="text-[18px] text-ink">{current + 1}</span>{' '}of {totalSlides}
+            </p>
+          )}
 
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={prev}
-              disabled={!canNav || current === 0}
-              aria-label="Previous slide"
-              className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
-            >
-              ←
-            </button>
-            <button
-              type="button"
-              onClick={next}
-              disabled={!canNav || current === totalSlides - 1}
-              aria-label="Next slide"
-              className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
-            >
-              →
-            </button>
-          </div>
+          {showControls && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={prev}
+                disabled={current === 0}
+                aria-label="Previous slide"
+                className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
+              >
+                ←
+              </button>
+              <button
+                type="button"
+                onClick={next}
+                disabled={current === totalSlides - 1}
+                aria-label="Next slide"
+                className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
+              >
+                →
+              </button>
+            </div>
+          )}
 
           <Link
             href="/browse"
@@ -169,7 +174,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
       </div>
 
       {/* ── Dot indicators ──────────────────────────────────── */}
-      {canNav && (
+      {showControls && totalSlides > 1 && (
         <div className="flex justify-center gap-1.5 mt-[26px]">
           {Array.from({ length: totalSlides }, (_, i) => (
             <button

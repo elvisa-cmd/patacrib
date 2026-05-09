@@ -1,10 +1,3 @@
-const stats = [
-  { number: '2,418', label: 'Active listings', sub: 'Across Nairobi' },
-  { number: '100%', label: 'GPS verified', sub: 'Precise to 3 metres' },
-  { number: '47', label: 'Estates covered', sub: 'Growing weekly' },
-  { number: '4.9★', label: 'Landlord rating', sub: 'Verified profiles' },
-]
-
 const STAT_BORDERS = [
   'border-r border-b md:border-b-0 border-border',
   'md:border-r border-b md:border-b-0 border-border',
@@ -12,10 +5,24 @@ const STAT_BORDERS = [
   '',
 ]
 
-export default function StatsBar() {
+interface StatsProps {
+  totalListings:  number
+  totalLandlords: number
+  estatesCovered: number
+  gpsVerified:    number
+}
+
+export default function StatsBar({ stats }: { stats: StatsProps }) {
+  const items = [
+    { number: stats.totalListings.toLocaleString(), label: 'Active listings',    sub: 'Across Nairobi'      },
+    { number: '100%',                               label: 'GPS verified',       sub: 'Precise to 3 metres' },
+    { number: stats.estatesCovered.toString(),      label: 'Estates covered',    sub: 'Growing weekly'      },
+    { number: stats.totalLandlords.toString(),      label: 'Verified landlords', sub: 'Trusted profiles'    },
+  ]
+
   return (
     <section className="bg-surface border-t border-b border-border grid grid-cols-2 md:grid-cols-4">
-      {stats.map((stat, i) => (
+      {items.map((stat, i) => (
         <div
           key={stat.label}
           className={`px-6 md:px-16 py-7 hover:bg-surface2 transition-colors cursor-default ${STAT_BORDERS[i]}`}

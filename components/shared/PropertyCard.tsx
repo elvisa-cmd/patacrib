@@ -64,7 +64,11 @@ const PLACEHOLDER_GRADIENT = 'linear-gradient(135deg, #e6f2ec 0%, #b5d9c8 100%)'
 const TYPE_LABELS: Record<string, string> = {
   bedsitter: 'Bedsitter', studio: 'Studio', '1br': '1 Bed', '2br': '2 Beds',
   '3br': '3 Beds', '4br': '4 Beds', maisonette: 'Maisonette',
-  bungalow: 'Bungalow', mansion: 'Mansion',
+  bungalow: 'Bungalow', mansion: 'Mansion', commercial: 'Commercial', office: 'Office',
+}
+
+function isCommercialType(t: string) {
+  return t === 'commercial' || t === 'office'
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -241,7 +245,10 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
           {property.title}
         </p>
         <p className="font-sans text-[10px] text-muted">
-          {property.bedrooms}bd · {property.bathrooms}ba · {TYPE_LABELS[property.propertyType] ?? property.propertyType}
+          {isCommercialType(property.propertyType)
+            ? `Commercial · ${TYPE_LABELS[property.propertyType] ?? property.propertyType}`
+            : `${property.bedrooms}bd · ${property.bathrooms}ba · ${TYPE_LABELS[property.propertyType] ?? property.propertyType}`
+          }
           {dist && ` · ${dist}`}
         </p>
         <p className="font-serif text-[18px] text-ink mt-2">
@@ -317,7 +324,10 @@ function ListCard({ property, showSave = true, isSaved: initialIsSaved = false, 
             <p className="font-sans text-[12px] text-muted line-clamp-1 mb-2">{property.description}</p>
           )}
           <p className="font-sans text-[10px] text-muted">
-            {property.bedrooms}bd · {property.bathrooms}ba · {TYPE_LABELS[property.propertyType] ?? property.propertyType}
+            {isCommercialType(property.propertyType)
+              ? `Commercial · ${TYPE_LABELS[property.propertyType] ?? property.propertyType}`
+              : `${property.bedrooms}bd · ${property.bathrooms}ba · ${TYPE_LABELS[property.propertyType] ?? property.propertyType}`
+            }
             {dist && ` · ${dist}`}
           </p>
         </div>
