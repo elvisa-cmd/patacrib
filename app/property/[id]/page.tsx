@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
-import ImageGallery from '@/components/property/ImageGallery'
+import { ImageGallery } from '@/components/property/ImageGallery'
 import PropertyInfo from '@/components/property/PropertyInfo'
 import KenyaDetails from '@/components/property/KenyaDetails'
 import PropertyMap from '@/components/property/PropertyMap'
@@ -132,9 +132,9 @@ export default async function PropertyDetailPage({
           images={detailedProperty.images}
           title={detailedProperty.title}
           status={detailedProperty.status}
-          propertyId={detailedProperty.id}
-          isSaved={isSaved}
-          isLoggedIn={!!session}
+          price={detailedProperty.price}
+          priceType={detailedProperty.priceType}
+          estate={detailedProperty.estate}
         />
 
         {/* Two-column layout — single column on mobile */}

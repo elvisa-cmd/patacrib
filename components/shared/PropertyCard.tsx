@@ -164,15 +164,26 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
       className={`bg-surface border border-border flex flex-col group hover:-translate-y-1 hover:shadow-md transition-all duration-200 ${className}`}
     >
       {/* Image */}
-      <div className="relative aspect-[16/10] overflow-hidden flex-shrink-0" style={{ background: PLACEHOLDER_GRADIENT }}>
+      <div className="relative aspect-video overflow-hidden flex-shrink-0 bg-[#0a0a0a]">
+        {/* Blur background layer */}
+        {property.images[0] && (
+          <div
+            className="absolute inset-0 scale-110 blur-xl opacity-50"
+            style={{
+              backgroundImage:    `url(${property.images[0]})`,
+              backgroundSize:     'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+        )}
         {/* Loading skeleton */}
         {!imgLoaded && property.images[0] && (
           <div
-            className="absolute inset-0 z-10"
+            className="absolute inset-0 z-20"
             style={{
-              background: 'linear-gradient(90deg, #f3f1ec 25%, #e6f2ec 50%, #f3f1ec 75%)',
-              backgroundSize: '200% 100%',
-              animation: 'shimmer 1.6s ease-in-out infinite',
+              background:         'linear-gradient(90deg, #111 25%, #1a2a1a 50%, #111 75%)',
+              backgroundSize:     '200% 100%',
+              animation:          'shimmer 1.6s ease-in-out infinite',
             }}
           />
         )}
@@ -181,19 +192,21 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
             src={property.images[0]}
             alt={property.title}
             fill
-            className={`object-cover object-center group-hover:scale-105 transition-all duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
+            className={`object-contain relative z-10 transition-opacity duration-500 ${imgLoaded ? 'opacity-100' : 'opacity-0'}`}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 380px"
             onLoad={() => setImgLoaded(true)}
           />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-5xl opacity-20" aria-hidden="true">🏠</span>
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <span className="text-5xl opacity-10" aria-hidden="true">🏠</span>
           </div>
         )}
+        {/* Bottom gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black/60 to-transparent z-20 pointer-events-none" />
         <StatusBadge status={property.status} />
         {/* Photo count badge */}
         {property.images.length > 1 && (
-          <span className="absolute bottom-2 right-2 bg-black/60 text-white font-sans font-bold text-[8px] px-1.5 py-0.5 flex items-center gap-1">
+          <span className="absolute bottom-2 right-2 z-30 bg-black/50 text-white font-sans font-bold text-[8px] px-1.5 py-0.5 flex items-center gap-1">
             📷 {property.images.length}
           </span>
         )}
@@ -202,15 +215,15 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
           <button
             type="button"
             aria-label={isSaved ? 'Unsave property' : 'Save property'}
-            className="absolute top-2 right-2 w-7 h-7 bg-white/90 flex items-center justify-center hover:bg-white transition-colors"
+            className="absolute top-2 right-2 z-30 w-7 h-7 bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center hover:bg-black/60 transition-colors"
             onClick={handleSave}
           >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
               <path
                 d="M6.5 11.5C6.5 11.5 1 7.8 1 4.5a2.5 2.5 0 0 1 5.5-1 2.5 2.5 0 0 1 5.5 1C12 7.8 6.5 11.5 6.5 11.5z"
-                stroke="#1a6b4a"
+                stroke="white"
                 strokeWidth="1.2"
-                fill={isSaved ? '#1a6b4a' : 'none'}
+                fill={isSaved ? 'white' : 'none'}
               />
             </svg>
           </button>
