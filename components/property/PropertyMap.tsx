@@ -11,7 +11,7 @@ const MapInner = dynamic(() => import('./PropertyMapInner'), {
       className="bg-surface2 flex items-center justify-center"
       style={{ height: '200px' }}
     >
-      <p className="font-sans text-[11px] text-muted">Loading map…</p>
+      <div className="w-7 h-7 rounded-full border-2 border-border border-t-accent animate-spin" />
     </div>
   ),
 })

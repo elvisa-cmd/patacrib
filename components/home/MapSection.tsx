@@ -14,7 +14,7 @@ const LeafletMap = dynamic(() => import('./LeafletMap'), {
   ssr: false,
   loading: () => (
     <div className="absolute inset-0 flex items-center justify-center bg-surface2">
-      <p className="font-sans text-[12px] text-muted">Loading map…</p>
+      <div className="w-8 h-8 rounded-full border-2 border-border border-t-accent animate-spin" />
     </div>
   ),
 })
