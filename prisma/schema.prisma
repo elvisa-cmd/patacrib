@@ -47,8 +47,9 @@ model Property {
   longitude Float @default(36.817223)
 
   // Media
-  images   String[] @default([])
-  videoUrl String?
+  images       String[] @default([])
+  videoUrl     String?
+  tourImageUrl String?
 
   features  String[] @default([])
   amenities String[] @default([])

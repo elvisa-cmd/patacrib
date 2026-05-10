@@ -6,8 +6,10 @@ import { join } from 'path'
 import { randomUUID } from 'crypto'
 import sharp from 'sharp'
 
-const MAX_SIZE   = 10 * 1024 * 1024
-const VALID_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm'])
+const MAX_IMAGE_SIZE = 10  * 1024 * 1024   // 10 MB
+const MAX_VIDEO_SIZE = 150 * 1024 * 1024   // 150 MB
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
@@ -31,33 +33,47 @@ export async function POST(req: Request) {
   if (!file) {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   }
-  if (!VALID_MIME.has(file.type)) {
+
+  const isImage = IMAGE_TYPES.has(file.type)
+  const isVideo = VIDEO_TYPES.has(file.type)
+
+  if (!isImage && !isVideo) {
     return NextResponse.json(
-      { error: 'Invalid file type. Use JPEG, PNG, or WebP.' },
+      { error: 'Invalid file type. Use JPEG, PNG, WebP, MP4, MOV, or WebM.' },
       { status: 400 },
     )
   }
-  if (file.size > MAX_SIZE) {
-    return NextResponse.json({ error: 'File too large. Maximum 10MB.' }, { status: 400 })
+
+  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: `File too large. Maximum ${isVideo ? '150MB' : '10MB'}.` },
+      { status: 400 },
+    )
   }
 
   const raw = Buffer.from(await file.arrayBuffer())
-
-  // Compress: resize to max 1200×900, convert to JPEG 80q progressive
-  const compressed = await sharp(raw)
-    .resize(1200, 900, {
-      fit:                'cover',
-      position:           'center',
-      withoutEnlargement: true,
-    })
-    .jpeg({ quality: 80, progressive: true })
-    .toBuffer()
-
-  const filename = `${randomUUID()}.jpg`
-  const dir      = join(process.cwd(), 'public', 'uploads')
-
+  const dir = join(process.cwd(), 'public', 'uploads')
   await mkdir(dir, { recursive: true })
-  await writeFile(join(dir, filename), compressed)
+
+  let filename: string
+  let output:   Buffer
+
+  if (isVideo) {
+    const ext = file.type === 'video/quicktime' ? 'mov'
+      : file.type === 'video/webm' ? 'webm' : 'mp4'
+    filename = `${randomUUID()}.${ext}`
+    output   = raw
+  } else {
+    // Compress image: resize to max 1200×900, JPEG 80q progressive
+    filename = `${randomUUID()}.jpg`
+    output   = await sharp(raw)
+      .resize(1200, 900, { fit: 'cover', position: 'center', withoutEnlargement: true })
+      .jpeg({ quality: 80, progressive: true })
+      .toBuffer()
+  }
+
+  await writeFile(join(dir, filename), output)
 
   return NextResponse.json({ url: `/uploads/${filename}` })
 }

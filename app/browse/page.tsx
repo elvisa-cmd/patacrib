@@ -66,6 +66,8 @@ export default async function BrowsePage({
       waterSchedule: p.waterSchedule,
       powerBackup:   p.powerBackup,
       borehole:      p.borehole,
+      videoUrl:      p.videoUrl,
+      tourImageUrl:  p.tourImageUrl,
       _count:        p._count,
     }))
   } catch (error) {

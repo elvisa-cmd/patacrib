@@ -18,6 +18,8 @@ export type SerializedProperty = {
   matatuRoutes: string[]
   waterSchedule: string | null
   powerBackup: boolean
+  videoUrl?: string | null
+  tourImageUrl?: string | null
 }
 
 export type BrowseProperty = SerializedProperty & {
@@ -32,6 +34,7 @@ export type DetailedProperty = SerializedProperty & {
   amenities: string[]
   borehole: boolean
   videoUrl: string | null
+  tourImageUrl: string | null
   adminId: string
   admin: {
     name: string

@@ -144,17 +144,24 @@ export default function AddPropertyForm() {
   // Section 3 — Photos
   const [images, setImages] = useState<string[]>([])
 
-  // Section 4 — Kenya details
+  // Section 4 — Virtual tour
+  const [videoUrl,          setVideoUrl]          = useState('')
+  const [tourImageUrl,      setTourImageUrl]      = useState('')
+  const [videoUploading,    setVideoUploading]    = useState(false)
+  const [tourImgUploading,  setTourImgUploading]  = useState(false)
+  const [videoError,        setVideoError]        = useState('')
+  const [tourImgError,      setTourImgError]      = useState('')
+
+  // Section 5 — Kenya details
   const [waterSchedule, setWaterSchedule] = useState('')
   const [matatuRoutes,  setMatatuRoutes]  = useState<string[]>([])
   const [safetyScore,   setSafetyScore]   = useState('')
   const [powerBackup,   setPowerBackup]   = useState(false)
   const [borehole,      setBorehole]      = useState(false)
 
-  // Section 5 — Features & amenities
+  // Section 6 — Features & amenities
   const [features,  setFeatures]  = useState<string[]>([])
   const [amenities, setAmenities] = useState<string[]>([])
-  const [videoUrl,  setVideoUrl]  = useState('')
 
   // Submit state
   const [submitting, setSubmitting] = useState(false)
@@ -197,6 +204,7 @@ export default function AddPropertyForm() {
           longitude:     lng,
           images,
           videoUrl:      videoUrl      || undefined,
+          tourImageUrl:  tourImageUrl  || undefined,
           features,
           amenities,
           waterSchedule: waterSchedule || undefined,
@@ -679,9 +687,146 @@ export default function AddPropertyForm() {
               />
             </section>
 
-            {/* ── Section 4: Kenya details ──────────────────────────── */}
+            {/* ── Section 4: Virtual tour ───────────────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={4} title="Kenya details" />
+              <div className="flex items-center gap-3 mb-1">
+                <span className="w-6 h-6 bg-accent flex items-center justify-center font-sans font-bold text-[11px] text-white flex-shrink-0">4</span>
+                <h2 className="font-sans font-bold text-[13px] text-ink uppercase tracking-[1px]">Virtual Tour</h2>
+                <span className="font-sans text-[9px] border border-border text-muted px-2 py-0.5 uppercase tracking-wide">Optional</span>
+              </div>
+              <p className="font-sans text-[11px] text-muted mb-6 ml-9">Help seekers explore your property without visiting</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                {/* Option A — Video walkthrough */}
+                <div className="border border-border p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🎥</span>
+                    <p className="font-sans font-bold text-[13px] text-ink">Video Walkthrough</p>
+                  </div>
+                  <p className="font-sans text-[11px] text-muted mb-4">
+                    Record a video walking through each room. Seekers can watch before visiting.
+                  </p>
+
+                  {videoUrl ? (
+                    <div className="mb-3">
+                      <video controls className="w-full" preload="metadata">
+                        <source src={videoUrl} type="video/mp4" />
+                      </video>
+                      <button
+                        type="button"
+                        onClick={() => setVideoUrl('')}
+                        className="font-sans text-[11px] text-muted hover:text-red transition-colors mt-2"
+                      >
+                        ✕ Remove video
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`flex items-center justify-center gap-2 border border-dashed border-border2 py-4 cursor-pointer hover:bg-surface2 transition-colors ${videoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/quicktime,video/webm"
+                        className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          if (file.size > 150 * 1024 * 1024) { setVideoError('Max 150 MB'); return }
+                          setVideoError('')
+                          setVideoUploading(true)
+                          try {
+                            const fd = new FormData()
+                            fd.append('file', file)
+                            const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                            const data = await res.json()
+                            if (!res.ok) { setVideoError(data.error ?? 'Upload failed'); return }
+                            setVideoUrl(data.url)
+                          } catch {
+                            setVideoError('Upload failed — try again')
+                          } finally {
+                            setVideoUploading(false)
+                          }
+                        }}
+                      />
+                      <span className="font-sans text-[12px] text-muted">
+                        {videoUploading ? 'Uploading…' : '⬆ Upload video (MP4, MOV, WebM · max 150 MB)'}
+                      </span>
+                    </label>
+                  )}
+                  {videoError && <p className="font-sans text-[11px] text-red mt-1">{videoError}</p>}
+
+                  <div className="mt-4 bg-surface2 px-3 py-3">
+                    <p className="font-sans text-[10px] text-muted leading-relaxed">
+                      💡 <strong>Tips:</strong> Film in good lighting (daytime) · Walk slowly through each room · Show windows, storage, bathroom · Keep under 3 minutes
+                    </p>
+                  </div>
+                </div>
+
+                {/* Option B — 360° photo */}
+                <div className="border border-border p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🌐</span>
+                    <p className="font-sans font-bold text-[13px] text-ink">360° Photo Tour</p>
+                  </div>
+                  <p className="font-sans text-[11px] text-muted mb-4">
+                    Take a 360° photo with your phone camera app and upload it.
+                  </p>
+
+                  {tourImageUrl ? (
+                    <div className="mb-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={tourImageUrl} alt="360° preview" className="w-full h-32 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setTourImageUrl('')}
+                        className="font-sans text-[11px] text-muted hover:text-red transition-colors mt-2"
+                      >
+                        ✕ Remove photo
+                      </button>
+                    </div>
+                  ) : (
+                    <label className={`flex items-center justify-center gap-2 border border-dashed border-border2 py-4 cursor-pointer hover:bg-surface2 transition-colors ${tourImgUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png"
+                        className="hidden"
+                        onChange={async e => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          setTourImgError('')
+                          setTourImgUploading(true)
+                          try {
+                            const fd = new FormData()
+                            fd.append('file', file)
+                            const res = await fetch('/api/upload', { method: 'POST', body: fd })
+                            const data = await res.json()
+                            if (!res.ok) { setTourImgError(data.error ?? 'Upload failed'); return }
+                            setTourImageUrl(data.url)
+                          } catch {
+                            setTourImgError('Upload failed — try again')
+                          } finally {
+                            setTourImgUploading(false)
+                          }
+                        }}
+                      />
+                      <span className="font-sans text-[12px] text-muted">
+                        {tourImgUploading ? 'Uploading…' : '⬆ Upload 360° photo (JPEG or PNG)'}
+                      </span>
+                    </label>
+                  )}
+                  {tourImgError && <p className="font-sans text-[11px] text-red mt-1">{tourImgError}</p>}
+
+                  <div className="mt-4 bg-surface2 px-3 py-3">
+                    <p className="font-sans text-[10px] text-muted leading-relaxed">
+                      💡 <strong>How to take a 360° photo:</strong> iPhone: Panoramic mode in Camera · Android: Google Street View app → Create → Take a Photo Sphere · Stand in the center of the room · Rotate slowly in a full circle
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ── Section 5: Kenya details ──────────────────────────── */}
+            <section className={SECTION}>
+              <SectionHeader num={5} title="Kenya details" />
 
               <div className={FIELD}>
                 <label className={LABEL}>Water schedule</label>
@@ -740,9 +885,9 @@ export default function AddPropertyForm() {
               </div>
             </section>
 
-            {/* ── Section 5: Features & amenities ──────────────────── */}
+            {/* ── Section 6: Features & amenities ──────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={5} title="Features & amenities" />
+              <SectionHeader num={6} title="Features & amenities" />
 
               <div className={FIELD}>
                 <label className={LABEL}>Features</label>
@@ -764,21 +909,11 @@ export default function AddPropertyForm() {
                 />
               </div>
 
-              <div>
-                <label className={LABEL}>Video tour URL (optional)</label>
-                <input
-                  type="url"
-                  value={videoUrl}
-                  onChange={e => setVideoUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=…"
-                  className={INPUT}
-                />
-              </div>
             </section>
 
-            {/* ── Section 6: Submit ──────────────────────────────────── */}
+            {/* ── Section 7: Submit ──────────────────────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={6} title="Publish listing" />
+              <SectionHeader num={7} title="Publish listing" />
 
               {error && (
                 <div className="bg-red/10 border border-red/20 px-4 py-3 mb-5">

@@ -58,6 +58,8 @@ export default async function HomePage() {
     matatuRoutes: p.matatuRoutes,
     waterSchedule:p.waterSchedule,
     powerBackup:  p.powerBackup,
+    videoUrl:     p.videoUrl,
+    tourImageUrl: p.tourImageUrl,
   }))
 
   return (

@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
 import { ImageGallery } from '@/components/property/ImageGallery'
+import { VirtualTour } from '@/components/property/VirtualTour'
 import PropertyInfo from '@/components/property/PropertyInfo'
 import KenyaDetails from '@/components/property/KenyaDetails'
 import PropertyMap from '@/components/property/PropertyMap'
@@ -85,6 +86,7 @@ export default async function PropertyDetailPage({
     longitude:     property.longitude,
     images:        property.images,
     videoUrl:      property.videoUrl,
+    tourImageUrl:  property.tourImageUrl ?? null,
     features:      property.features,
     amenities:     property.amenities,
     waterSchedule: property.waterSchedule,
@@ -139,6 +141,14 @@ export default async function PropertyDetailPage({
           priceType={detailedProperty.priceType}
           estate={detailedProperty.estate}
         />
+
+        <div className="px-4 md:px-16 pt-6">
+          <VirtualTour
+            videoUrl={detailedProperty.videoUrl}
+            tourImageUrl={detailedProperty.tourImageUrl}
+            propertyTitle={detailedProperty.title}
+          />
+        </div>
 
         <div className="px-4 md:px-16 py-0 flex flex-col md:flex-row gap-6 md:gap-10 items-start pb-24 md:pb-0">
 

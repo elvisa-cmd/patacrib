@@ -7,22 +7,24 @@ import Image from 'next/image'
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface CardProperty {
-  id:           string
-  title:        string
-  description?: string
-  price:        number
-  priceType:    string
-  bedrooms:     number
-  bathrooms:    number
-  images:       string[]
-  status:       string
-  estate:       string | null
-  city:         string
-  address:      string
-  latitude?:    number
-  longitude?:   number
-  propertyType: string
-  _count?:      { savedBy: number; views: number }
+  id:            string
+  title:         string
+  description?:  string
+  price:         number
+  priceType:     string
+  bedrooms:      number
+  bathrooms:     number
+  images:        string[]
+  status:        string
+  estate:        string | null
+  city:          string
+  address:       string
+  latitude?:     number
+  longitude?:    number
+  propertyType:  string
+  videoUrl?:     string | null
+  tourImageUrl?: string | null
+  _count?:       { savedBy: number; views: number }
 }
 
 interface PropertyCardProps {
@@ -214,6 +216,12 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
             📷 {property.images.length}
           </span>
         )}
+        {/* Virtual tour badge */}
+        {(property.videoUrl || property.tourImageUrl) && (
+          <div className="absolute top-2 left-2 z-30 bg-black/70 backdrop-blur-sm text-white text-[8px] font-bold uppercase tracking-[1.5px] px-2 py-1 flex items-center gap-1">
+            🎥 Virtual tour
+          </div>
+        )}
         {/* Save button */}
         {showSave && (
           <button
@@ -309,6 +317,11 @@ function ListCard({ property, showSave = true, isSaved: initialIsSaved = false, 
           <Image src={property.images[0]} alt={property.title} fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="160px" />
         )}
         <StatusBadge status={property.status} />
+        {(property.videoUrl || property.tourImageUrl) && (
+          <div className="absolute top-1.5 left-1.5 z-30 bg-black/70 text-white text-[7px] font-bold uppercase tracking-[1px] px-1.5 py-0.5 flex items-center gap-1">
+            🎥 Tour
+          </div>
+        )}
       </div>
 
       {/* Details */}
