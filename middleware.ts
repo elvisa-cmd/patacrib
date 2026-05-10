@@ -3,7 +3,10 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
-  try {
+  const { pathname } = request.nextUrl
+
+  // Only protect dashboard routes
+  if (pathname.startsWith('/dashboard')) {
     const token = await getToken({
       req:    request,
       secret: process.env.NEXTAUTH_SECRET,
@@ -12,10 +15,9 @@ export async function middleware(request: NextRequest) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
-  } catch {
-    return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  // Allow ALL other routes through
   return NextResponse.next()
 }
 
