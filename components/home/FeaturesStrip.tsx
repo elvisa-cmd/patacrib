@@ -1,31 +1,64 @@
 const features = [
-  { emoji: '📍', name: 'GPS pinned · 3m' },
-  { emoji: '🚌', name: 'Matatu routes' },
-  { emoji: '💧', name: 'Water schedule' },
-  { emoji: '🔒', name: 'Safety score' },
-  { emoji: '🎥', name: 'Virtual tours' },
-  { emoji: '⚡', name: 'Power backup' },
-  { emoji: '🗺', name: 'Live directions' },
+  {
+    icon:        '📍',
+    label:       'GPS PINNED · 3M',
+    href:        '/browse',
+    description: 'Every property pinned to exact location',
+  },
+  {
+    icon:        '🚌',
+    label:       'MATATU ROUTES',
+    href:        '/browse',
+    description: 'See matatu routes for every listing',
+  },
+  {
+    icon:        '💧',
+    label:       'WATER SCHEDULE',
+    href:        '/browse',
+    description: 'Know water supply before you move in',
+  },
+  {
+    icon:        '🔒',
+    label:       'SAFETY SCORE',
+    href:        '/browse',
+    description: 'Safety ratings for every estate',
+  },
+  {
+    icon:        '🎥',
+    label:       'VIRTUAL TOURS',
+    href:        '/browse?tour=true',
+    description: 'View properties without visiting',
+  },
+  {
+    icon:        '⚡',
+    label:       'POWER BACKUP',
+    href:        '/browse',
+    description: 'Generator and solar backup information',
+  },
+  {
+    icon:        '🗺',
+    label:       'LIVE DIRECTIONS',
+    href:        '/browse',
+    description: 'In-app navigation to any property',
+  },
 ]
 
 export default function FeaturesStrip() {
   return (
-    <section className="bg-surface border-b border-border overflow-x-auto scrollbar-none">
-      <div className="flex min-w-max">
-        {features.map((feature, i) => (
-          <div
-            key={feature.name}
-            className={`flex items-center gap-2 px-7 py-4 border-r border-border hover:bg-accent-l group transition-colors cursor-default ${
-              i === 0 ? 'border-l border-border' : ''
-            }`}
-          >
-            <span role="img" aria-hidden="true">{feature.emoji}</span>
-            <span className="font-sans font-medium text-[10px] uppercase tracking-[1px] text-muted group-hover:text-accent transition-colors whitespace-nowrap">
-              {feature.name}
-            </span>
-          </div>
-        ))}
-      </div>
-    </section>
+    <div className="flex overflow-x-auto scrollbar-none bg-white border-b border-border">
+      {features.map((feature, i) => (
+        <a
+          key={i}
+          href={feature.href}
+          className="flex items-center gap-2 px-6 py-4 border-r border-border flex-shrink-0 group hover:bg-accent-l transition-colors duration-200 cursor-pointer"
+          title={feature.description}
+        >
+          <span className="text-base">{feature.icon}</span>
+          <span className="text-[10px] font-bold uppercase tracking-[1.2px] text-muted group-hover:text-accent transition-colors duration-200 whitespace-nowrap">
+            {feature.label}
+          </span>
+        </a>
+      ))}
+    </div>
   )
 }

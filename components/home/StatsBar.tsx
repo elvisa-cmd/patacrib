@@ -30,14 +30,15 @@ export default function StatsBar({ stats = DEFAULT_STATS }: { stats?: StatsProps
   return (
     <section className="bg-surface border-t border-b border-border grid grid-cols-2 md:grid-cols-4">
       {items.map((stat, i) => (
-        <div
+        <a
           key={stat.label}
-          className={`px-6 md:px-16 py-7 hover:bg-surface2 transition-colors cursor-default ${STAT_BORDERS[i]}`}
+          href="/browse"
+          className={`block px-6 md:px-16 py-7 hover:bg-surface2 transition-colors cursor-pointer ${STAT_BORDERS[i]}`}
         >
           <p className="font-serif text-[36px] text-ink leading-none">{stat.number}</p>
           <p className="font-sans font-medium text-[11px] text-muted mt-2">{stat.label}</p>
           <p className="font-serif italic text-[11px] text-muted2 mt-0.5">{stat.sub}</p>
-        </div>
+        </a>
       ))}
     </section>
   )

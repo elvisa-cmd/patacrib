@@ -4,18 +4,21 @@ const steps = [
     title: 'Search your area',
     desc:  'Filter by estate, price, type, and distance from your location',
     href:  '/browse',
+    cta:   'Start browsing',
   },
   {
     num:   '02',
     title: 'See the exact pin',
     desc:  'Every property is GPS-pinned to the metre — not just a neighbourhood',
-    href:  '/browse?view=map',
+    href:  '/browse',
+    cta:   'View on map',
   },
   {
     num:   '03',
     title: 'Book and move in',
     desc:  'Message the landlord, book a viewing, and secure your home',
     href:  '/signup',
+    cta:   'Create account',
   },
 ]
 
@@ -54,7 +57,7 @@ export default function HowItWorks() {
           <p className="font-sans font-bold text-[13px] text-ink mb-3">{step.title}</p>
           <p className="font-sans font-light text-[11px] text-muted leading-[1.7]">{step.desc}</p>
           <p className="font-sans text-[11px] text-accent mt-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            {i === 0 ? 'Browse listings →' : i === 1 ? 'View on map →' : 'Sign up free →'}
+            {step.cta} →
           </p>
         </a>
       ))}
