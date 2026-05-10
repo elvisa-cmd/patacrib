@@ -18,9 +18,14 @@ function buildFilterSummary(f: SearchFilters): string {
   if (f.maxPrice)    parts.push(`Under KSh ${Number(f.maxPrice).toLocaleString('en-KE')}`)
   if (f.minPrice)    parts.push(`From KSh ${Number(f.minPrice).toLocaleString('en-KE')}`)
   if (f.q)           parts.push(`"${f.q}"`)
-  if (f.borehole === '1')    parts.push('Borehole')
-  if (f.powerBackup === '1') parts.push('Generator/Solar')
-  if (f.nearMatatu === '1')  parts.push('Near matatu stage')
+  if (f.borehole === '1')       parts.push('Borehole')
+  if (f.powerBackup === '1')    parts.push('Generator/Solar')
+  if (f.nearMatatu === '1')     parts.push('Near matatu stage')
+  if (f.hasMatatu === 'true')   parts.push('Near matatu stage')
+  if (f.water === 'daily')      parts.push('Daily water')
+  if (f.tour === 'true')        parts.push('Virtual tours')
+  if (f.power === 'true')       parts.push('Power backup')
+  if (f.sort === 'safety')      parts.push('Sorted by safety score')
   return parts.join(' · ')
 }
 

@@ -11,6 +11,11 @@ export interface SearchFilters {
   borehole?:    string
   powerBackup?: string
   nearMatatu?:  string
+  hasMatatu?:   string
+  water?:       string
+  tour?:        string
+  power?:       string
+  view?:        string
 }
 
 export function buildPropertyFilter(
@@ -58,6 +63,26 @@ export function buildPropertyFilter(
   if (filters.powerBackup === '1') where.powerBackup = true
   if (filters.nearMatatu === '1')  where.matatuRoutes = { isEmpty: false }
 
+  // Feature-strip filters
+  if (filters.hasMatatu === 'true') {
+    where.matatuRoutes = { isEmpty: false }
+  }
+
+  if (filters.water === 'daily') {
+    where.waterSchedule = { contains: 'daily', mode: 'insensitive' }
+  }
+
+  if (filters.tour === 'true') {
+    where.OR = [
+      { videoUrl:     { not: null } },
+      { tourImageUrl: { not: null } },
+    ]
+  }
+
+  if (filters.power === 'true') {
+    where.powerBackup = true
+  }
+
   return where
 }
 
@@ -68,6 +93,7 @@ export function buildPropertyOrderBy(
     case 'price-asc':  return { price: 'asc' }
     case 'price-desc': return { price: 'desc' }
     case 'oldest':     return { createdAt: 'asc' }
+    case 'safety':     return { safetyScore: 'desc' }
     default:           return { createdAt: 'desc' }
   }
 }
