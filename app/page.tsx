@@ -3,7 +3,6 @@ import Nav from '@/components/home/Nav'
 import HeroHeadline from '@/components/home/HeroHeadline'
 import SearchBar from '@/components/home/SearchBar'
 import HomeContent from '@/components/home/HomeContent'
-import StatsBar from '@/components/home/StatsBar'
 import FeaturesStrip from '@/components/home/FeaturesStrip'
 import HowItWorks from '@/components/home/HowItWorks'
 import Footer from '@/components/home/Footer'
@@ -67,8 +66,7 @@ export default async function HomePage() {
       <main>
         <HeroHeadline />
         <SearchBar />
-        <HomeContent properties={properties} />
-        <StatsBar stats={stats} />
+        <HomeContent properties={properties} stats={stats} />
         <FeaturesStrip />
         <HowItWorks />
       </main>

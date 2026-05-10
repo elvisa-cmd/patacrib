@@ -3,13 +3,23 @@
 import { useState } from 'react'
 import FeaturedStrip from './FeaturedStrip'
 import MapSection from './MapSection'
+import StatsBar from './StatsBar'
 import NavigationModal from '@/components/shared/NavigationModal'
 import type { SerializedProperty } from '@/types/property'
 
+interface StatsData {
+  totalListings:  number
+  totalLandlords: number
+  estatesCovered: number
+  gpsVerified:    number
+}
+
 export default function HomeContent({
   properties,
+  stats,
 }: {
   properties: SerializedProperty[]
+  stats?: StatsData
 }) {
   const [selectedId,   setSelectedId]   = useState<string | null>(null)
   const [navOpen,      setNavOpen]      = useState(false)
@@ -29,8 +39,8 @@ export default function HomeContent({
         onSelectProperty={setSelectedId}
         onNavigate={handleNavigate}
       />
+      <StatsBar stats={stats} />
 
-      {/* In-app navigation modal — opened from map route card */}
       <NavigationModal
         isOpen={navOpen}
         onClose={() => setNavOpen(false)}

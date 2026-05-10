@@ -18,50 +18,59 @@ export default async function BrowsePage({
   const where    = buildPropertyFilter(filters)
   const orderBy  = buildPropertyOrderBy(filters.sort)
 
-  const [properties, totalCount, savedRows] = await Promise.all([
-    prisma.property.findMany({
-      where,
-      orderBy,
-      take: 24,
-      include: {
-        _count: { select: { savedBy: true, views: true } },
-      },
-    }),
-    prisma.property.count({ where }),
-    session?.user?.userId
-      ? prisma.savedProperty.findMany({
-          where:  { userId: session.user.userId },
-          select: { propertyId: true },
-        })
-      : Promise.resolve([]),
-  ])
+  let properties: BrowseProperty[] = []
+  let totalCount = 0
+  let savedIds:   string[] = []
 
-  const savedIds = savedRows.map(r => r.propertyId)
+  try {
+    const [rows, count, savedRows] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        orderBy,
+        take: 24,
+        include: {
+          _count: { select: { savedBy: true, views: true } },
+        },
+      }),
+      prisma.property.count({ where }),
+      session?.user?.userId
+        ? prisma.savedProperty.findMany({
+            where:  { userId: session.user.userId },
+            select: { propertyId: true },
+          })
+        : Promise.resolve([]),
+    ])
 
-  const serialized: BrowseProperty[] = properties.map(p => ({
-    id:            p.id,
-    title:         p.title,
-    description:   p.description,
-    price:         p.price,
-    priceType:     p.priceType,
-    bedrooms:      p.bedrooms,
-    bathrooms:     p.bathrooms,
-    propertyType:  p.propertyType,
-    address:       p.address,
-    estate:        p.estate,
-    city:          p.city,
-    latitude:      p.latitude,
-    longitude:     p.longitude,
-    images:        p.images,
-    status:        p.status,
-    createdAt:     p.createdAt.toISOString(),
-    safetyScore:   p.safetyScore,
-    matatuRoutes:  p.matatuRoutes,
-    waterSchedule: p.waterSchedule,
-    powerBackup:   p.powerBackup,
-    borehole:      p.borehole,
-    _count:        p._count,
-  }))
+    totalCount = count
+    savedIds   = savedRows.map(r => r.propertyId)
+
+    properties = rows.map(p => ({
+      id:            p.id,
+      title:         p.title,
+      description:   p.description,
+      price:         p.price,
+      priceType:     p.priceType,
+      bedrooms:      p.bedrooms,
+      bathrooms:     p.bathrooms,
+      propertyType:  p.propertyType,
+      address:       p.address,
+      estate:        p.estate,
+      city:          p.city,
+      latitude:      p.latitude,
+      longitude:     p.longitude,
+      images:        p.images,
+      status:        p.status,
+      createdAt:     p.createdAt.toISOString(),
+      safetyScore:   p.safetyScore,
+      matatuRoutes:  p.matatuRoutes,
+      waterSchedule: p.waterSchedule,
+      powerBackup:   p.powerBackup,
+      borehole:      p.borehole,
+      _count:        p._count,
+    }))
+  } catch (error) {
+    console.error('[browse] DB error:', error)
+  }
 
   return (
     <div className="h-screen overflow-hidden bg-bg flex flex-col">
@@ -84,7 +93,7 @@ export default async function BrowsePage({
           </div>
 
           <ResultsArea
-            properties={serialized}
+            properties={properties}
             totalCount={totalCount}
             filters={filters}
             savedIds={savedIds}

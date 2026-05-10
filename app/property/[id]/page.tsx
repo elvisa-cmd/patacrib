@@ -19,10 +19,10 @@ export default async function PropertyDetailPage({
 }) {
   const { id } = await params
 
-  // Crash early: empty id is never a valid cuid
   if (!id) notFound()
 
-  const [property, session] = await Promise.all([
+  // Primary fetch — call notFound on any DB failure
+  const [rawProperty, session] = await Promise.all([
     prisma.property.findUnique({
       where: { id },
       include: {
@@ -30,40 +30,44 @@ export default async function PropertyDetailPage({
           include: { _count: { select: { properties: true } } },
         },
       },
-    }),
-    getServerSession(authOptions),
+    }).catch((err) => { console.error('[property-detail] DB error:', err); return null }),
+    getServerSession(authOptions).catch(() => null),
   ])
 
-  if (!property) notFound()
+  if (!rawProperty || !rawProperty.admin) notFound()
 
-  // Crash early: orphaned property with no admin should not render
-  if (!property.admin) notFound()
+  const property = rawProperty
+  const userId   = session?.user?.userId ?? null
 
-  const userId = session?.user?.userId ?? null
+  // Fetch nearby + saved state — non-fatal
+  let nearby:  Awaited<ReturnType<typeof prisma.property.findMany>> = []
+  let isSaved = false
 
-  const [nearby, isSaved] = await Promise.all([
-    prisma.property.findMany({
-      where: { status: 'available', NOT: { id } },
-      orderBy: { createdAt: 'desc' },
-      take: 4,
-    }),
-    userId
-      ? prisma.savedProperty
-          .findUnique({
-            where: { userId_propertyId: { userId, propertyId: id } },
-          })
-          .then(Boolean)
-      : Promise.resolve(false),
-  ])
+  try {
+    ;[nearby, isSaved] = await Promise.all([
+      prisma.property.findMany({
+        where:   { status: 'available', NOT: { id } },
+        orderBy: { createdAt: 'desc' },
+        take:    4,
+      }),
+      userId
+        ? prisma.savedProperty
+            .findUnique({
+              where: { userId_propertyId: { userId, propertyId: id } },
+            })
+            .then(Boolean)
+        : Promise.resolve(false),
+    ])
+  } catch (error) {
+    console.error('[property-detail] DB error fetching nearby:', error)
+  }
 
-  // Fire-and-forget view tracking — never blocks the page render
+  // Fire-and-forget view tracking
   if (userId) {
     prisma.propertyView
       .create({ data: { propertyId: id, userId } })
       .catch(() => {})
   }
-
-  // ── Serialise for client components (no Date objects) ─────────────
 
   const detailedProperty: DetailedProperty = {
     id:            property.id,
@@ -127,7 +131,6 @@ export default async function PropertyDetailPage({
       <Nav />
 
       <main className="pt-[60px]">
-        {/* Full-width image gallery */}
         <ImageGallery
           images={detailedProperty.images}
           title={detailedProperty.title}
@@ -137,10 +140,8 @@ export default async function PropertyDetailPage({
           estate={detailedProperty.estate}
         />
 
-        {/* Two-column layout — single column on mobile */}
         <div className="px-4 md:px-16 py-0 flex flex-col md:flex-row gap-6 md:gap-10 items-start pb-24 md:pb-0">
 
-          {/* Right — price card (shows FIRST on mobile) */}
           <div className="w-full md:w-[340px] md:flex-shrink-0 md:sticky md:top-20 md:py-8 order-1 md:order-2 hidden md:block">
             <PriceCard
               price={detailedProperty.price}
@@ -160,7 +161,6 @@ export default async function PropertyDetailPage({
             />
           </div>
 
-          {/* Left — scrollable details */}
           <div className="flex-1 min-w-0 order-2 md:order-1">
             <PropertyInfo property={detailedProperty} />
             <KenyaDetails
@@ -189,7 +189,6 @@ export default async function PropertyDetailPage({
 
         </div>
 
-        {/* Sticky mobile bar — shown instead of sidebar */}
         <MobilePropertyBar
           lat={detailedProperty.latitude}
           lng={detailedProperty.longitude}

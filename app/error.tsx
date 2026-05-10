@@ -14,23 +14,25 @@ export default function Error({
   }, [error])
 
   return (
-    <div className="min-h-screen bg-bg flex items-center justify-center px-6">
-      <div className="text-center max-w-md">
-        <p className="font-sans text-[13px] uppercase tracking-widest text-muted mb-3">Something went wrong</p>
-        <h1 className="font-serif text-[28px] text-ink mb-3">This page couldn&apos;t load</h1>
-        <p className="font-sans text-[14px] text-muted mb-8">
-          There was a problem connecting to the server. This is usually temporary.
+    <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]">
+      <div className="text-center px-6">
+        <div className="text-6xl mb-6">⚠️</div>
+        <h2 className="font-serif text-3xl text-[#0f0e0c] mb-3">
+          Something went wrong
+        </h2>
+        <p className="text-[#87837c] text-sm mb-8 max-w-sm mx-auto">
+          We encountered an error. Please try again.
         </p>
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex gap-3 justify-center">
           <button
             onClick={reset}
-            className="bg-accent text-white font-sans font-bold text-[12px] uppercase tracking-wide px-5 py-2.5 hover:bg-accent-d transition-colors"
+            className="bg-[#1a6b4a] text-white font-bold uppercase tracking-wide px-6 py-3 text-sm hover:bg-[#145c3d] transition-colors"
           >
             Try again
           </button>
           <a
             href="/"
-            className="border border-border text-ink font-sans font-bold text-[12px] uppercase tracking-wide px-5 py-2.5 hover:bg-surface2 transition-colors"
+            className="border border-[#0f0e0c] text-[#0f0e0c] font-bold uppercase tracking-wide px-6 py-3 text-sm hover:bg-[#f3f1ec] transition-colors"
           >
             Go home
           </a>
