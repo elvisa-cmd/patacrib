@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   try {
     const token = await getToken({
       req:    request,
@@ -20,6 +20,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Only run on dashboard routes — login/signup/homepage are always public
   matcher: ['/dashboard/:path*'],
 }
