@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { getRealRoute } from '@/lib/routing'
+import { useEffect, useRef } from 'react'
+import { getWalkingRoute }   from '@/lib/routing'
+import type { RouteStep }    from '@/lib/routing'
 
 interface NavProperty {
   title:     string
@@ -11,21 +12,21 @@ interface NavProperty {
 }
 
 export interface NavRoute {
-  distMetres:          number
-  distKm:              string
-  walkMin:             number
-  driveMin:            number
-  matatuMin:           number
-  walkDurationText?:   string
-  driveDurationText?:  string
-  matatuDurationText?: string
-  rawKm:               number
+  distMetres:    number
+  distanceText:  string
+  walkMinutes:   number
+  walkText:      string
+  driveMinutes:  number
+  driveText:     string
+  matatuMinutes: number
+  matatuText:    string
+  steps:         RouteStep[]
 }
 
 export interface NavigationMapInnerProps {
   property:          NavProperty
-  onRouteCalculated: (route: NavRoute) => void
-  onLocationUpdate:  (loc: { lat: number; lng: number; heading?: number; speed?: number }) => void
+  onRouteReady:      (route: NavRoute) => void
+  onLocationUpdate:  (loc: { lat: number; lng: number; heading?: number; arrived: boolean; distMetres: number }) => void
   travelMode:        'walking' | 'driving' | 'matatu'
 }
 
@@ -42,7 +43,7 @@ function buildUserIcon(L: typeof import('leaflet'), heading?: number) {
     html: `
       <style>
         @keyframes navPulse {
-          0%   { transform:translate(-50%,-50%) scale(1); opacity:1 }
+          0%   { transform:translate(-50%,-50%) scale(1);   opacity:1 }
           100% { transform:translate(-50%,-50%) scale(2.2); opacity:0 }
         }
       </style>
@@ -82,12 +83,11 @@ function buildUserIcon(L: typeof import('leaflet'), heading?: number) {
   })
 }
 
-/** Inline Haversine — used for arrival detection only, no API call needed. */
 function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R    = 6_371_000
   const dLat = (lat2 - lat1) * (Math.PI / 180)
   const dLon = (lng2 - lng1) * (Math.PI / 180)
-  const a =
+  const a    =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(lat1 * (Math.PI / 180)) *
     Math.cos(lat2 * (Math.PI / 180)) *
@@ -97,16 +97,15 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
 
 export default function NavigationMapInner({
   property,
-  onRouteCalculated,
+  onRouteReady,
   onLocationUpdate,
 }: NavigationMapInnerProps) {
-  const mapRef          = useRef<HTMLDivElement>(null)
-  const mapInstRef      = useRef<import('leaflet').Map | null>(null)
-  const userMarkerRef   = useRef<import('leaflet').Marker | null>(null)
-  const routeLineRef    = useRef<import('leaflet').Layer | null>(null)
-  const watchIdRef      = useRef<number | null>(null)
-  const lastOsrmLocRef  = useRef<[number, number] | null>(null)
-  const [arrived, setArrived] = useState(false)
+  const mapRef         = useRef<HTMLDivElement>(null)
+  const mapInstRef     = useRef<import('leaflet').Map | null>(null)
+  const userMarkerRef  = useRef<import('leaflet').Marker | null>(null)
+  const routeLineRef   = useRef<import('leaflet').Layer | null>(null)
+  const watchIdRef     = useRef<number | null>(null)
+  const lastOsrmLocRef = useRef<[number, number] | null>(null)
 
   useEffect(() => {
     if (!mapRef.current || mapInstRef.current) return
@@ -131,7 +130,7 @@ export default function NavigationMapInner({
       }).addTo(map)
 
       // Green property pin
-      const escaped = property.title.replace(/"/g, '&quot;').slice(0, 32)
+      const escaped  = property.title.replace(/"/g, '&quot;').slice(0, 32)
       const propIcon = L.divIcon({
         className: '',
         html: `
@@ -164,10 +163,10 @@ export default function NavigationMapInner({
       watchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
           if (cancelled) return
-          const { latitude, longitude, heading, speed } = pos.coords
+          const { latitude, longitude, heading } = pos.coords
           const userLoc: [number, number] = [latitude, longitude]
 
-          // ── 1. Update user marker ──────────────────────────────────────
+          // Update user marker
           if (userMarkerRef.current) {
             userMarkerRef.current.setLatLng(userLoc)
             userMarkerRef.current.setIcon(buildUserIcon(L, heading ?? undefined))
@@ -182,38 +181,39 @@ export default function NavigationMapInner({
             )
           }
 
-          // ── 2. Keep map centred on user ────────────────────────────────
           map.panTo(userLoc, { animate: true })
 
-          // ── 3. Haversine for fast arrival check ────────────────────────
+          // Haversine for fast arrival check
           const distMetres = haversineM(latitude, longitude, property.latitude, property.longitude)
+          const arrived    = distMetres <= 50
 
-          onLocationUpdate({ lat: latitude, lng: longitude, heading: heading ?? undefined, speed: speed ?? undefined })
+          onLocationUpdate({ lat: latitude, lng: longitude, heading: heading ?? undefined, arrived, distMetres })
 
-          // ── 4. Arrival at ≤ 50 m ──────────────────────────────────────
-          if (distMetres <= 50) {
-            setArrived(true)
+          if (arrived) {
             navigator.geolocation.clearWatch(watchIdRef.current!)
             watchIdRef.current = null
             return
           }
 
-          // ── 5. OSRM call — throttled to once per ~50 m moved ──────────
-          const last = lastOsrmLocRef.current
-          const movedEnough = !last || Math.hypot(latitude - last[0], longitude - last[1]) > 0.00045
+          // OSRM call — throttled to once per ~50 m moved
+          const last         = lastOsrmLocRef.current
+          const movedEnough  = !last || Math.hypot(latitude - last[0], longitude - last[1]) > 0.00045
 
           if (movedEnough) {
             lastOsrmLocRef.current = [latitude, longitude]
 
-            // Emit Haversine estimate immediately so the UI isn't blank
-            const rawKm = distMetres / 1000
-            onRouteCalculated({
-              distMetres: Math.round(distMetres),
-              distKm:     distMetres < 1000 ? `${Math.round(distMetres)}m` : `${rawKm.toFixed(1)}km`,
-              walkMin:    Math.max(1, Math.round((rawKm / 4)  * 60)),
-              driveMin:   Math.max(1, Math.round((rawKm / 30) * 60)),
-              matatuMin:  Math.max(1, Math.round((rawKm / 25) * 60)),
-              rawKm,
+            // Emit Haversine estimate immediately so UI isn't blank
+            const roadM = distMetres * 1.4
+            onRouteReady({
+              distMetres:    Math.round(distMetres),
+              distanceText:  distMetres < 1000 ? `${Math.round(distMetres)}m` : `${(distMetres / 1000).toFixed(1)}km`,
+              walkMinutes:   Math.max(1, Math.round((roadM / 4000)  * 60)),
+              walkText:      `${Math.max(1, Math.round((roadM / 4000)  * 60))} min`,
+              driveMinutes:  Math.max(1, Math.round((roadM / 25000) * 60)),
+              driveText:     `${Math.max(1, Math.round((roadM / 25000) * 60))} min`,
+              matatuMinutes: Math.max(1, Math.round((roadM / 25000) * 60)) + 5,
+              matatuText:    `${Math.max(1, Math.round((roadM / 25000) * 60)) + 5} min`,
+              steps:         [],
             })
 
             // Show straight-line route while waiting for OSRM
@@ -223,32 +223,27 @@ export default function NavigationMapInner({
               { color: C.blue, weight: 4, dashArray: '10 8', opacity: 0.6, lineCap: 'round' },
             ).addTo(map)
 
-            // Async OSRM fetch — replaces straight line once it arrives
+            // Replace with real road route once OSRM responds
             void (async () => {
-              const result = await getRealRoute(
-                latitude, longitude,
-                property.latitude, property.longitude,
-              )
+              const result = await getWalkingRoute(latitude, longitude, property.latitude, property.longitude)
               if (!result || cancelled) return
 
-              // Replace straight line with real road polyline
               routeLineRef.current?.remove()
               routeLineRef.current = L.geoJSON(
                 result.geometry as Parameters<typeof L.geoJSON>[0],
                 { style: { color: C.blue, weight: 5, opacity: 0.85, lineCap: 'round', lineJoin: 'round' } },
               ).addTo(map)
 
-              // Emit accurate OSRM-based route info
-              onRouteCalculated({
-                distMetres:         result.distanceMetres,
-                distKm:             result.distanceText,
-                walkMin:            Math.max(1, Math.round(result.durationSeconds      / 60)),
-                driveMin:           Math.max(1, Math.round(result.driveDurationSeconds / 60)),
-                matatuMin:          Math.max(1, Math.round((result.driveDurationSeconds + 300) / 60)),
-                walkDurationText:   result.walkDurationText,
-                driveDurationText:  result.driveDurationText,
-                matatuDurationText: result.matatuDurationText,
-                rawKm:              result.distanceMetres / 1000,
+              onRouteReady({
+                distMetres:    result.distanceMetres,
+                distanceText:  result.distanceText,
+                walkMinutes:   result.walkMinutes,
+                walkText:      result.walkText,
+                driveMinutes:  result.driveMinutes,
+                driveText:     result.driveText,
+                matatuMinutes: result.matatuMinutes,
+                matatuText:    result.matatuText,
+                steps:         result.steps,
               })
             })()
           }
@@ -271,17 +266,6 @@ export default function NavigationMapInner({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  if (arrived) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-accent-l flex-col gap-4 p-8 w-full h-full">
-        <div className="text-6xl">🎉</div>
-        <h2 className="font-serif text-3xl text-accent text-center">You have arrived!</h2>
-        <p className="font-sans text-muted  text-center text-sm">{property.title}</p>
-        <p className="font-sans text-muted2 text-center text-xs">{property.address}</p>
-      </div>
-    )
-  }
 
   return (
     <div

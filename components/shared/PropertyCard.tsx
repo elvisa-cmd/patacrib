@@ -1,8 +1,30 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import { useState, useEffect } from 'react'
+import { useRouter }            from 'next/navigation'
+import Image                    from 'next/image'
+import { estimateRoute }        from '@/lib/routing'
+
+// ── User location (cached across renders) ────────────────────────────────────
+
+let cachedUserLoc: [number, number] | null = null
+
+function useUserLocation(): [number, number] | null {
+  const [loc, setLoc] = useState<[number, number] | null>(cachedUserLoc)
+  useEffect(() => {
+    if (cachedUserLoc) { setLoc(cachedUserLoc); return }
+    navigator.geolocation?.getCurrentPosition(
+      (pos) => {
+        const l: [number, number] = [pos.coords.latitude, pos.coords.longitude]
+        cachedUserLoc = l
+        setLoc(l)
+      },
+      () => {},
+      { timeout: 5000, maximumAge: 60_000 },
+    )
+  }, [])
+  return loc
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,10 +161,14 @@ function CompactCard({ property, isSelected, onClick }: PropertyCardProps) {
 function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, className = '' }: PropertyCardProps) {
   const [isSaved,   setIsSaved]   = useState(initialIsSaved)
   const [imgLoaded, setImgLoaded] = useState(false)
-  const router = useRouter()
-  const dist = property.latitude != null && property.longitude != null
-    ? distanceToCBD(property.latitude, property.longitude)
-    : null
+  const router      = useRouter()
+  const userLoc     = useUserLocation()
+  const dist =
+    userLoc && property.latitude != null && property.longitude != null
+      ? `📍 ${estimateRoute(userLoc[0], userLoc[1], property.latitude, property.longitude).distanceText} away`
+      : property.latitude != null && property.longitude != null
+      ? distanceToCBD(property.latitude, property.longitude)
+      : null
 
   async function handleSave(e: React.MouseEvent) {
     e.preventDefault()
@@ -281,10 +307,14 @@ function GridCard({ property, showSave = true, isSaved: initialIsSaved = false, 
 
 function ListCard({ property, showSave = true, isSaved: initialIsSaved = false, className = '' }: PropertyCardProps) {
   const [isSaved, setIsSaved] = useState(initialIsSaved)
-  const router = useRouter()
-  const dist = property.latitude != null && property.longitude != null
-    ? distanceToCBD(property.latitude, property.longitude)
-    : null
+  const router  = useRouter()
+  const userLoc = useUserLocation()
+  const dist =
+    userLoc && property.latitude != null && property.longitude != null
+      ? `📍 ${estimateRoute(userLoc[0], userLoc[1], property.latitude, property.longitude).distanceText} away`
+      : property.latitude != null && property.longitude != null
+      ? distanceToCBD(property.latitude, property.longitude)
+      : null
 
   async function handleSave(e: React.MouseEvent) {
     e.preventDefault()
