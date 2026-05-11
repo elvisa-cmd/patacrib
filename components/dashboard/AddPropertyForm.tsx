@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import AutoLocationCapture from '@/components/shared/AutoLocationCapture'
+import TourRecorder from '@/components/shared/TourRecorder'
 import PhotoUpload from './PhotoUpload'
 import ListingPreview from './ListingPreview'
 
@@ -127,12 +128,10 @@ export default function AddPropertyForm() {
   const [images, setImages] = useState<string[]>([])
 
   // Section 4 — Virtual tour
-  const [videoUrl,          setVideoUrl]          = useState('')
-  const [tourImageUrl,      setTourImageUrl]      = useState('')
-  const [videoUploading,    setVideoUploading]    = useState(false)
-  const [tourImgUploading,  setTourImgUploading]  = useState(false)
-  const [videoError,        setVideoError]        = useState('')
-  const [tourImgError,      setTourImgError]      = useState('')
+  const [videoUrl,         setVideoUrl]         = useState('')
+  const [tourImageUrl,     setTourImageUrl]     = useState('')
+  const [tourImgUploading, setTourImgUploading] = useState(false)
+  const [tourImgError,     setTourImgError]     = useState('')
 
   // Section 5 — Kenya details
   const [waterSchedule, setWaterSchedule] = useState('')
@@ -400,73 +399,32 @@ export default function AddPropertyForm() {
               </div>
               <p className="font-sans text-[11px] text-muted mb-6 ml-9">Help seekers explore your property without visiting</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
-                {/* Option A — Video walkthrough */}
-                <div className="border border-border p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">🎥</span>
-                    <p className="font-sans font-bold text-[13px] text-ink">Video Walkthrough</p>
+              {/* Video tour — in-browser recorder */}
+              <div className="mb-5">
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#0f0e0c', marginBottom: '8px', display: 'block' }}>
+                  Virtual Tour (optional)
+                </label>
+                <p style={{ fontSize: '12px', color: '#6b6055', marginBottom: '12px' }}>
+                  Record a silent walkthrough of your property. Renters can view it before visiting.
+                </p>
+                {videoUrl ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(26,107,74,0.08)', borderRadius: '10px' }}>
+                    <span style={{ color: '#1a6b4a', fontSize: '13px', fontWeight: 600 }}>✅ Tour recorded</span>
+                    <button
+                      type="button"
+                      onClick={() => setVideoUrl('')}
+                      style={{ marginLeft: 'auto', fontSize: '12px', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <p className="font-sans text-[11px] text-muted mb-4">
-                    Record a video walking through each room. Seekers can watch before visiting.
-                  </p>
+                ) : (
+                  <TourRecorder onUpload={(url) => setVideoUrl(url)} />
+                )}
+              </div>
 
-                  {videoUrl ? (
-                    <div className="mb-3">
-                      <video controls className="w-full" preload="metadata">
-                        <source src={videoUrl} type="video/mp4" />
-                      </video>
-                      <button
-                        type="button"
-                        onClick={() => setVideoUrl('')}
-                        className="font-sans text-[11px] text-muted hover:text-red transition-colors mt-2"
-                      >
-                        ✕ Remove video
-                      </button>
-                    </div>
-                  ) : (
-                    <label className={`flex items-center justify-center gap-2 border border-dashed border-border2 py-4 cursor-pointer hover:bg-surface2 transition-colors ${videoUploading ? 'opacity-50 pointer-events-none' : ''}`}>
-                      <input
-                        type="file"
-                        accept="video/mp4,video/quicktime,video/webm"
-                        className="hidden"
-                        onChange={async e => {
-                          const file = e.target.files?.[0]
-                          if (!file) return
-                          if (file.size > 150 * 1024 * 1024) { setVideoError('Max 150 MB'); return }
-                          setVideoError('')
-                          setVideoUploading(true)
-                          try {
-                            const fd = new FormData()
-                            fd.append('file', file)
-                            const res = await fetch('/api/upload', { method: 'POST', body: fd })
-                            const data = await res.json()
-                            if (!res.ok) { setVideoError(data.error ?? 'Upload failed'); return }
-                            setVideoUrl(data.url)
-                          } catch {
-                            setVideoError('Upload failed — try again')
-                          } finally {
-                            setVideoUploading(false)
-                          }
-                        }}
-                      />
-                      <span className="font-sans text-[12px] text-muted">
-                        {videoUploading ? 'Uploading…' : '⬆ Upload video (MP4, MOV, WebM · max 150 MB)'}
-                      </span>
-                    </label>
-                  )}
-                  {videoError && <p className="font-sans text-[11px] text-red mt-1">{videoError}</p>}
-
-                  <div className="mt-4 bg-surface2 px-3 py-3">
-                    <p className="font-sans text-[10px] text-muted leading-relaxed">
-                      💡 <strong>Tips:</strong> Film in good lighting (daytime) · Walk slowly through each room · Show windows, storage, bathroom · Keep under 3 minutes
-                    </p>
-                  </div>
-                </div>
-
-                {/* Option B — 360° photo */}
-                <div className="border border-border p-5">
+              {/* 360° photo */}
+              <div className="border border-border p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">🌐</span>
                     <p className="font-sans font-bold text-[13px] text-ink">360° Photo Tour</p>
@@ -525,7 +483,6 @@ export default function AddPropertyForm() {
                     </p>
                   </div>
                 </div>
-              </div>
             </section>
 
             {/* ── Section 5: Kenya details ──────────────────────────── */}

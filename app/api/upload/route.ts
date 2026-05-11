@@ -9,7 +9,7 @@ import sharp from 'sharp'
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm'])
 const MAX_IMAGE_SIZE = 10  * 1024 * 1024   // 10 MB
-const MAX_VIDEO_SIZE = 150 * 1024 * 1024   // 150 MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024   // 200 MB
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions)
