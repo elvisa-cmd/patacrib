@@ -32,7 +32,6 @@ export interface NavigationMapInnerProps {
 
 type GpsStatus = 'locating' | 'refining' | 'navigating' | 'unavailable' | 'unavailable_cbd'
 
-// Nairobi CBD — used as fallback origin when GPS fails
 const CBD: [number, number] = [-1.286389, 36.817223]
 
 const C = {
@@ -100,12 +99,20 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
+function accuracyLabel(m: number | null): string {
+  if (m === null) return ''
+  if (m <= 10)  return ' ±' + Math.round(m) + 'm'
+  if (m <= 50)  return ' ±' + Math.round(m) + 'm'
+  if (m <= 200) return ' ±' + Math.round(m) + 'm'
+  return ' ±' + (m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m) + 'm')
+}
+
 const STATUS_UI: Record<GpsStatus, { text: string; icon: 'spinner' | 'dot' | 'check' | 'warn'; warn: boolean }> = {
-  locating:       { text: 'Getting your location…',                       icon: 'spinner', warn: false },
-  refining:       { text: 'Refining location…',                           icon: 'dot',     warn: false },
-  navigating:     { text: 'Navigating',                                   icon: 'check',   warn: false },
-  unavailable:    { text: 'Location unavailable · showing property only', icon: 'warn',    warn: true  },
-  unavailable_cbd: { text: 'No GPS · times shown from CBD',               icon: 'warn',    warn: true  },
+  locating:        { text: 'Getting your GPS location…',                    icon: 'spinner', warn: false },
+  refining:        { text: 'Refining GPS…',                                 icon: 'dot',     warn: false },
+  navigating:      { text: 'GPS location confirmed',                        icon: 'check',   warn: false },
+  unavailable:     { text: 'Location unavailable · showing property only',  icon: 'warn',    warn: true  },
+  unavailable_cbd: { text: 'No GPS · distances shown from CBD',             icon: 'warn',    warn: true  },
 }
 
 export default function NavigationMapInner({
@@ -120,8 +127,10 @@ export default function NavigationMapInner({
   const routeLineRef   = useRef<import('leaflet').Layer | null>(null)
   const watchIdRef     = useRef<number | null>(null)
   const lastOsrmLocRef = useRef<[number, number] | null>(null)
+  const userLocRef     = useRef<[number, number] | null>(null)
 
   const [gpsStatus, setGpsStatus] = useState<GpsStatus>('locating')
+  const [accuracy,  setAccuracy]  = useState<number | null>(null)
 
   useEffect(() => {
     if (!mapRef.current || mapInstRef.current) return
@@ -129,7 +138,6 @@ export default function NavigationMapInner({
     let cancelled = false
 
     async function init() {
-      // ── Load Leaflet and render map + property pin immediately ────────────
       const L = (await import('leaflet')).default
       await import('leaflet/dist/leaflet.css')
       if (cancelled || !mapRef.current) return
@@ -175,30 +183,28 @@ export default function NavigationMapInner({
       L.marker([property.latitude, property.longitude], { icon: propIcon }).addTo(map)
       map.setView([property.latitude, property.longitude], 15)
 
-      // ── Helper: place or update the blue user dot ─────────────────────────
       function placeUserDot(lat: number, lng: number, heading?: number, fitBounds = false) {
+        userLocRef.current = [lat, lng]
         const icon = buildUserIcon(L, heading)
         if (userMarkerRef.current) {
           userMarkerRef.current.setLatLng([lat, lng])
           userMarkerRef.current.setIcon(icon)
         } else {
           userMarkerRef.current = L.marker([lat, lng], { icon, zIndexOffset: 1000 }).addTo(map)
-          if (fitBounds) {
-            map.fitBounds(
-              L.latLngBounds([[lat, lng], [property.latitude, property.longitude]]),
-              { padding: [80, 80] },
-            )
-          }
+        }
+        if (fitBounds) {
+          map.fitBounds(
+            L.latLngBounds([[lat, lng], [property.latitude, property.longitude]]),
+            { padding: [80, 80] },
+          )
         }
       }
 
-      // ── Helper: calculate and draw route from any [lat, lng] origin ───────
       async function calculateRoute(loc: [number, number]) {
         const [lat, lng] = loc
         const distMetres = haversineM(lat, lng, property.latitude, property.longitude)
         const roadM      = distMetres * 1.4
 
-        // Emit haversine estimate immediately so times are never blank
         onRouteReady({
           distMetres:    Math.round(distMetres),
           distanceText:  distMetres < 1000 ? `${Math.round(distMetres)}m` : `${(distMetres / 1000).toFixed(1)}km`,
@@ -211,7 +217,6 @@ export default function NavigationMapInner({
           steps:         [],
         })
 
-        // Draw straight-line placeholder while OSRM fetches
         routeLineRef.current?.remove()
         routeLineRef.current = L.polyline(
           [[lat, lng], [property.latitude, property.longitude]],
@@ -246,38 +251,44 @@ export default function NavigationMapInner({
         return
       }
 
-      // ── Stage 1: Fast rough location (WiFi/cell, low accuracy, 3 s) ───────
+      // ── Stage 1: Fast rough location (WiFi/cell) ────────────────────────────
+      // maximumAge: 10000 — don't use cache older than 10 s
+      // timeout: 5000 — wait up to 5 s for a network location
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           if (cancelled) return
           const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude]
           setGpsStatus('refining')
+          setAccuracy(Math.round(pos.coords.accuracy))
           placeUserDot(pos.coords.latitude, pos.coords.longitude, undefined, true)
-
-          // Populate times immediately — don't wait for precise GPS (FIX 2)
           void calculateRoute(loc)
 
-          // ── Stage 2: Precise GPS ──────────────────────────────────────────
+          // ── Stage 2: Precise GPS lock (up to 30 s) ──────────────────────────
+          // Longer timeout gives GPS chips time to get a satellite fix.
+          // maximumAge: 0 — must be a fresh reading, never cached.
           navigator.geolocation.getCurrentPosition(
             (pos2) => {
               if (cancelled) return
               const precise: [number, number] = [pos2.coords.latitude, pos2.coords.longitude]
               setGpsStatus('navigating')
-              placeUserDot(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.heading ?? undefined, false)
+              setAccuracy(Math.round(pos2.coords.accuracy))
+              // fitBounds: true — re-center map to show precise dot + property
+              placeUserDot(pos2.coords.latitude, pos2.coords.longitude, pos2.coords.heading ?? undefined, true)
               void calculateRoute(precise)
             },
             () => {
-              // Precise failed — rough location + route already shown, just advance status
+              // GPS satellites unavailable — rough network location is still valid
               if (!cancelled) setGpsStatus('navigating')
             },
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+            { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 },
           )
 
-          // ── Continuous watch for live navigation (map pan, arrival) ───────
+          // ── Continuous watch: live position updates ─────────────────────────
           watchIdRef.current = navigator.geolocation.watchPosition(
             (pos) => {
               if (cancelled) return
-              const { latitude, longitude, heading } = pos.coords
+              const { latitude, longitude, heading, accuracy: acc } = pos.coords
+              setAccuracy(Math.round(acc))
               placeUserDot(latitude, longitude, heading ?? undefined, false)
               map.panTo([latitude, longitude], { animate: true })
 
@@ -291,35 +302,34 @@ export default function NavigationMapInner({
                 return
               }
 
-              // Throttled OSRM refresh as user moves (~50 m threshold)
+              // Throttle OSRM refreshes: recalculate after every ~30 m of movement
               const last        = lastOsrmLocRef.current
-              const movedEnough = !last || Math.hypot(latitude - last[0], longitude - last[1]) > 0.00045
+              const movedEnough = !last || Math.hypot(latitude - last[0], longitude - last[1]) > 0.00027
               if (movedEnough) {
                 lastOsrmLocRef.current = [latitude, longitude]
                 void calculateRoute([latitude, longitude])
               }
             },
             () => {},
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
           )
         },
         (err) => {
           if (cancelled) return
           if (err.code === 1) {
-            // Permission denied — nothing to retry
             setGpsStatus('unavailable')
             void calculateRoute(CBD)
           } else if (err.code === 2) {
-            // Position unavailable
             setGpsStatus('unavailable')
             void calculateRoute(CBD)
           } else {
-            // Timeout — retry once without high accuracy
+            // Timeout — retry once with relaxed settings
             navigator.geolocation.getCurrentPosition(
               (pos) => {
                 if (cancelled) return
                 const loc: [number, number] = [pos.coords.latitude, pos.coords.longitude]
                 setGpsStatus('navigating')
+                setAccuracy(Math.round(pos.coords.accuracy))
                 placeUserDot(pos.coords.latitude, pos.coords.longitude, undefined, true)
                 void calculateRoute(loc)
               },
@@ -333,7 +343,7 @@ export default function NavigationMapInner({
             )
           }
         },
-        { enableHighAccuracy: false, timeout: 3000, maximumAge: 30000 },
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 10000 },
       )
     }
 
@@ -352,7 +362,19 @@ export default function NavigationMapInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  function recenterOnMe() {
+    const loc = userLocRef.current
+    const map = mapInstRef.current
+    const L   = leafletRef.current
+    if (!loc || !map || !L) return
+    map.fitBounds(
+      L.latLngBounds([loc, [property.latitude, property.longitude]]),
+      { padding: [80, 80] },
+    )
+  }
+
   const ui = STATUS_UI[gpsStatus]
+  const accText = (gpsStatus === 'refining' || gpsStatus === 'navigating') ? accuracyLabel(accuracy) : ''
 
   return (
     <div className="relative w-full h-full" style={{ minHeight: '300px' }}>
@@ -375,35 +397,36 @@ export default function NavigationMapInner({
         `}
       >
         {ui.icon === 'spinner' && (
-          <span
-            className="w-3 h-3 border-2 border-blue-300/40 border-t-blue-400 rounded-full animate-spin flex-shrink-0"
-            aria-hidden="true"
-          />
+          <span className="w-3 h-3 border-2 border-blue-300/40 border-t-blue-400 rounded-full animate-spin flex-shrink-0" aria-hidden="true" />
         )}
         {ui.icon === 'dot' && (
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse flex-shrink-0"
-            aria-hidden="true"
-          />
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse flex-shrink-0" aria-hidden="true" />
         )}
         {ui.icon === 'check' && (
-          <span
-            className="text-[10px] font-bold flex-shrink-0"
-            style={{ color: C.accent }}
-            aria-hidden="true"
-          >✓</span>
+          <span className="text-[10px] font-bold flex-shrink-0" style={{ color: C.accent }} aria-hidden="true">✓</span>
         )}
         {ui.icon === 'warn' && (
           <span className="text-amber-500 text-xs flex-shrink-0" aria-hidden="true">⚠</span>
         )}
         <span
-          className={`font-sans text-[11px] font-semibold whitespace-nowrap ${
-            ui.warn ? 'text-amber-700' : 'text-white'
-          }`}
+          className={`font-sans text-[11px] font-semibold whitespace-nowrap ${ui.warn ? 'text-amber-700' : 'text-white'}`}
         >
-          {ui.text}
+          {ui.text}{accText}
         </span>
       </div>
+
+      {/* Re-center button — only shown once we have the user's location */}
+      {(gpsStatus === 'refining' || gpsStatus === 'navigating') && (
+        <button
+          type="button"
+          onClick={recenterOnMe}
+          aria-label="Re-center on my location"
+          className="absolute bottom-4 right-4 z-[1000] w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors"
+          style={{ fontSize: '18px' }}
+        >
+          ◎
+        </button>
+      )}
     </div>
   )
 }
