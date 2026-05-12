@@ -19,6 +19,7 @@ function stepPx(container: HTMLElement, n: number) {
 export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   const [visibleCards, setVisibleCards] = useState(3)
   const [activeIndex,  setActiveIndex]  = useState(0)
+  const isMobile = visibleCards === 1
 
   useEffect(() => {
     const update = () => setVisibleCards(window.innerWidth < 768 ? 1 : 3)
@@ -34,16 +35,15 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   const dragStartX  = useRef(0)
   const isDragging  = useRef(false)
   const touchStartX = useRef(0)
-  // stable ref so the auto-advance interval never holds a stale goTo closure
   const goToRef     = useRef(goTo)
   useEffect(() => { goToRef.current = goTo })
 
-  // Scroll the track to keep the active card visible
+  // Sync desktop carousel track with activeIndex
   useEffect(() => {
-    goToRef.current(Math.floor(activeIndex / visibleCards))
-  }, [activeIndex, visibleCards])
+    if (!isMobile) goToRef.current(Math.floor(activeIndex / visibleCards))
+  }, [activeIndex, visibleCards, isMobile])
 
-  // Auto-advance active card every 3 seconds
+  // Auto-advance every 3 s
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveIndex(prev => (prev === properties.length - 1 ? 0 : prev + 1))
@@ -51,15 +51,16 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
     return () => clearInterval(interval)
   }, [properties.length])
 
-  // Apply transform whenever current or visibleCards changes
+  // Apply CSS transform (desktop only)
   useEffect(() => {
+    if (isMobile) return
     const track = trackRef.current
     if (!track?.parentElement) return
     track.style.transform = `translateX(-${current * stepPx(track.parentElement, visibleCards)}px)`
-  }, [current, visibleCards])
+  }, [current, visibleCards, isMobile])
 
-  // Recalculate on resize without changing slide
   useEffect(() => {
+    if (isMobile) return
     const onResize = () => {
       const track = trackRef.current
       if (!track?.parentElement) return
@@ -67,11 +68,11 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
     }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [current, visibleCards])
+  }, [current, visibleCards, isMobile])
 
   function onMouseDown(e: React.MouseEvent) {
-    isDragging.current  = true
-    dragStartX.current  = e.clientX
+    isDragging.current = true
+    dragStartX.current = e.clientX
     if (trackRef.current) trackRef.current.style.transition = 'none'
   }
 
@@ -88,22 +89,13 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
     }
   }
 
-  function onTouchStart(e: React.TouchEvent) {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  function onTouchEnd(e: React.TouchEvent) {
-    const diff = touchStartX.current - e.changedTouches[0].clientX
-    if (Math.abs(diff) > 50) diff > 0 ? next() : prev()
-  }
-
-  const showControls = properties.length > 3
+  const showControls = !isMobile && properties.length > 3
 
   return (
     <section className="bg-white border-t border-b border-border px-4 md:px-16 pt-10 md:pt-[60px] pb-9 md:pb-[56px]">
+
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-end justify-between mb-8">
-
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-block w-6 h-px bg-accent" />
@@ -112,7 +104,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
             </p>
           </div>
           <h2 className="font-serif text-[36px] leading-none text-ink">
-            Latest in <em>Nairobi</em>
+            Latest listings
           </h2>
         </div>
 
@@ -122,7 +114,6 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
               <span className="text-[18px] text-ink">{current + 1}</span>{' '}of {totalSlides}
             </p>
           )}
-
           {showControls && (
             <div className="flex gap-2">
               <button
@@ -131,83 +122,113 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
                 disabled={current === 0}
                 aria-label="Previous slide"
                 className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
-              >
-                ←
-              </button>
+              >←</button>
               <button
                 type="button"
                 onClick={next}
                 disabled={current === totalSlides - 1}
                 aria-label="Next slide"
                 className="w-10 h-10 border-[1.5px] border-border2 bg-white text-muted flex items-center justify-center hover:border-ink hover:text-ink transition-colors disabled:opacity-25 disabled:pointer-events-none font-sans text-[16px]"
-              >
-                →
-              </button>
+              >→</button>
             </div>
           )}
-
-          <Link
-            href="/browse"
-            className="font-sans text-[12px] text-muted hover:text-ink transition-colors"
-          >
+          <Link href="/browse" className="font-sans text-[12px] text-muted hover:text-ink transition-colors">
             All listings →
           </Link>
         </div>
       </div>
 
-      {/* ── Carousel track ──────────────────────────────────── */}
-      {/* overflow-x:clip hides side cards; overflow-y:visible lets scale/y transforms show */}
-      <div
-        style={{ overflowX: 'clip', overflowY: 'visible' }}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={e => { setIsPaused(false); finishDrag(e.clientX) }}
-      >
-        <div
-          ref={trackRef}
-          className="flex select-none"
-          style={{
-            gap:        '16px',
-            padding:    '12px 0 16px',
-            transition: 'transform 0.55s cubic-bezier(0.77, 0, 0.175, 1)',
-            willChange: 'transform',
-          }}
-          onMouseDown={onMouseDown}
-          onMouseUp={e => finishDrag(e.clientX)}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        >
-          {properties.map((p, index) => (
-            <motion.div
-              key={p.id}
-              animate={{
-                scale:   activeIndex === index ? 1.05 : 0.92,
-                opacity: activeIndex === index ? 1 : 0.7,
-                y:       activeIndex === index ? -8 : 0,
-              }}
-              transition={{
-                type:      'spring',
-                stiffness: 300,
-                damping:   25,
-                duration:  0.4,
-              }}
-              whileHover={{
-                scale:   activeIndex === index ? 1.07 : 0.96,
-                opacity: 1,
-              }}
-              onClick={() => setActiveIndex(index)}
-              style={{
-                flex:            `0 0 calc(${100 / visibleCards}% - ${16 * (visibleCards - 1) / visibleCards}px)`,
-                cursor:          'pointer',
-                transformOrigin: 'center bottom',
-              }}
-            >
-              <PropertyCard property={p} mode="grid" showSave />
-            </motion.div>
-          ))}
-        </div>
-      </div>
+      {/* ── Carousel ──────────────────────────────────────────── */}
+      {properties.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#b0a898', padding: '40px 16px', fontSize: '14px' }}>
+          No listings available yet
+        </p>
+      ) : isMobile ? (
 
-      {/* ── Dot indicators (one per card) ───────────────────── */}
+        /* ── MOBILE: native scroll-snap, escapes section px-4 ── */
+        <div className="-mx-4">
+          <div
+            style={{
+              display:                 'flex',
+              gap:                     '16px',
+              overflowX:               'auto',
+              scrollSnapType:          'x mandatory',
+              WebkitOverflowScrolling: 'touch',
+              paddingLeft:             '16px',
+              paddingRight:            '16px',
+              paddingBottom:           '12px',
+              scrollbarWidth:          'none',
+            }}
+          >
+            {properties.map(p => (
+              <div
+                key={p.id}
+                style={{
+                  minWidth:      'min(280px, 85vw)',
+                  maxWidth:      'min(280px, 85vw)',
+                  flexShrink:    0,
+                  scrollSnapAlign: 'start',
+                }}
+              >
+                <PropertyCard property={p} mode="grid" showSave />
+              </div>
+            ))}
+          </div>
+        </div>
+
+      ) : (
+
+        /* ── DESKTOP: transform-based with spring scale animation ── */
+        <div
+          style={{ overflowX: 'clip', overflowY: 'visible' }}
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={e => { setIsPaused(false); finishDrag(e.clientX) }}
+        >
+          <div
+            ref={trackRef}
+            className="flex select-none"
+            style={{
+              gap:        '16px',
+              padding:    '12px 0 16px',
+              transition: 'transform 0.55s cubic-bezier(0.77, 0, 0.175, 1)',
+              willChange: 'transform',
+            }}
+            onMouseDown={onMouseDown}
+            onMouseUp={e => finishDrag(e.clientX)}
+            onTouchStart={e => { touchStartX.current = e.touches[0].clientX }}
+            onTouchEnd={e => {
+              const diff = touchStartX.current - e.changedTouches[0].clientX
+              if (Math.abs(diff) > 50) diff > 0 ? next() : prev()
+            }}
+          >
+            {properties.map((p, index) => (
+              <motion.div
+                key={p.id}
+                animate={{
+                  scale:   activeIndex === index ? 1.05 : 0.92,
+                  opacity: activeIndex === index ? 1 : 0.7,
+                  y:       activeIndex === index ? -8 : 0,
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25, duration: 0.4 }}
+                whileHover={{
+                  scale:   activeIndex === index ? 1.07 : 0.96,
+                  opacity: 1,
+                }}
+                onClick={() => setActiveIndex(index)}
+                style={{
+                  flex:            `0 0 calc(${100 / visibleCards}% - ${16 * (visibleCards - 1) / visibleCards}px)`,
+                  cursor:          'pointer',
+                  transformOrigin: 'center bottom',
+                }}
+              >
+                <PropertyCard property={p} mode="grid" showSave />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Dot indicators ──────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '16px' }}>
         {properties.map((_, i) => (
           <button
