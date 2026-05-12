@@ -156,8 +156,9 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
       </div>
 
       {/* ── Carousel track ──────────────────────────────────── */}
+      {/* overflow-x:clip hides side cards; overflow-y:visible lets scale/y transforms show */}
       <div
-        className="overflow-hidden"
+        style={{ overflowX: 'clip', overflowY: 'visible' }}
         onMouseEnter={() => setIsPaused(true)}
         onMouseLeave={e => { setIsPaused(false); finishDrag(e.clientX) }}
       >
