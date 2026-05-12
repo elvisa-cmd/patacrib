@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
 import PropertyCard from '@/components/shared/PropertyCard'
 import { useCarousel } from '@/lib/hooks/useCarousel'
@@ -15,13 +16,9 @@ function stepPx(container: HTMLElement, n: number) {
   return (container.offsetWidth + gap) / n
 }
 
-function cardFlex(n: number) {
-  const gap = 16
-  return `0 0 calc(${100 / n}% - ${gap * (n - 1) / n}px)`
-}
-
 export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   const [visibleCards, setVisibleCards] = useState(3)
+  const [activeIndex,  setActiveIndex]  = useState(0)
 
   useEffect(() => {
     const update = () => setVisibleCards(window.innerWidth < 768 ? 1 : 3)
@@ -37,6 +34,22 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   const dragStartX  = useRef(0)
   const isDragging  = useRef(false)
   const touchStartX = useRef(0)
+  // stable ref so the auto-advance interval never holds a stale goTo closure
+  const goToRef     = useRef(goTo)
+  useEffect(() => { goToRef.current = goTo })
+
+  // Scroll the track to keep the active card visible
+  useEffect(() => {
+    goToRef.current(Math.floor(activeIndex / visibleCards))
+  }, [activeIndex, visibleCards])
+
+  // Auto-advance active card every 3 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveIndex(prev => (prev === properties.length - 1 ? 0 : prev + 1))
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [properties.length])
 
   // Apply transform whenever current or visibleCards changes
   useEffect(() => {
@@ -85,14 +98,12 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
   }
 
   const showControls = properties.length > 3
-  const canNav = showControls && totalSlides > 1
 
   return (
     <section className="bg-white border-t border-b border-border px-4 md:px-16 pt-10 md:pt-[60px] pb-9 md:pb-[56px]">
       {/* ── Header ──────────────────────────────────────────── */}
       <div className="flex items-end justify-between mb-8">
 
-        {/* Left — eyebrow + title */}
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-block w-6 h-px bg-accent" />
@@ -105,7 +116,6 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
           </h2>
         </div>
 
-        {/* Right — counter + arrows + link */}
         <div className="flex items-center gap-4">
           {showControls && (
             <p className="font-serif text-[14px] text-muted whitespace-nowrap">
@@ -156,7 +166,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
           className="flex select-none"
           style={{
             gap:        '16px',
-            padding:    '0 0 8px',
+            padding:    '12px 0 16px',
             transition: 'transform 0.55s cubic-bezier(0.77, 0, 0.175, 1)',
             willChange: 'transform',
           }}
@@ -165,38 +175,58 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {properties.map(p => (
-            <div key={p.id} style={{ flex: cardFlex(visibleCards) }}>
+          {properties.map((p, index) => (
+            <motion.div
+              key={p.id}
+              animate={{
+                scale:   activeIndex === index ? 1.05 : 0.92,
+                opacity: activeIndex === index ? 1 : 0.7,
+                y:       activeIndex === index ? -8 : 0,
+              }}
+              transition={{
+                type:      'spring',
+                stiffness: 300,
+                damping:   25,
+                duration:  0.4,
+              }}
+              whileHover={{
+                scale:   activeIndex === index ? 1.07 : 0.96,
+                opacity: 1,
+              }}
+              onClick={() => setActiveIndex(index)}
+              style={{
+                flex:            `0 0 calc(${100 / visibleCards}% - ${16 * (visibleCards - 1) / visibleCards}px)`,
+                cursor:          'pointer',
+                transformOrigin: 'center bottom',
+              }}
+            >
               <PropertyCard property={p} mode="grid" showSave />
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
 
-      {/* ── Dot indicators ──────────────────────────────────── */}
-      {showControls && totalSlides > 1 && (
-        <div className="flex justify-center gap-1.5 mt-[26px]">
-          {Array.from({ length: totalSlides }, (_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => goTo(i)}
-              aria-label={`Go to slide ${i + 1}`}
-              style={{
-                width:        i === current ? '24px' : '5px',
-                height:       '5px',
-                borderRadius: i === current ? '3px' : '50%',
-                background:   i === current ? '#0f0e0c' : 'rgba(15,14,12,0.13)',
-                transition:   'all 0.35s cubic-bezier(0.34,1.56,0.64,1)',
-                cursor:       'pointer',
-                border:       'none',
-                padding:      0,
-                flexShrink:   0,
-              }}
-            />
-          ))}
-        </div>
-      )}
+      {/* ── Dot indicators (one per card) ───────────────────── */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '16px' }}>
+        {properties.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Go to property ${i + 1}`}
+            onClick={() => setActiveIndex(i)}
+            style={{
+              width:        i === activeIndex ? '24px' : '6px',
+              height:       '6px',
+              borderRadius: '3px',
+              background:   i === activeIndex ? '#1a6b4a' : 'rgba(0,0,0,0.15)',
+              border:       'none',
+              cursor:       'pointer',
+              padding:      0,
+              transition:   'all 0.3s ease',
+            }}
+          />
+        ))}
+      </div>
     </section>
   )
 }
