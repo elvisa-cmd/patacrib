@@ -68,7 +68,7 @@ export default async function HomePage() {
     longitude:    p.longitude,
     images:       p.images,
     status:       p.status,
-    createdAt:    p.createdAt.toISOString(),
+    createdAt:    p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
     propertyType: p.propertyType,
     safetyScore:  p.safetyScore,
     matatuRoutes: p.matatuRoutes,
