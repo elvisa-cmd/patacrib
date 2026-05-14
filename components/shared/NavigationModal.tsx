@@ -60,6 +60,7 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
   const [userLat,          setUserLat]          = useState<number | null>(null)
   const [userLng,          setUserLng]          = useState<number | null>(null)
+  const [gpsAccuracy,      setGpsAccuracy]      = useState<number | null>(null)
 
   useEffect(() => {
     setRoute(null)
@@ -68,6 +69,7 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     setCurrentStepIndex(0)
     setUserLat(null)
     setUserLng(null)
+    setGpsAccuracy(null)
   }, [property?.title])
 
   useEffect(() => {
@@ -203,6 +205,7 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
             setDistRemaining(data.distMetres)
             setUserLat(data.lat)
             setUserLng(data.lng)
+            if (data.accuracy != null) setGpsAccuracy(data.accuracy)
             if (data.arrived) setArrived(true)
           }}
           travelMode={travelMode}
@@ -241,14 +244,27 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           ))}
         </div>
 
-        {/* Distance chip */}
-        {route && (
-          <div style={{ padding: '0 16px 8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+        {/* Distance chip + GPS accuracy label */}
+        <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          {route && (
             <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b6055' }}>
               📍 {route.distanceText} total distance
             </span>
-          </div>
-        )}
+          )}
+          {gpsAccuracy !== null && (() => {
+            const label = gpsAccuracy <= 10 ? `📍 Precise GPS · ±${Math.round(gpsAccuracy)}m`
+              : gpsAccuracy <= 50          ? `📍 Good GPS · ±${Math.round(gpsAccuracy)}m`
+              : `⚠️ Low accuracy · ±${Math.round(gpsAccuracy)}m — step outside`
+            const color = gpsAccuracy <= 10 ? '#1a6b4a'
+              : gpsAccuracy <= 50          ? '#e8a020'
+              : '#dc2626'
+            return (
+              <span style={{ fontSize: '10px', fontWeight: 600, color, whiteSpace: 'nowrap' }}>
+                {label}
+              </span>
+            )
+          })()}
+        </div>
 
         {/* Matatu route chips */}
         {property.matatuRoutes.length > 0 && (
