@@ -9,6 +9,7 @@ import type { SerializedProperty } from '@/types/property'
 
 interface FeaturedStripProps {
   properties: SerializedProperty[]
+  dbError?:   boolean
 }
 
 function stepPx(container: HTMLElement, n: number) {
@@ -16,7 +17,7 @@ function stepPx(container: HTMLElement, n: number) {
   return (container.offsetWidth + gap) / n
 }
 
-export default function FeaturedStrip({ properties }: FeaturedStripProps) {
+export default function FeaturedStrip({ properties, dbError }: FeaturedStripProps) {
   const [visibleCards, setVisibleCards] = useState(3)
   const [activeIndex,  setActiveIndex]  = useState(0)
   const isMobile = visibleCards === 1
@@ -141,7 +142,7 @@ export default function FeaturedStrip({ properties }: FeaturedStripProps) {
       {/* ── Carousel ──────────────────────────────────────────── */}
       {properties.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#b0a898', padding: '40px 16px', fontSize: '14px' }}>
-          No listings available yet
+          {dbError ? 'Could not load listings — please refresh' : 'No listings available yet'}
         </p>
       ) : isMobile ? (
 

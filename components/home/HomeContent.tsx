@@ -17,9 +17,11 @@ interface StatsData {
 export default function HomeContent({
   properties,
   stats,
+  dbError,
 }: {
   properties: SerializedProperty[]
   stats?: StatsData
+  dbError?: boolean
 }) {
   const [selectedId,   setSelectedId]   = useState<string | null>(null)
   const [navOpen,      setNavOpen]      = useState(false)
@@ -32,7 +34,7 @@ export default function HomeContent({
 
   return (
     <>
-      <FeaturedStrip properties={properties} />
+      <FeaturedStrip properties={properties} dbError={dbError} />
       <MapSection
         properties={properties}
         selectedId={selectedId}
