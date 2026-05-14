@@ -38,22 +38,38 @@ export interface NavigationModalProps {
 
 type TravelMode = 'walking' | 'matatu' | 'driving'
 
-export default function NavigationModal({ isOpen, onClose, property }: NavigationModalProps) {
-  const [route,             setRoute]             = useState<NavRoute | null>(null)
-  const [travelMode,        setTravelMode]        = useState<TravelMode>('walking')
-  const [arrived,           setArrived]           = useState(false)
-  const [distRemaining,     setDistRemaining]     = useState<number | null>(null)
-  const [currentStepIndex,  setCurrentStepIndex]  = useState(0)
+function arrivalTime(minsFromNow: number): string {
+  const d = new Date(Date.now() + minsFromNow * 60_000)
+  return d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit', hour12: true })
+}
 
-  // Reset when property changes
+function openNativeMaps(userLat: number, userLng: number, destLat: number, destLng: number) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  if (isIOS) {
+    window.open(`maps://maps.apple.com/?saddr=${userLat},${userLng}&daddr=${destLat},${destLng}&dirflg=d`)
+  } else {
+    window.open(`https://www.google.com/maps/dir/${userLat},${userLng}/${destLat},${destLng}`)
+  }
+}
+
+export default function NavigationModal({ isOpen, onClose, property }: NavigationModalProps) {
+  const [route,            setRoute]            = useState<NavRoute | null>(null)
+  const [travelMode,       setTravelMode]       = useState<TravelMode>('walking')
+  const [arrived,          setArrived]          = useState(false)
+  const [distRemaining,    setDistRemaining]    = useState<number | null>(null)
+  const [currentStepIndex, setCurrentStepIndex] = useState(0)
+  const [userLat,          setUserLat]          = useState<number | null>(null)
+  const [userLng,          setUserLng]          = useState<number | null>(null)
+
   useEffect(() => {
     setRoute(null)
     setArrived(false)
     setDistRemaining(null)
     setCurrentStepIndex(0)
+    setUserLat(null)
+    setUserLng(null)
   }, [property?.title])
 
-  // Advance step based on remaining distance
   useEffect(() => {
     if (!route || !distRemaining || route.steps.length === 0) return
     const totalSteps = route.steps.length
@@ -80,16 +96,20 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     return '↑'
   }
 
+  const currentMins =
+    !route          ? null :
+    travelMode === 'walking' ? route.walkMinutes   :
+    travelMode === 'matatu'  ? route.matatuMinutes :
+    route.driveMinutes
+
   if (!isOpen || !property) return null
 
-  // ── Arrived screen ─────────────────────────────────────────────────────────
+  // ── Arrived screen ──────────────────────────────────────────────────────────
   if (arrived) {
     return (
       <div className="fixed inset-0 z-[9999] bg-[#faf8f5] flex flex-col items-center justify-center p-8 text-center">
         <div className="text-8xl mb-6 animate-bounce">🎉</div>
-        <h2 className="font-serif text-[40px] text-accent leading-tight mb-3">
-          You have arrived!
-        </h2>
+        <h2 className="font-serif text-[40px] text-accent leading-tight mb-3">You have arrived!</h2>
         <p className="font-sans font-bold text-[15px] text-ink mb-1">{property.title}</p>
         <p className="font-sans text-[12px] text-muted mb-8">{property.address}</p>
         <div className="flex gap-3">
@@ -112,20 +132,16 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     )
   }
 
-  const modeBtn = (mode: TravelMode, emoji: string, time: string) => (
-    <button
-      key={mode}
-      onClick={() => setTravelMode(mode)}
-      className={`flex-1 py-3 flex flex-col items-center gap-0.5 border-r border-white/10 last:border-r-0 transition-colors ${
-        travelMode === mode ? 'bg-white/15' : 'hover:bg-white/8'
-      }`}
-    >
-      <span className="text-xl">{emoji}</span>
-      <span className={`font-sans text-[11px] font-bold leading-none mt-0.5 ${travelMode === mode ? 'text-white' : 'text-white/40'}`}>
-        {time}
-      </span>
-    </button>
-  )
+  const transportOptions: Array<{
+    mode:    TravelMode
+    icon:    string
+    label:   string
+    mins:    number | null
+  }> = [
+    { mode: 'walking', icon: '🚶', label: 'Walk',   mins: route?.walkMinutes   ?? null },
+    { mode: 'matatu',  icon: '🚌', label: 'Matatu', mins: route?.matatuMinutes ?? null },
+    { mode: 'driving', icon: '🚗', label: 'Drive',  mins: route?.driveMinutes  ?? null },
+  ]
 
   return (
     <div
@@ -134,45 +150,37 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
       aria-modal="true"
       aria-label="In-app navigation"
     >
-      {/* ── Top bar ─────────────────────────────────────────────────────────── */}
+      {/* ── Top bar ───────────────────────────────────────────────────────────── */}
       <div className="bg-ink text-white flex-shrink-0">
 
-        {/* Back + title */}
+        {/* Back + property title + arrival time */}
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
           <button
             onClick={onClose}
             className="w-9 h-9 flex items-center justify-center bg-white/10 rounded-full flex-shrink-0 hover:bg-white/20 transition-colors"
             aria-label="Close navigation"
-          >
-            ←
-          </button>
+          >←</button>
           <div className="flex-1 min-w-0">
-            <p className="font-sans font-bold text-sm text-white truncate leading-snug">
-              {property.title}
-            </p>
+            <p className="font-sans font-bold text-sm text-white truncate leading-snug">{property.title}</p>
             <p className="font-sans text-white/50 text-xs truncate">{property.address}</p>
           </div>
-          {distRemaining !== null && (
-            <div className="text-right flex-shrink-0">
+          <div className="text-right flex-shrink-0">
+            {distRemaining !== null && (
               <p className="font-sans font-black text-[20px] text-white leading-none">
                 {distRemaining < 1000
                   ? `${Math.round(distRemaining)}m`
-                  : `${(distRemaining / 1000).toFixed(1)}km`
-                }
+                  : `${(distRemaining / 1000).toFixed(1)}km`}
               </p>
-              <p className="font-sans text-white/40 text-[9px] uppercase tracking-wide">remaining</p>
-            </div>
-          )}
+            )}
+            {currentMins !== null && (
+              <p className="font-sans text-white/50 text-[10px] whitespace-nowrap">
+                Arrive {arrivalTime(currentMins)}
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Travel mode selector */}
-        <div className="flex border-t border-white/10 divide-x divide-white/10">
-          {modeBtn('walking', '🚶', route?.walkText  ?? '--')}
-          {modeBtn('matatu',  '🚌', route?.matatuText ?? '--')}
-          {modeBtn('driving', '🚗', route?.driveText  ?? '--')}
-        </div>
-
-        {/* Current instruction */}
+        {/* Current step instruction */}
         <div className="px-4 py-3 bg-accent flex items-center gap-3">
           <span className="text-2xl flex-shrink-0 font-bold">{getCurrentArrow()}</span>
           <div className="flex-1 min-w-0">
@@ -186,59 +194,66 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
         </div>
       </div>
 
-      {/* ── Live map ────────────────────────────────────────────────────────── */}
+      {/* ── Live map ──────────────────────────────────────────────────────────── */}
       <div className="flex-1 relative min-h-0">
         <NavigationMap
           property={property}
           onRouteReady={setRoute}
           onLocationUpdate={(data) => {
             setDistRemaining(data.distMetres)
+            setUserLat(data.lat)
+            setUserLng(data.lng)
             if (data.arrived) setArrived(true)
           }}
           travelMode={travelMode}
         />
       </div>
 
-      {/* ── Bottom panel ────────────────────────────────────────────────────── */}
+      {/* ── Bottom panel ──────────────────────────────────────────────────────── */}
       <div className="bg-white border-t border-border flex-shrink-0">
 
-        {/* Walk / Matatu / Drive summary */}
-        <div className="flex items-center px-4 py-3 border-b border-border">
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-xl">🚶</span>
-            <div>
-              <p className="font-sans font-black text-base text-ink leading-none">
-                {route?.walkText ?? '– min'}
-              </p>
-              <p className="font-sans text-[11px] text-muted">Walking</p>
-            </div>
-          </div>
-          <div className="w-px h-10 bg-border flex-shrink-0" />
-          <div className="flex items-center gap-2 flex-1 px-4">
-            <span className="text-xl">🚌</span>
-            <div>
-              <p className="font-sans font-black text-base text-ink leading-none">
-                {route?.matatuText ?? '– min'}
-              </p>
-              <p className="font-sans text-[11px] text-muted">Matatu</p>
-            </div>
-          </div>
-          <div className="w-px h-10 bg-border flex-shrink-0" />
-          <div className="flex items-center gap-2 flex-1 px-4">
-            <span className="text-xl">🚗</span>
-            <div>
-              <p className="font-sans font-black text-base text-ink leading-none">
-                {route?.driveText ?? '– min'}
-              </p>
-              <p className="font-sans text-[11px] text-muted">Drive</p>
-            </div>
-          </div>
+        {/* Bolt-style transport mode cards */}
+        <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 8px' }}>
+          {transportOptions.map(opt => (
+            <button
+              key={opt.mode}
+              type="button"
+              onClick={() => setTravelMode(opt.mode)}
+              style={{
+                flex:       1,
+                padding:    '10px 6px',
+                background: travelMode === opt.mode ? 'rgba(26,107,74,0.08)' : '#fff',
+                border:     travelMode === opt.mode ? '2px solid #1a6b4a' : '1.5px solid rgba(0,0,0,0.10)',
+                borderRadius: '10px',
+                cursor:     'pointer',
+                textAlign:  'center',
+                transition: 'border-color 0.15s, background 0.15s',
+              }}
+            >
+              <div style={{ fontSize: '20px', lineHeight: 1 }}>{opt.icon}</div>
+              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f0e0c', marginTop: '4px', lineHeight: 1 }}>
+                {opt.mins !== null ? `${opt.mins} min` : '–'}
+              </div>
+              <div style={{ fontSize: '10px', color: '#6b6055', marginTop: '2px', lineHeight: 1 }}>
+                {opt.mins !== null ? arrivalTime(opt.mins) : opt.label}
+              </div>
+            </button>
+          ))}
         </div>
+
+        {/* Distance chip */}
+        {route && (
+          <div style={{ padding: '0 16px 8px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b6055' }}>
+              📍 {route.distanceText} total distance
+            </span>
+          </div>
+        )}
 
         {/* Matatu route chips */}
         {property.matatuRoutes.length > 0 && (
-          <div className="px-4 py-3 bg-surface2 border-b border-border">
-            <p className="font-sans text-[9px] font-bold uppercase tracking-[1px] text-muted mb-2">
+          <div className="px-4 py-2 bg-surface2 border-t border-border">
+            <p className="font-sans text-[9px] font-bold uppercase tracking-[1px] text-muted mb-1.5">
               Matatu routes nearby
             </p>
             <div className="flex gap-2 flex-wrap">
@@ -248,15 +263,12 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
                 </span>
               ))}
             </div>
-            {travelMode === 'matatu' && (
-              <p className="font-sans text-[10px] text-muted mt-1.5">+ 5 min waiting time at stage</p>
-            )}
           </div>
         )}
 
         {/* Step-by-step directions */}
         {route && route.steps.length > 0 && (
-          <div className="max-h-36 overflow-y-auto">
+          <div className="max-h-28 overflow-y-auto border-t border-border">
             {route.steps.map((step, i) => (
               <div
                 key={i}
@@ -265,14 +277,14 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
                 }`}
               >
                 <span className={`text-lg flex-shrink-0 ${
-                  i === currentStepIndex ? 'text-accent'  :
-                  i < currentStepIndex   ? 'text-muted2'  : 'text-muted'
+                  i === currentStepIndex ? 'text-accent' :
+                  i < currentStepIndex   ? 'text-muted2' : 'text-muted'
                 }`}>
                   {step.arrow}
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-bold truncate ${
-                    i === currentStepIndex ? 'text-accent'            :
+                    i === currentStepIndex ? 'text-accent' :
                     i < currentStepIndex   ? 'text-muted line-through' : 'text-ink'
                   }`}>
                     {step.instruction}
@@ -289,8 +301,31 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           </div>
         )}
 
-        {/* Close */}
-        <div className="px-4 py-3">
+        {/* Open in Google / Apple Maps + Close */}
+        <div className="px-4 py-3 flex flex-col gap-2 border-t border-border">
+          {userLat !== null && userLng !== null && (
+            <button
+              type="button"
+              onClick={() => openNativeMaps(userLat!, userLng!, property.latitude, property.longitude)}
+              style={{
+                width:          '100%',
+                padding:        '13px',
+                background:     '#1a6b4a',
+                color:          '#fff',
+                border:         'none',
+                borderRadius:   '12px',
+                fontSize:       '13px',
+                fontWeight:     700,
+                cursor:         'pointer',
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'center',
+                gap:            '8px',
+              }}
+            >
+              🗺 Open in Google Maps
+            </button>
+          )}
           <button
             onClick={onClose}
             className="w-full border border-border text-muted font-sans font-bold text-xs uppercase tracking-wide py-3 hover:border-ink hover:text-ink transition-colors"
