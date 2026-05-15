@@ -102,6 +102,21 @@ export default function HeroSlider({ properties, dbError }: Props) {
     !(Math.abs(p.latitude - (-1.286389)) < 0.001 && Math.abs(p.longitude - 36.817223) < 0.001)
 
   return (
+    <>
+    <style>{`
+      @keyframes kenburns {
+        0%   { transform: scale(1.08); }
+        100% { transform: scale(1);    }
+      }
+      @keyframes slideUp {
+        0%   { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0);    }
+      }
+      @keyframes progress {
+        0%   { width: 0%;    }
+        100% { width: 100%;  }
+      }
+    `}</style>
     <div
       style={{
         position:   'relative',
@@ -118,15 +133,20 @@ export default function HeroSlider({ properties, dbError }: Props) {
     >
       {/* ── Slides ─────────────────────────────────────────────────────────── */}
       {properties.map((prop, i) => {
-        const offset = i - current
+        const isActive = i === current
+        const isPrev   = i === (current - 1 + total) % total
         return (
           <div
             key={prop.id}
             style={{
               position:   'absolute',
               inset:      0,
-              transform:  `translateX(${offset * 100}%)`,
-              transition: dragging ? 'none' : 'transform 0.45s cubic-bezier(0.25,0.46,0.45,0.94)',
+              opacity:    isActive ? 1 : 0,
+              transform:  isActive ? 'translateX(0%) scale(1)'
+                        : isPrev  ? 'translateX(-100%) scale(0.95)'
+                        :           'translateX(100%) scale(0.95)',
+              transition: dragging ? 'none' : 'all 0.6s cubic-bezier(0.25,0.46,0.45,0.94)',
+              zIndex:     isActive ? 2 : 1,
             }}
           >
             {prop.images?.[0] ? (
@@ -134,7 +154,11 @@ export default function HeroSlider({ properties, dbError }: Props) {
               <img
                 src={prop.images[0]}
                 alt={prop.title}
-                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                style={{
+                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                  animation: isActive ? 'kenburns 6s ease-out forwards' : 'none',
+                  transform: isActive ? undefined : 'scale(1.05)',
+                }}
                 draggable={false}
               />
             ) : (
@@ -143,6 +167,7 @@ export default function HeroSlider({ properties, dbError }: Props) {
                 background: BG_COLORS[i % BG_COLORS.length],
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '80px',
+                animation: isActive ? 'kenburns 6s ease-out forwards' : 'none',
               }}>
                 {getIcon(prop.propertyType)}
               </div>
@@ -179,15 +204,19 @@ export default function HeroSlider({ properties, dbError }: Props) {
       </div>
 
       {/* ── Bottom info ──────────────────────────────────────────────────── */}
-      <div style={{
-        position:   'absolute',
-        bottom:     0,
-        left:       0,
-        right:      0,
-        padding:    '20px 16px',
-        zIndex:     5,
-        fontFamily: 'inherit',
-      }}>
+      <div
+        key={`info-${current}`}
+        style={{
+          position:  'absolute',
+          bottom:     0,
+          left:       0,
+          right:      0,
+          padding:    '20px 16px',
+          zIndex:     5,
+          fontFamily: 'inherit',
+          animation: 'slideUp 0.5s cubic-bezier(0.25,0.46,0.45,0.94) forwards',
+        }}
+      >
         {/* Dot indicators */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '14px' }}>
           {properties.map((_, i) => (
@@ -208,6 +237,21 @@ export default function HeroSlider({ properties, dbError }: Props) {
               }}
             />
           ))}
+        </div>
+
+        {/* Progress bar */}
+        <div style={{
+          height: '2px', background: 'rgba(255,255,255,0.2)',
+          borderRadius: '1px', marginBottom: '12px', overflow: 'hidden',
+        }}>
+          <div
+            key={`progress-${current}`}
+            style={{
+              height: '100%', background: '#4dbe87',
+              borderRadius: '1px',
+              animation: 'progress 4s linear forwards',
+            }}
+          />
         </div>
 
         {/* Price */}
@@ -299,5 +343,6 @@ export default function HeroSlider({ properties, dbError }: Props) {
         </div>
       </div>
     </div>
+    </>
   )
 }
