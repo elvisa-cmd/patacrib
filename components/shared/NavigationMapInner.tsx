@@ -37,8 +37,6 @@ export interface NavigationMapInnerProps {
   travelMode: 'walking' | 'driving' | 'matatu'
 }
 
-const CBD: [number, number] = [-1.286389, 36.817223]
-
 const C = {
   accent: '#1a6b4a',
   blue:   '#2563eb',
@@ -125,6 +123,7 @@ export default function NavigationMapInner({
   const [accuracyColor, setAccuracyColor] = useState('#b0a898')
   const [showRetry,     setShowRetry]     = useState(false)
   const [gpsLocked,     setGpsLocked]     = useState(false)
+  const [showNoGps,     setShowNoGps]     = useState(false)
 
   useEffect(() => {
     if (!mapRef.current || mapInstRef.current) return
@@ -340,10 +339,10 @@ export default function NavigationMapInner({
             finish(bestPos)
           } else {
             resolved = true
-            setAccuracyLabel('⚠️ No GPS — showing distance from CBD')
+            setAccuracyLabel("📍 Tap 'Open in Google Maps' for turn-by-turn directions")
             setAccuracyColor('#dc2626')
             setShowRetry(true)
-            void calculateRoute(CBD)
+            setShowNoGps(true)
           }
         }, 20000)
 
@@ -387,17 +386,17 @@ export default function NavigationMapInner({
             }
 
             if (err.code === 1) {
-              setAccuracyLabel('Location permission denied')
+              setAccuracyLabel("Enable location to get directions from your position")
               setAccuracyColor('#dc2626')
               setShowRetry(false)
-              void calculateRoute(CBD)
+              setShowNoGps(true)
             } else if (bestPos) {
               finish(bestPos)
             } else {
-              setAccuracyLabel('⚠️ No GPS — showing distance from CBD')
+              setAccuracyLabel("📍 Tap 'Open in Google Maps' for turn-by-turn directions")
               setAccuracyColor('#dc2626')
               setShowRetry(true)
-              void calculateRoute(CBD)
+              setShowNoGps(true)
             }
           },
           { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 },
@@ -405,9 +404,9 @@ export default function NavigationMapInner({
       }
 
       if (!navigator.geolocation) {
-        setAccuracyLabel('⚠️ GPS not available on this device')
+        setAccuracyLabel("Enable location to get directions from your position")
         setAccuracyColor('#dc2626')
-        void calculateRoute(CBD)
+        setShowNoGps(true)
         return
       }
 
@@ -468,7 +467,7 @@ export default function NavigationMapInner({
           maxWidth:       'calc(100vw - 32px)',
         }}
       >
-        {!gpsLocked && (
+        {!gpsLocked && !showNoGps && (
           <span
             style={{
               width:        '10px',
@@ -485,7 +484,7 @@ export default function NavigationMapInner({
         <span style={{ fontSize: '11px', fontWeight: 600, color: accuracyColor, whiteSpace: 'nowrap' }}>
           {accuracyLabel}
         </span>
-        {showRetry && (
+        {showRetry && !showNoGps && (
           <button
             type="button"
             onClick={() => startPreciseRef.current?.()}
@@ -506,6 +505,68 @@ export default function NavigationMapInner({
           </button>
         )}
       </div>
+
+      {/* No-GPS overlay — shown when location is unavailable */}
+      {showNoGps && (
+        <div
+          style={{
+            position:       'absolute',
+            bottom:         '16px',
+            left:           '16px',
+            right:          '16px',
+            zIndex:         1000,
+            background:     '#fff',
+            borderRadius:   '12px',
+            padding:        '16px',
+            boxShadow:      '0 4px 20px rgba(0,0,0,0.18)',
+            display:        'flex',
+            flexDirection:  'column',
+            alignItems:     'center',
+            gap:            '10px',
+          }}
+        >
+          <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f0e0c', textAlign: 'center', margin: 0 }}>
+            Enable location to get directions from your position
+          </p>
+          <button
+            type="button"
+            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`)}
+            style={{
+              width:          '100%',
+              padding:        '12px',
+              background:     '#1a6b4a',
+              color:          '#fff',
+              border:         'none',
+              borderRadius:   '10px',
+              fontSize:       '13px',
+              fontWeight:     700,
+              cursor:         'pointer',
+              display:        'flex',
+              alignItems:     'center',
+              justifyContent: 'center',
+              gap:            '8px',
+            }}
+          >
+            🗺 Open in Google Maps
+          </button>
+          {showRetry && (
+            <button
+              type="button"
+              onClick={() => { setShowNoGps(false); startPreciseRef.current?.() }}
+              style={{
+                fontSize:   '12px',
+                color:      '#6b6055',
+                background: 'none',
+                border:     'none',
+                cursor:     'pointer',
+                padding:    '4px',
+              }}
+            >
+              🔄 Try enabling GPS again
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Re-center button */}
       {gpsLocked && (
