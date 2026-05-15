@@ -24,12 +24,24 @@ export default async function Nav() {
   const links    = session ? AUTH_LINKS : GUEST_LINKS
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-[500] h-[60px] border-b border-border flex items-center justify-between px-4 md:px-16 bg-bg/[0.92] backdrop-blur-md relative">
+    <nav style={{
+      position:              'sticky',
+      top:                   0,
+      zIndex:                50,
+      background:            'rgba(250,248,245,0.95)',
+      backdropFilter:        'blur(12px)',
+      WebkitBackdropFilter:  'blur(12px)',
+      borderBottom:          '1px solid rgba(0,0,0,0.06)',
+      padding:               '14px 16px',
+      display:               'flex',
+      alignItems:            'center',
+      justifyContent:        'space-between',
+    }}>
 
       {/* Logo */}
-      <Link href="/" className="font-sans font-black text-[18px] tracking-tight flex-shrink-0">
-        <span className="text-ink">Pata</span>
-        <span className="text-accent">Crib</span>
+      <Link href="/" style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-0.5px', textDecoration: 'none' }}>
+        <span style={{ color: '#0f0e0c' }}>Pata</span>
+        <span style={{ color: '#1a6b4a' }}>Krib</span>
       </Link>
 
       {/* Center links — hidden on mobile */}
@@ -38,7 +50,7 @@ export default async function Nav() {
           <Link
             key={label}
             href={href}
-            className="font-sans font-normal text-[12px] uppercase tracking-[0.8px] text-muted hover:text-ink transition-colors"
+            style={{ fontSize: '13px', color: '#6b6055', textDecoration: 'none' }}
           >
             {label}
           </Link>
@@ -46,7 +58,7 @@ export default async function Nav() {
         {session && (
           <Link
             href={dashHref}
-            className="font-sans font-normal text-[12px] uppercase tracking-[0.8px] text-muted hover:text-ink transition-colors"
+            style={{ fontSize: '13px', color: '#6b6055', textDecoration: 'none' }}
           >
             Dashboard
           </Link>
@@ -54,15 +66,25 @@ export default async function Nav() {
       </div>
 
       {/* Right side */}
-      <div className="flex items-center gap-4 flex-shrink-0">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
         {session ? (
           <>
             {isAdmin && (
               <Link
                 href="/dashboard/add"
-                className="hidden md:inline-flex font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
+                className="hidden md:inline-flex"
+                style={{
+                  background:     '#1a6b4a',
+                  color:          '#fff',
+                  padding:        '8px 18px',
+                  borderRadius:   '20px',
+                  fontSize:       '13px',
+                  fontWeight:     700,
+                  textDecoration: 'none',
+                  border:         'none',
+                }}
               >
-                List property
+                List Property
               </Link>
             )}
             <UserMenu
@@ -74,16 +96,26 @@ export default async function Nav() {
           <>
             <Link
               href="/login"
-              className="hidden md:inline font-sans font-normal text-[13px] text-muted hover:text-ink transition-colors"
+              className="hidden md:inline"
+              style={{ fontSize: '13px', color: '#6b6055', textDecoration: 'none' }}
             >
               Sign in
             </Link>
-            <div className="hidden md:block w-px h-5 bg-border" />
             <Link
               href="/login"
-              className="hidden md:inline-flex font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-ink text-white px-4 py-2 hover:bg-accent-d transition-colors"
+              className="hidden md:inline-flex"
+              style={{
+                background:     '#1a6b4a',
+                color:          '#fff',
+                padding:        '8px 18px',
+                borderRadius:   '20px',
+                fontSize:       '13px',
+                fontWeight:     700,
+                textDecoration: 'none',
+                border:         'none',
+              }}
             >
-              List property
+              List Property
             </Link>
           </>
         )}

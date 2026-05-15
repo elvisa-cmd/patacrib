@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Instrument_Serif } from 'next/font/google'
 import './globals.css'
-import { Providers }     from './providers'
-import { PageLoader }    from '@/components/shared/PageLoader'
-import InstallPrompt     from '@/components/shared/InstallPrompt'
+import { Providers }         from './providers'
+import { PageLoader }        from '@/components/shared/PageLoader'
+import InstallPrompt         from '@/components/shared/InstallPrompt'
+import FloatingBottomNav     from '@/components/ui/FloatingBottomNav'
 
 const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
@@ -65,7 +66,14 @@ export default function RootLayout({
     <html lang="en" className={instrumentSerif.variable}>
       <body className="bg-bg text-ink font-sans antialiased">
         <PageLoader />
-        <Providers>{children}</Providers>
+        <Providers>
+          <div style={{ paddingBottom: '80px' }} className="md:pb-0">
+            {children}
+          </div>
+        </Providers>
+        <div className="md:hidden">
+          <FloatingBottomNav />
+        </div>
         <InstallPrompt />
       </body>
     </html>

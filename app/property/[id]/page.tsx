@@ -133,7 +133,7 @@ export default async function PropertyDetailPage({
     <div className="min-h-screen bg-bg">
       <Nav />
 
-      <main className="pt-[60px]">
+      <main>
         <ImageGallery
           images={detailedProperty.images}
           title={detailedProperty.title}

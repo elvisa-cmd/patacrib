@@ -84,43 +84,86 @@ export default async function SeekerDashboard() {
     console.error('Seeker dashboard error:', error)
   }
 
-  return (
-    <main className="min-h-screen bg-bg">
-      <Nav />
-      <div className="pt-[60px] px-4 md:px-16 py-8">
+  const hour     = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-border">
-          <div>
-            <h1 className="font-serif text-3xl text-ink">
-              Welcome back, {session.user.name}
-            </h1>
-            <p className="text-muted text-sm mt-1">Your saved properties and messages</p>
-          </div>
-          <a
-            href="/browse"
-            className="bg-accent text-white font-bold uppercase tracking-wide px-5 py-3 text-sm hover:bg-accent-d transition-colors"
-          >
-            Browse properties
+  return (
+    <main className="min-h-screen" style={{ background: '#faf8f5' }}>
+      <Nav />
+
+      {/* Dark header */}
+      <div style={{
+        background:   '#0f1a12',
+        padding:      '24px 16px 28px',
+        marginBottom: '0',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <span style={{ fontSize: '17px', fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>
+            Pata<span style={{ color: '#4dbe87' }}>Krib</span>
+          </span>
+          <a href="/dashboard/messages" style={{ position: 'relative', textDecoration: 'none' }}>
+            <div style={{
+              width: '36px', height: '36px',
+              background: 'rgba(255,255,255,0.1)',
+              borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '18px',
+            }}>
+              🔔
+            </div>
+            {unreadCount > 0 && (
+              <div style={{
+                position: 'absolute', top: '-2px', right: '-2px',
+                width: '16px', height: '16px',
+                background: '#1a6b4a', borderRadius: '50%',
+                fontSize: '9px', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700,
+              }}>
+                {unreadCount}
+              </div>
+            )}
           </a>
         </div>
+        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontWeight: 500 }}>
+          {greeting} 👋
+        </p>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 20px', letterSpacing: '-0.5px' }}>
+          {session.user.name ?? 'Welcome back'}
+        </h1>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-ink text-white p-6">
-            <p className="font-serif text-4xl font-bold">{savedProperties.length}</p>
-            <p className="text-white/40 text-xs uppercase tracking-wide mt-1">Saved properties</p>
-          </div>
-          <div className="bg-white border border-border p-6">
-            <p className={`font-serif text-4xl font-bold ${unreadCount > 0 ? 'text-accent' : 'text-ink'}`}>
-              {unreadCount}
-            </p>
-            <p className="text-muted text-xs uppercase tracking-wide mt-1">Unread messages</p>
-          </div>
-          <div className="bg-white border border-border p-6">
-            <p className="font-serif text-4xl font-bold text-ink">{recentViews.length}</p>
-            <p className="text-muted text-xs uppercase tracking-wide mt-1">Properties viewed</p>
-          </div>
+        {/* Stats grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {[
+            { value: savedProperties.length, label: 'Saved properties' },
+            { value: unreadCount,             label: 'Unread messages',  highlight: unreadCount > 0 },
+            { value: recentViews.length,      label: 'Properties viewed' },
+            { value: conversations.length,    label: 'Active chats' },
+          ].map(({ value, label, highlight }) => (
+            <div key={label} style={{
+              background:   'rgba(255,255,255,0.07)',
+              borderRadius: '14px',
+              padding:      '14px',
+              border:       '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <p style={{ fontSize: '26px', fontWeight: 700, color: highlight ? '#4dbe87' : '#4dbe87', margin: '0 0 4px' }}>
+                {value}
+              </p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0, fontWeight: 500 }}>
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '16px' }}>
+
+        {/* Section title */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: '#0f0e0c', letterSpacing: '-0.2px' }}>My Properties</span>
+          <a href="/browse" style={{ fontSize: '12px', color: '#1a6b4a', fontWeight: 600, textDecoration: 'none' }}>Browse more →</a>
         </div>
 
         {/* Main grid */}
@@ -283,7 +326,7 @@ export default async function SeekerDashboard() {
           </div>
         )}
 
-      </div>
+      </div>{/* /body */}
       <Footer />
     </main>
   )

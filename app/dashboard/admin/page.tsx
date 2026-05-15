@@ -81,31 +81,62 @@ export default async function DashboardPage() {
     hour < 17 ? 'Good afternoon' : 'Good evening'
 
   return (
-    <div className="min-h-screen bg-bg">
+    <div className="min-h-screen" style={{ background: '#faf8f5' }}>
       <Nav />
 
-      <main className="pt-[60px] px-16 py-10">
-
-        {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="flex items-start justify-between pb-7 mb-8 border-b border-border">
-          <div>
-            <h1 className="font-serif text-[28px] text-ink leading-tight">
-              {greeting}, {session.user.name ?? 'Landlord'}
-            </h1>
-            <p className="font-sans font-light text-[14px] text-muted mt-1">
-              Here is your PataKrib dashboard
-            </p>
-          </div>
-          <a
-            href="/dashboard/add"
-            className="bg-accent text-white font-sans font-bold text-[12px] uppercase tracking-[0.5px] px-5 py-2.5 hover:bg-accent-d transition-colors"
-          >
+      {/* Dark header */}
+      <div style={{ background: '#0f1a12', padding: '24px 16px 28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+          <span style={{ fontSize: '17px', fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>
+            Pata<span style={{ color: '#4dbe87' }}>Krib</span>
+          </span>
+          <a href="/dashboard/add" style={{
+            background: '#1a6b4a', color: '#fff',
+            padding: '8px 18px', borderRadius: '20px',
+            fontSize: '13px', fontWeight: 700,
+            textDecoration: 'none',
+          }}>
             + Add Property
           </a>
         </div>
+        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', fontWeight: 500 }}>
+          {greeting} 👋
+        </p>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 20px', letterSpacing: '-0.5px' }}>
+          {session.user.name ?? 'Landlord'}
+        </h1>
 
-        {/* ── Stats cards ─────────────────────────────────────────────────── */}
-        <StatsCards stats={stats} />
+        {/* 2×2 stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          {[
+            { value: stats.available,      label: 'Active listings' },
+            { value: stats.totalViews,     label: 'Total views' },
+            { value: stats.unreadMessages, label: 'Enquiries',        highlight: stats.unreadMessages > 0 },
+            { value: stats.rented,         label: 'Rented out' },
+          ].map(({ value, label, highlight }) => (
+            <div key={label} style={{
+              background: 'rgba(255,255,255,0.07)',
+              borderRadius: '14px',
+              padding: '14px',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}>
+              <p style={{ fontSize: '26px', fontWeight: 700, color: '#4dbe87', margin: '0 0 4px' }}>
+                {value}
+              </p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0, fontWeight: 500 }}>
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <main className="px-4 md:px-16 py-8">
+
+        {/* ── Stats cards (desktop only, mobile uses dark header above) ──── */}
+        <div className="hidden md:block mb-8">
+          <StatsCards stats={stats} />
+        </div>
 
         {/* ── Main grid ───────────────────────────────────────────────────── */}
         <div className="grid gap-6" style={{ gridTemplateColumns: '1fr 360px' }}>
