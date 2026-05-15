@@ -1,9 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import PlusCodePicker from '@/components/shared/PlusCodePicker'
+import ExifLocationCapture from '@/components/shared/ExifLocationCapture'
 import TourRecorder from '@/components/shared/TourRecorder'
-import PhotoUpload from './PhotoUpload'
 import ListingPreview from './ListingPreview'
 
 // ── Design-system constants ──────────────────────────────────────────────────
@@ -120,10 +119,11 @@ export default function AddPropertyForm() {
   const [address,         setAddress]         = useState('')
   const [estate,          setEstate]          = useState('')
   const [city,            setCity]            = useState('Nairobi')
-  const [lat,              setLat]              = useState<number | null>(null)
-  const [lng,              setLng]              = useState<number | null>(null)
-  const [capturedAddress,  setCapturedAddress]  = useState('')
-  const [capturedPlusCode, setCapturedPlusCode] = useState('')
+  const [lat,            setLat]            = useState<number | null>(null)
+  const [lng,            setLng]            = useState<number | null>(null)
+  const [capturedAddress, setCapturedAddress] = useState('')
+  const [locationSource, setLocationSource] = useState<'exif' | 'manual' | null>(null)
+  const [uploading,      setUploading]      = useState(false)
 
   // Section 3 — Photos
   const [images, setImages] = useState<string[]>([])
@@ -156,7 +156,7 @@ export default function AddPropertyForm() {
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
     if (lat === null || lng === null) {
-      setError('Please enter your Plus Code to set the property location.')
+      setError('Property location is required. Please upload photos taken at the property with location enabled.')
       return
     }
 
@@ -180,7 +180,6 @@ export default function AddPropertyForm() {
           city,
           latitude:      lat,
           longitude:     lng,
-          plusCode:      capturedPlusCode || undefined,
           images,
           videoUrl:      videoUrl      || undefined,
           tourImageUrl:  tourImageUrl  || undefined,
@@ -234,6 +233,22 @@ export default function AddPropertyForm() {
 
           {/* Left — form sections */}
           <div className="flex-1 min-w-0">
+
+            {/* Camera location note */}
+            <div style={{
+              padding:      '12px 14px',
+              background:   'rgba(26,107,74,0.06)',
+              border:       '1px solid rgba(26,107,74,0.15)',
+              borderRadius: '12px',
+              fontSize:     '12px',
+              color:        '#1a6b4a',
+              lineHeight:   1.6,
+              marginBottom: '16px',
+            }}>
+              📍 <strong>Important:</strong> Before taking photos, make sure your phone camera
+              has location access enabled. Go to Settings → Camera → Location → Allow.
+              This lets PataKrib verify the exact property location from your photos.
+            </div>
 
             {/* ── Section 1: Basic info ─────────────────────────────── */}
             <section className={SECTION}>
@@ -331,34 +346,41 @@ export default function AddPropertyForm() {
               </div>
             </section>
 
-            {/* ── Section 2: Location & GPS ─────────────────────────── */}
+            {/* ── Section 2: Photos & Location ─────────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={2} title="Location & GPS" />
+              <SectionHeader num={2} title="Photos & location" />
 
-              <div className="mb-5">
-                <PlusCodePicker
-                  onCapture={(capLat, capLng, capAddress, capPlusCode) => {
-                    setLat(capLat)
-                    setLng(capLng)
-                    setCapturedAddress(capAddress)
-                    setCapturedPlusCode(capPlusCode)
-                    if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
-                  }}
-                  onClear={() => {
-                    setLat(null)
-                    setLng(null)
-                    setCapturedAddress('')
-                    setCapturedPlusCode('')
-                  }}
-                  captured={lat !== null}
-                  capturedAddress={capturedAddress}
-                  capturedLat={lat ?? undefined}
-                  capturedLng={lng ?? undefined}
-                  capturedPlusCode={capturedPlusCode || undefined}
-                />
-              </div>
+              <ExifLocationCapture
+                onLocationFound={(capLat, capLng, capAddress, source) => {
+                  setLat(capLat)
+                  setLng(capLng)
+                  setCapturedAddress(capAddress)
+                  setLocationSource(source)
+                  if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
+                }}
+                onPhotosSelected={async (files) => {
+                  setUploading(true)
+                  setImages([])
+                  for (const file of files) {
+                    try {
+                      const fd = new FormData()
+                      fd.append('file', file)
+                      const res  = await fetch('/api/upload', { method: 'POST', body: fd })
+                      const data = await res.json() as { url?: string }
+                      if (res.ok && data.url) setImages(prev => [...prev, data.url!])
+                    } catch { /* skip failed upload */ }
+                  }
+                  setUploading(false)
+                }}
+              />
 
-              <div className={FIELD}>
+              {uploading && (
+                <div className="mt-3 font-sans text-[11px] text-muted">
+                  Uploading photos…
+                </div>
+              )}
+
+              <div className={`${FIELD} mt-5`}>
                 <label className={LABEL}>Street address</label>
                 <input
                   type="text"
@@ -390,16 +412,6 @@ export default function AddPropertyForm() {
                   />
                 </div>
               </div>
-            </section>
-
-            {/* ── Section 3: Photos ─────────────────────────────────── */}
-            <section className={SECTION}>
-              <SectionHeader num={3} title="Photos" />
-              <PhotoUpload
-                urls={images}
-                onAdd={url => setImages(prev => [...prev, url])}
-                onRemove={url => setImages(prev => prev.filter(u => u !== url))}
-              />
             </section>
 
             {/* ── Section 4: Virtual tour ───────────────────────────── */}
