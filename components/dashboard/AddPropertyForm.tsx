@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import AutoLocationCapture from '@/components/shared/AutoLocationCapture'
+import GoogleMapsLocationPicker from '@/components/shared/GoogleMapsLocationPicker'
 import TourRecorder from '@/components/shared/TourRecorder'
 import PhotoUpload from './PhotoUpload'
 import ListingPreview from './ListingPreview'
@@ -117,12 +117,12 @@ export default function AddPropertyForm() {
   const [propertyType, setPropertyType] = useState('')
 
   // Section 2 — Location
-  const [address,       setAddress]       = useState('')
-  const [estate,        setEstate]        = useState('')
-  const [city,          setCity]          = useState('Nairobi')
-  const [lat,           setLat]           = useState<number | null>(null)
-  const [lng,           setLng]           = useState<number | null>(null)
-  const [locationReady, setLocationReady] = useState(false)
+  const [address,         setAddress]         = useState('')
+  const [estate,          setEstate]          = useState('')
+  const [city,            setCity]            = useState('Nairobi')
+  const [lat,             setLat]             = useState<number | null>(null)
+  const [lng,             setLng]             = useState<number | null>(null)
+  const [capturedAddress, setCapturedAddress] = useState('')
 
   // Section 3 — Photos
   const [images, setImages] = useState<string[]>([])
@@ -154,8 +154,8 @@ export default function AddPropertyForm() {
     if (!price || Number(price) <= 0) { setError('Price must be a positive number'); return }
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
-    if (!locationReady || lat === null || lng === null) {
-      setError('Property location could not be verified. GPS is required to list on PataKrib.')
+    if (lat === null || lng === null) {
+      setError('Please set the property location using Google Maps before submitting.')
       return
     }
 
@@ -334,15 +334,22 @@ export default function AddPropertyForm() {
               <SectionHeader num={2} title="Location & GPS" />
 
               <div className="mb-5">
-                <AutoLocationCapture
-                  onCapture={(capLat, capLng) => {
+                <GoogleMapsLocationPicker
+                  onCapture={(capLat, capLng, capAddress) => {
                     setLat(capLat)
                     setLng(capLng)
-                    setLocationReady(true)
+                    setCapturedAddress(capAddress)
+                    if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
                   }}
-                  onFail={() => {
-                    setLocationReady(false)
+                  onClear={() => {
+                    setLat(null)
+                    setLng(null)
+                    setCapturedAddress('')
                   }}
+                  captured={lat !== null}
+                  capturedAddress={capturedAddress}
+                  capturedLat={lat ?? undefined}
+                  capturedLng={lng ?? undefined}
                 />
               </div>
 
