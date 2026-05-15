@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import dynamic                  from 'next/dynamic'
-import type { NavRoute }        from './NavigationMapInner'
+import { useState, useEffect, useRef } from 'react'
+import dynamic                          from 'next/dynamic'
+import type { NavRoute }                from './NavigationMapInner'
 
 const NavigationMap = dynamic(
   () => import('./NavigationMap'),
@@ -38,318 +38,413 @@ export interface NavigationModalProps {
 
 type TravelMode = 'walking' | 'matatu' | 'driving'
 
+interface NominatimResult {
+  lat:          string
+  lon:          string
+  display_name: string
+}
+
 function arrivalTime(minsFromNow: number): string {
   const d = new Date(Date.now() + minsFromNow * 60_000)
   return d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit', hour12: true })
 }
 
-function openNativeMaps(userLat: number, userLng: number, destLat: number, destLng: number) {
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-  if (isIOS) {
-    window.open(`maps://maps.apple.com/?saddr=${userLat},${userLng}&daddr=${destLat},${destLng}&dirflg=d`)
-  } else {
-    window.open(`https://www.google.com/maps/dir/${userLat},${userLng}/${destLat},${destLng}`)
-  }
-}
-
 export default function NavigationModal({ isOpen, onClose, property }: NavigationModalProps) {
-  const [route,            setRoute]            = useState<NavRoute | null>(null)
-  const [travelMode,       setTravelMode]       = useState<TravelMode>('walking')
-  const [arrived,          setArrived]          = useState(false)
-  const [distRemaining,    setDistRemaining]    = useState<number | null>(null)
-  const [currentStepIndex, setCurrentStepIndex] = useState(0)
-  const [userLat,          setUserLat]          = useState<number | null>(null)
-  const [userLng,          setUserLng]          = useState<number | null>(null)
-  const [gpsAccuracy,      setGpsAccuracy]      = useState<number | null>(null)
+  const [route,           setRoute]           = useState<NavRoute | null>(null)
+  const [travelMode,      setTravelMode]      = useState<TravelMode>('walking')
+  const [fromQuery,       setFromQuery]       = useState('')
+  const [fromSuggestions, setFromSuggestions] = useState<NominatimResult[]>([])
+  const [fromLocation,    setFromLocation]    = useState<{ lat: number; lng: number; label: string } | null>(null)
+  const [searching,       setSearching]       = useState(false)
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
+  // Reset state when property changes
   useEffect(() => {
     setRoute(null)
-    setArrived(false)
-    setDistRemaining(null)
-    setCurrentStepIndex(0)
-    setUserLat(null)
-    setUserLng(null)
-    setGpsAccuracy(null)
+    setFromQuery('')
+    setFromSuggestions([])
+    setFromLocation(null)
+    setSearching(false)
   }, [property?.title])
 
+  async function searchLocation(query: string) {
+    if (query.length < 3) { setFromSuggestions([]); return }
+    setSearching(true)
+    try {
+      const res  = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Kenya')}&format=json&limit=5&countrycodes=ke`,
+        { headers: { 'Accept-Language': 'en' } },
+      )
+      const data = await res.json() as NominatimResult[]
+      setFromSuggestions(data)
+    } catch {
+      setFromSuggestions([])
+    } finally {
+      setSearching(false)
+    }
+  }
+
   useEffect(() => {
-    if (!route || !distRemaining || route.steps.length === 0) return
-    const totalSteps = route.steps.length
-    const progress   = Math.max(0, 1 - distRemaining / Math.max(1, route.distMetres))
-    const estimated  = Math.floor(progress * totalSteps)
-    setCurrentStepIndex(Math.min(estimated, totalSteps - 1))
-  }, [distRemaining, route])
-
-  const currentStep = route?.steps[currentStepIndex]
-
-  const getInstruction = (): string => {
-    if (!route) return 'Getting your location…'
-    if (currentStep) return currentStep.instruction
-    const d = route.distMetres
-    if (d > 1000) return `Head toward ${property?.estate ?? 'destination'} — ${route.distanceText} away`
-    if (d > 200)  return `Getting close — ${route.distanceText} remaining`
-    return 'Almost there!'
-  }
-
-  const getCurrentArrow = (): string => {
-    if (!route)       return '↑'
-    if (currentStep)  return currentStep.arrow
-    if (route.distMetres <= 200) return '🎯'
-    return '↑'
-  }
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => void searchLocation(fromQuery), 400)
+    return () => clearTimeout(debounceRef.current)
+  }, [fromQuery])
 
   const currentMins =
-    !route          ? null :
+    !route         ? null :
     travelMode === 'walking' ? route.walkMinutes   :
     travelMode === 'matatu'  ? route.matatuMinutes :
     route.driveMinutes
 
-  if (!isOpen || !property) return null
-
-  // ── Arrived screen ──────────────────────────────────────────────────────────
-  if (arrived) {
-    return (
-      <div className="fixed inset-0 z-[9999] bg-[#faf8f5] flex flex-col items-center justify-center p-8 text-center">
-        <div className="text-8xl mb-6 animate-bounce">🎉</div>
-        <h2 className="font-serif text-[40px] text-accent leading-tight mb-3">You have arrived!</h2>
-        <p className="font-sans font-bold text-[15px] text-ink mb-1">{property.title}</p>
-        <p className="font-sans text-[12px] text-muted mb-8">{property.address}</p>
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="border border-ink text-ink font-sans font-bold text-[12px] uppercase tracking-wide px-6 py-3 hover:bg-ink hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          {property.id && (
-            <a
-              href={`/property/${property.id}`}
-              className="bg-accent text-white font-sans font-bold text-[12px] uppercase tracking-wide px-6 py-3 hover:bg-accent-d transition-colors"
-            >
-              View listing →
-            </a>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const transportOptions: Array<{
-    mode:    TravelMode
-    icon:    string
-    label:   string
-    mins:    number | null
-  }> = [
+  const transportOptions: Array<{ mode: TravelMode; icon: string; label: string; mins: number | null }> = [
     { mode: 'walking', icon: '🚶', label: 'Walk',   mins: route?.walkMinutes   ?? null },
     { mode: 'matatu',  icon: '🚌', label: 'Matatu', mins: route?.matatuMinutes ?? null },
     { mode: 'driving', icon: '🚗', label: 'Drive',  mins: route?.driveMinutes  ?? null },
   ]
 
+  if (!isOpen || !property) return null
+
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col bg-white"
+      className="fixed inset-0 z-[9999] flex flex-col bg-[#faf8f5]"
       role="dialog"
       aria-modal="true"
-      aria-label="In-app navigation"
+      aria-label="Get directions"
     >
-      {/* ── Top bar ───────────────────────────────────────────────────────────── */}
-      <div className="bg-ink text-white flex-shrink-0">
-
-        {/* Back + property title + arrival time */}
-        <div className="flex items-center gap-3 px-4 pt-4 pb-2">
+      {/* ── Header ───────────────────────────────────────────────────────────── */}
+      <div style={{
+        background:   '#fff',
+        borderBottom: '1px solid rgba(0,0,0,0.08)',
+        padding:      '14px 16px 0',
+        flexShrink:   0,
+      }}>
+        {/* Back + title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center bg-white/10 rounded-full flex-shrink-0 hover:bg-white/20 transition-colors"
-            aria-label="Close navigation"
+            style={{
+              width: '36px', height: '36px',
+              background: 'rgba(0,0,0,0.06)', border: 'none',
+              borderRadius: '50%', fontSize: '18px',
+              cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+            aria-label="Close"
           >←</button>
-          <div className="flex-1 min-w-0">
-            <p className="font-sans font-bold text-sm text-white truncate leading-snug">{property.title}</p>
-            <p className="font-sans text-white/50 text-xs truncate">{property.address}</p>
-          </div>
-          <div className="text-right flex-shrink-0">
-            {distRemaining !== null && (
-              <p className="font-sans font-black text-[20px] text-white leading-none">
-                {distRemaining < 1000
-                  ? `${Math.round(distRemaining)}m`
-                  : `${(distRemaining / 1000).toFixed(1)}km`}
-              </p>
-            )}
-            {currentMins !== null && (
-              <p className="font-sans text-white/50 text-[10px] whitespace-nowrap">
-                Arrive {arrivalTime(currentMins)}
-              </p>
-            )}
-          </div>
+          <span style={{ fontSize: '16px', fontWeight: 700, color: '#0f0e0c' }}>Directions</span>
         </div>
 
-        {/* Current step instruction */}
-        <div className="px-4 py-3 bg-accent flex items-center gap-3">
-          <span className="text-2xl flex-shrink-0 font-bold">{getCurrentArrow()}</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-sans text-white font-bold text-sm leading-tight truncate">
-              {getInstruction()}
-            </p>
-            {currentStep?.distance && (
-              <p className="font-sans text-white/60 text-xs mt-0.5">{currentStep.distance}</p>
+        {/* FROM input */}
+        <div style={{ marginBottom: '10px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#b0a898', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+            Your location
+          </div>
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              background: '#f5f5f5', borderRadius: '12px', padding: '12px 14px',
+              border: fromLocation ? '2px solid #1a6b4a' : '2px solid transparent',
+              transition: 'border-color 0.15s',
+            }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#1a6b4a', flexShrink: 0 }} />
+              <input
+                type="text"
+                value={fromQuery}
+                onChange={(e) => {
+                  setFromQuery(e.target.value)
+                  setFromLocation(null)
+                  setRoute(null)
+                }}
+                placeholder="Where are you? e.g. Westlands, Kilimani…"
+                style={{
+                  flex: 1, border: 'none', background: 'transparent',
+                  fontSize: '14px', color: '#0f0e0c', outline: 'none',
+                  fontFamily: 'inherit',
+                }}
+                autoComplete="off"
+              />
+              {searching && (
+                <div style={{
+                  width: '14px', height: '14px',
+                  border: '2px solid #1a6b4a', borderTopColor: 'transparent',
+                  borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0,
+                }} />
+              )}
+              {fromLocation && (
+                <span style={{ color: '#1a6b4a', fontSize: '16px', flexShrink: 0 }}>✓</span>
+              )}
+            </div>
+
+            {/* Suggestions dropdown */}
+            {fromSuggestions.length > 0 && !fromLocation && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 2000,
+                background: '#fff', borderRadius: '12px', marginTop: '4px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                border: '1px solid rgba(0,0,0,0.08)', overflow: 'hidden',
+              }}>
+                {fromSuggestions.map((s, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      setFromLocation({ lat: parseFloat(s.lat), lng: parseFloat(s.lon), label: s.display_name })
+                      setFromQuery(s.display_name.split(',').slice(0, 2).join(','))
+                      setFromSuggestions([])
+                    }}
+                    style={{
+                      padding: '12px 16px', cursor: 'pointer',
+                      fontSize: '13px', color: '#0f0e0c',
+                      borderBottom: i < fromSuggestions.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                      display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = '#f5f5f5')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span style={{ flexShrink: 0, marginTop: '1px' }}>📍</span>
+                    <div>
+                      <div style={{ fontWeight: 500 }}>{s.display_name.split(',')[0]}</div>
+                      <div style={{ fontSize: '11px', color: '#b0a898', marginTop: '2px' }}>
+                        {s.display_name.split(',').slice(1, 3).join(',')}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
+          </div>
+
+          {/* Use current location button */}
+          <button
+            type="button"
+            onClick={() => {
+              setFromQuery('Getting location…')
+              navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                  const { latitude: lat, longitude: lng } = pos.coords
+                  try {
+                    const res   = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                    const data  = await res.json() as { display_name?: string }
+                    const label = data.display_name?.split(',').slice(0, 2).join(',') ?? 'Current location'
+                    setFromLocation({ lat, lng, label })
+                    setFromQuery(label)
+                  } catch {
+                    setFromLocation({ lat, lng, label: 'Current location' })
+                    setFromQuery('Current location')
+                  }
+                },
+                () => setFromQuery(''),
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
+              )
+            }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'none', border: 'none',
+              color: '#1a6b4a', fontSize: '13px', fontWeight: 600,
+              cursor: 'pointer', padding: '6px 0', marginTop: '6px',
+            }}
+          >
+            <span>📡</span> Use my current location
+          </button>
+        </div>
+
+        {/* TO — fixed destination */}
+        <div style={{ marginBottom: '14px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#b0a898', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+            Destination
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            background: '#f5f5f5', borderRadius: '12px', padding: '12px 14px',
+          }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#0f0e0c', flexShrink: 0 }} />
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f0e0c' }}>{property.title}</div>
+              <div style={{ fontSize: '12px', color: '#6b6055', marginTop: '1px' }}>
+                {property.address || property.estate || ''}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Live map ──────────────────────────────────────────────────────────── */}
+      {/* ── Map ──────────────────────────────────────────────────────────────── */}
       <div className="flex-1 relative min-h-0">
         <NavigationMap
           property={property}
+          userLocation={fromLocation}
           onRouteReady={setRoute}
-          onLocationUpdate={(data) => {
-            setDistRemaining(data.distMetres)
-            setUserLat(data.lat)
-            setUserLng(data.lng)
-            if (data.accuracy != null) setGpsAccuracy(data.accuracy)
-            if (data.arrived) setArrived(true)
-          }}
           travelMode={travelMode}
         />
-      </div>
 
-      {/* ── Bottom panel ──────────────────────────────────────────────────────── */}
-      <div className="bg-white border-t border-border flex-shrink-0">
-
-        {/* Bolt-style transport mode cards */}
-        <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 8px' }}>
-          {transportOptions.map(opt => (
-            <button
-              key={opt.mode}
-              type="button"
-              onClick={() => setTravelMode(opt.mode)}
-              style={{
-                flex:       1,
-                padding:    '10px 6px',
-                background: travelMode === opt.mode ? 'rgba(26,107,74,0.08)' : '#fff',
-                border:     travelMode === opt.mode ? '2px solid #1a6b4a' : '1.5px solid rgba(0,0,0,0.10)',
-                borderRadius: '10px',
-                cursor:     'pointer',
-                textAlign:  'center',
-                transition: 'border-color 0.15s, background 0.15s',
-              }}
-            >
-              <div style={{ fontSize: '20px', lineHeight: 1 }}>{opt.icon}</div>
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f0e0c', marginTop: '4px', lineHeight: 1 }}>
-                {opt.mins !== null ? `${opt.mins} min` : '–'}
+        {/* Empty state overlay when no location selected */}
+        {!fromLocation && (
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 500,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(250,248,245,0.82)',
+            backdropFilter: 'blur(2px)',
+          }}>
+            <div style={{ textAlign: 'center', padding: '24px' }}>
+              <div style={{ fontSize: '40px', marginBottom: '10px' }}>🗺</div>
+              <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f0e0c', marginBottom: '6px' }}>
+                Where are you coming from?
               </div>
-              <div style={{ fontSize: '10px', color: '#6b6055', marginTop: '2px', lineHeight: 1 }}>
-                {opt.mins !== null ? arrivalTime(opt.mins) : opt.label}
+              <div style={{ fontSize: '13px', color: '#b0a898', maxWidth: '240px' }}>
+                Type your location above to get walking, matatu and driving times
               </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Distance chip + GPS accuracy label */}
-        <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          {route && (
-            <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b6055' }}>
-              📍 {route.distanceText} total distance
-            </span>
-          )}
-          {gpsAccuracy !== null && (() => {
-            const label = gpsAccuracy <= 10 ? `📍 Precise GPS · ±${Math.round(gpsAccuracy)}m`
-              : gpsAccuracy <= 50          ? `📍 Good GPS · ±${Math.round(gpsAccuracy)}m`
-              : `⚠️ Low accuracy · ±${Math.round(gpsAccuracy)}m — step outside`
-            const color = gpsAccuracy <= 10 ? '#1a6b4a'
-              : gpsAccuracy <= 50          ? '#e8a020'
-              : '#dc2626'
-            return (
-              <span style={{ fontSize: '10px', fontWeight: 600, color, whiteSpace: 'nowrap' }}>
-                {label}
-              </span>
-            )
-          })()}
-        </div>
-
-        {/* Matatu route chips */}
-        {property.matatuRoutes.length > 0 && (
-          <div className="px-4 py-2 bg-surface2 border-t border-border">
-            <p className="font-sans text-[9px] font-bold uppercase tracking-[1px] text-muted mb-1.5">
-              Matatu routes nearby
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {property.matatuRoutes.map((r, i) => (
-                <span key={i} className="bg-accent text-white font-sans font-bold text-[11px] px-2.5 py-1">
-                  {r.trim()}
-                </span>
-              ))}
             </div>
           </div>
         )}
+      </div>
 
-        {/* Step-by-step directions */}
-        {route && route.steps.length > 0 && (
-          <div className="max-h-28 overflow-y-auto border-t border-border">
-            {route.steps.map((step, i) => (
-              <div
-                key={i}
-                className={`flex items-center gap-3 px-4 py-2 border-b border-border/50 transition-colors ${
-                  i === currentStepIndex ? 'bg-[#e6f2ec]' : ''
-                }`}
-              >
-                <span className={`text-lg flex-shrink-0 ${
-                  i === currentStepIndex ? 'text-accent' :
-                  i < currentStepIndex   ? 'text-muted2' : 'text-muted'
-                }`}>
-                  {step.arrow}
+      {/* ── Bottom panel ─────────────────────────────────────────────────────── */}
+      <div style={{ background: '#fff', borderTop: '1px solid rgba(0,0,0,0.08)', flexShrink: 0 }}>
+
+        {fromLocation && route ? (
+          <>
+            {/* Transport mode cards */}
+            <div style={{ display: 'flex', gap: '8px', padding: '10px 16px 8px' }}>
+              {transportOptions.map(opt => (
+                <button
+                  key={opt.mode}
+                  type="button"
+                  onClick={() => setTravelMode(opt.mode)}
+                  style={{
+                    flex: 1, padding: '10px 6px', textAlign: 'center',
+                    background:   travelMode === opt.mode ? 'rgba(26,107,74,0.08)' : '#fff',
+                    border:       travelMode === opt.mode ? '2px solid #1a6b4a' : '1.5px solid rgba(0,0,0,0.10)',
+                    borderRadius: '10px', cursor: 'pointer',
+                    transition:   'border-color 0.15s, background 0.15s',
+                  }}
+                >
+                  <div style={{ fontSize: '20px', lineHeight: 1 }}>{opt.icon}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f0e0c', marginTop: '4px', lineHeight: 1 }}>
+                    {opt.mins !== null ? `${opt.mins} min` : '–'}
+                  </div>
+                  <div style={{ fontSize: '10px', color: '#6b6055', marginTop: '2px', lineHeight: 1 }}>
+                    {opt.mins !== null ? arrivalTime(opt.mins) : opt.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Distance + arrival */}
+            <div style={{ padding: '0 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '11px', fontWeight: 600, color: '#6b6055' }}>
+                📍 {route.distanceText} total distance
+              </span>
+              {currentMins !== null && (
+                <span style={{ fontSize: '11px', fontWeight: 600, color: '#1a6b4a' }}>
+                  Arrive by {arrivalTime(currentMins)}
                 </span>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-bold truncate ${
-                    i === currentStepIndex ? 'text-accent' :
-                    i < currentStepIndex   ? 'text-muted line-through' : 'text-ink'
-                  }`}>
-                    {step.instruction}
-                  </p>
-                  {step.distance && (
-                    <p className="font-sans text-[9px] text-muted2">{step.distance}</p>
-                  )}
-                </div>
-                {i < currentStepIndex && (
-                  <span className="text-accent text-xs flex-shrink-0">✓</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
 
-        {/* Open in Google / Apple Maps + Close */}
-        <div className="px-4 py-3 flex flex-col gap-2 border-t border-border">
-          {userLat !== null && userLng !== null && (
+            {/* Matatu route chips */}
+            {property.matatuRoutes.length > 0 && (
+              <div style={{ padding: '8px 16px', background: '#f5f5f2', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                <p style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '1px', color: '#b0a898', marginBottom: '6px' }}>
+                  Matatu routes nearby
+                </p>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' as const }}>
+                  {property.matatuRoutes.map((r, i) => (
+                    <span key={i} style={{
+                      background: '#1a6b4a', color: '#fff',
+                      fontSize: '11px', fontWeight: 700,
+                      padding: '3px 10px',
+                    }}>
+                      {r.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Step-by-step directions */}
+            {route.steps.length > 0 && (
+              <div style={{ maxHeight: '112px', overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+                {route.steps.map((step, i) => (
+                  <div key={i} style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.04)',
+                  }}>
+                    <span style={{ fontSize: '18px', flexShrink: 0, color: '#6b6055' }}>{step.arrow}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f0e0c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                        {step.instruction}
+                      </p>
+                      {step.distance && (
+                        <p style={{ fontSize: '9px', color: '#b0a898', margin: 0 }}>{step.distance}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Open in Google Maps + Close */}
+            <div style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column' as const, gap: '8px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+                  if (isIOS) {
+                    window.open(`maps://maps.apple.com/?saddr=${fromLocation.lat},${fromLocation.lng}&daddr=${property.latitude},${property.longitude}&dirflg=d`)
+                  } else {
+                    window.open(`https://www.google.com/maps/dir/${fromLocation.lat},${fromLocation.lng}/${property.latitude},${property.longitude}`)
+                  }
+                }}
+                style={{
+                  width: '100%', padding: '13px',
+                  background: '#1a6b4a', color: '#fff',
+                  border: 'none', borderRadius: '12px',
+                  fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}
+              >
+                🗺 Open in Google Maps
+              </button>
+              <button
+                onClick={onClose}
+                style={{
+                  width: '100%', padding: '11px',
+                  background: 'none', border: '1px solid rgba(0,0,0,0.15)',
+                  borderRadius: '12px', fontSize: '12px',
+                  fontWeight: 700, color: '#6b6055', cursor: 'pointer',
+                  textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+                }}
+              >
+                ✕ Close
+              </button>
+            </div>
+          </>
+        ) : fromLocation && !route ? (
+          // Location selected, route loading
+          <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+            <div style={{ width: '24px', height: '24px', border: '3px solid #1a6b4a', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 8px' }} />
+            <div style={{ fontSize: '13px', color: '#6b6055' }}>Calculating route…</div>
+          </div>
+        ) : (
+          // No location selected
+          <div style={{ padding: '10px 16px 12px' }}>
             <button
-              type="button"
-              onClick={() => openNativeMaps(userLat!, userLng!, property.latitude, property.longitude)}
+              onClick={onClose}
               style={{
-                width:          '100%',
-                padding:        '13px',
-                background:     '#1a6b4a',
-                color:          '#fff',
-                border:         'none',
-                borderRadius:   '12px',
-                fontSize:       '13px',
-                fontWeight:     700,
-                cursor:         'pointer',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-                gap:            '8px',
+                width: '100%', padding: '11px',
+                background: 'none', border: '1px solid rgba(0,0,0,0.15)',
+                borderRadius: '12px', fontSize: '12px',
+                fontWeight: 700, color: '#6b6055', cursor: 'pointer',
+                textTransform: 'uppercase' as const, letterSpacing: '0.05em',
               }}
             >
-              🗺 Open in Google Maps
+              ✕ Close
             </button>
-          )}
-          <button
-            onClick={onClose}
-            className="w-full border border-border text-muted font-sans font-bold text-xs uppercase tracking-wide py-3 hover:border-ink hover:text-ink transition-colors"
-          >
-            ✕ Close navigation
-          </button>
-        </div>
+          </div>
+        )}
       </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
