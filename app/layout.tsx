@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import { Instrument_Serif } from 'next/font/google'
 import './globals.css'
-import { Providers } from './providers'
-import { PageLoader } from '@/components/shared/PageLoader'
+import { Providers }     from './providers'
+import { PageLoader }    from '@/components/shared/PageLoader'
+import InstallPrompt     from '@/components/shared/InstallPrompt'
 
 const instrumentSerif = Instrument_Serif({
   subsets: ['latin'],
@@ -31,6 +32,9 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
+  },
+  icons: {
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     type:        'website',
@@ -62,6 +66,7 @@ export default function RootLayout({
       <body className="bg-bg text-ink font-sans antialiased">
         <PageLoader />
         <Providers>{children}</Providers>
+        <InstallPrompt />
       </body>
     </html>
   )
