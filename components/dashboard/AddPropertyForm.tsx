@@ -408,15 +408,26 @@ export default function AddPropertyForm() {
                   Record a silent walkthrough of your property. Renters can view it before visiting.
                 </p>
                 {videoUrl ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(26,107,74,0.08)', borderRadius: '10px' }}>
-                    <span style={{ color: '#1a6b4a', fontSize: '13px', fontWeight: 600 }}>✅ Tour recorded</span>
-                    <button
-                      type="button"
-                      onClick={() => setVideoUrl('')}
-                      style={{ marginLeft: 'auto', fontSize: '12px', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}
-                    >
-                      Remove
-                    </button>
+                  <div>
+                    {/* Video preview player */}
+                    <div style={{ borderRadius: '10px', overflow: 'hidden', background: '#000', position: 'relative', marginBottom: '10px' }}>
+                      <video
+                        src={videoUrl}
+                        controls
+                        playsInline
+                        style={{ width: '100%', maxHeight: '260px', display: 'block', objectFit: 'contain' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(26,107,74,0.08)', borderRadius: '8px' }}>
+                      <span style={{ color: '#1a6b4a', fontSize: '13px', fontWeight: 600 }}>✅ Virtual tour uploaded</span>
+                      <button
+                        type="button"
+                        onClick={() => setVideoUrl('')}
+                        style={{ marginLeft: 'auto', fontSize: '12px', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        ✕ Remove &amp; re-record
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <TourRecorder onUpload={(url) => setVideoUrl(url)} />
