@@ -16,12 +16,14 @@ export default function ExifLocationCapture({
   const [address,        setAddress]        = useState('')
   const [photoCount,     setPhotoCount]     = useState(0)
   const [previews,       setPreviews]       = useState<string[]>([])
+  const [fromGallery,    setFromGallery]    = useState(false)
   const [manualPlusCode, setManualPlusCode] = useState('')
   const [manualStatus,   setManualStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [manualError,    setManualError]    = useState('')
   const mapRef         = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const inputRef       = useRef<HTMLInputElement>(null)
+  const cameraRef      = useRef<HTMLInputElement>(null)
+  const galleryRef     = useRef<HTMLInputElement>(null)
 
   async function reverseGeocode(lat: number, lng: number): Promise<string> {
     try {
@@ -41,14 +43,12 @@ export default function ExifLocationCapture({
     const L = (await import('leaflet')).default
     await import('leaflet/dist/leaflet.css')
 
-    // Clear any existing map
     mapRef.current.innerHTML = ''
     const map = L.map(mapRef.current, {
-      zoomControl:       false,
-      dragging:          false,
-      scrollWheelZoom:   false,
+      zoomControl:     false,
+      dragging:        false,
+      scrollWheelZoom: false,
     }).setView([lat, lng], 18)
-    // Store reference for cleanup
     ;(mapInstanceRef as React.MutableRefObject<unknown>).current = map
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -72,7 +72,7 @@ export default function ExifLocationCapture({
     }).addTo(map)
   }
 
-  async function handleFiles(files: FileList | null) {
+  async function handleFiles(files: FileList | null, isFromGallery = false) {
     if (!files || files.length === 0) return
 
     const fileArray = Array.from(files)
@@ -80,6 +80,7 @@ export default function ExifLocationCapture({
     setStatus('reading')
     setManualPlusCode('')
     setManualStatus('idle')
+    setFromGallery(false)
 
     const previewUrls = fileArray.map(f => URL.createObjectURL(f))
     setPreviews(previewUrls)
@@ -108,12 +109,14 @@ export default function ExifLocationCapture({
 
     if (bestLat !== null && bestLng !== null) {
       setFoundCoords({ lat: bestLat, lng: bestLng })
+      setFromGallery(isFromGallery)
       setStatus('found')
       const addr = await reverseGeocode(bestLat, bestLng)
       setAddress(addr)
       onLocationFound(bestLat, bestLng, addr, 'exif')
       await initMap(bestLat, bestLng)
     } else {
+      if (isFromGallery) setFromGallery(true)
       setStatus('notfound')
     }
   }
@@ -187,59 +190,124 @@ export default function ExifLocationCapture({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
-      {/* Photo upload area */}
+      {/* ── Photo capture UI ──────────────────────────────────────────────── */}
       <div>
         <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f0e0c', marginBottom: '8px' }}>
           Property Photos *
         </div>
 
-        <div
-          onClick={() => inputRef.current?.click()}
-          style={{
-            border:     '2px dashed rgba(26,107,74,0.3)',
-            borderRadius: '14px',
-            padding:    '24px 16px',
-            textAlign:  'center',
-            cursor:     'pointer',
-            background: 'rgba(26,107,74,0.03)',
-            transition: 'all 0.2s',
-          }}
-        >
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📸</div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f0e0c', marginBottom: '4px' }}>
-            Upload property photos
-          </div>
-          <div style={{ fontSize: '12px', color: '#6b6055', lineHeight: 1.5 }}>
-            Take photos AT the property with your phone.<br/>
-            We automatically extract the GPS location from your photos.
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+
+          {/* PRIMARY — take photo now */}
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            style={{
+              width:         '100%',
+              padding:       '20px 16px',
+              background:    '#1a6b4a',
+              color:         '#fff',
+              border:        'none',
+              borderRadius:  '16px',
+              cursor:        'pointer',
+              fontFamily:    'inherit',
+              display:       'flex',
+              flexDirection: 'column',
+              alignItems:    'center',
+              gap:           '8px',
+            }}
+          >
+            <span style={{ fontSize: '36px' }}>📷</span>
+            <div style={{ fontSize: '16px', fontWeight: 700 }}>Take photos now</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', lineHeight: 1.5 }}>
+              Stand at the property and take photos.<br/>
+              GPS is captured automatically from the camera.
+            </div>
+          </button>
+
+          {/* Instructions */}
           <div style={{
-            marginTop:    '12px',
-            display:      'inline-block',
-            background:   '#1a6b4a', color: '#fff',
-            padding:      '8px 20px', borderRadius: '20px',
-            fontSize: '13px', fontWeight: 600,
+            padding:      '12px 14px',
+            background:   'rgba(26,107,74,0.06)',
+            border:       '1px solid rgba(26,107,74,0.15)',
+            borderRadius: '12px',
+            fontSize:     '12px',
+            color:        '#6b6055',
+            lineHeight:   1.7,
           }}>
-            Choose photos
+            <div style={{ fontWeight: 700, color: '#0f0e0c', marginBottom: '4px' }}>
+              Before taking photos:
+            </div>
+            1. Make sure you are physically at the property<br/>
+            2. Enable camera location: Settings → Camera → Location → Allow<br/>
+            3. Take at least 3 photos of different rooms
           </div>
+
+          {/* SECONDARY — gallery fallback */}
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            style={{
+              width:         '100%',
+              padding:       '12px',
+              background:    'transparent',
+              color:         '#6b6055',
+              border:        '1px solid rgba(0,0,0,0.12)',
+              borderRadius:  '12px',
+              cursor:        'pointer',
+              fontFamily:    'inherit',
+              fontSize:      '13px',
+              fontWeight:    500,
+            }}
+          >
+            📁 Upload from gallery instead
+          </button>
+
+          {/* Gallery warning */}
+          {fromGallery && status === 'idle' && (
+            <div style={{
+              padding:      '10px 14px',
+              background:   'rgba(232,160,32,0.08)',
+              border:       '1px solid rgba(232,160,32,0.25)',
+              borderRadius: '10px',
+              fontSize:     '12px',
+              color:        '#b07a10',
+              lineHeight:   1.5,
+            }}>
+              ⚠️ Gallery photos may not have GPS data.
+              For verified listings please take photos directly from the camera at the property.
+            </div>
+          )}
         </div>
 
+        {/* Camera-only input */}
         <input
-          ref={inputRef}
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          multiple
+          style={{ display: 'none' }}
+          onChange={e => void handleFiles(e.target.files)}
+        />
+
+        {/* Gallery input */}
+        <input
+          ref={galleryRef}
           type="file"
           accept="image/*"
           multiple
           style={{ display: 'none' }}
-          onChange={e => void handleFiles(e.target.files)}
+          onChange={e => void handleFiles(e.target.files, true)}
         />
       </div>
 
       {/* Reading EXIF */}
       {status === 'reading' && (
         <div style={{
-          padding:    '14px',
-          background: 'rgba(26,107,74,0.06)',
-          border:     '1px solid rgba(26,107,74,0.15)',
+          padding:      '14px',
+          background:   'rgba(26,107,74,0.06)',
+          border:       '1px solid rgba(26,107,74,0.15)',
           borderRadius: '12px',
           display: 'flex', alignItems: 'center', gap: '10px',
         }}>
@@ -261,8 +329,8 @@ export default function ExifLocationCapture({
             <div key={i} style={{
               aspectRatio: '1',
               borderRadius: '10px',
-              overflow:     'hidden',
-              background:   '#f0f0eb',
+              overflow:    'hidden',
+              background:  '#f0f0eb',
             }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -278,15 +346,46 @@ export default function ExifLocationCapture({
       {/* GPS found from EXIF */}
       {status === 'found' && foundCoords && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {fromGallery ? (
+            <div style={{
+              display:      'inline-flex',
+              alignItems:   'center',
+              gap:          '6px',
+              background:   'rgba(232,160,32,0.15)',
+              color:        '#b07a10',
+              fontSize:     '12px',
+              fontWeight:   700,
+              padding:      '4px 12px',
+              borderRadius: '20px',
+              marginBottom: '8px',
+              alignSelf:    'flex-start',
+            }}>
+              ⚠️ Location from gallery photo
+            </div>
+          ) : (
+            <div style={{
+              display:      'inline-flex',
+              alignItems:   'center',
+              gap:          '6px',
+              background:   '#1a6b4a',
+              color:        '#fff',
+              fontSize:     '12px',
+              fontWeight:   700,
+              padding:      '4px 12px',
+              borderRadius: '20px',
+              marginBottom: '8px',
+              alignSelf:    'flex-start',
+            }}>
+              📍 GPS Verified · taken at property
+            </div>
+          )}
+
           <div style={{
             padding:      '12px 14px',
             background:   'rgba(26,107,74,0.08)',
             border:       '1px solid rgba(26,107,74,0.25)',
             borderRadius: '12px',
           }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a6b4a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>✅</span>GPS location extracted from photo
-            </div>
             <div style={{ fontSize: '12px', color: '#6b6055', lineHeight: 1.4, marginBottom: '6px' }}>
               {address}
             </div>
@@ -294,20 +393,21 @@ export default function ExifLocationCapture({
               🔒 {foundCoords.lat.toFixed(7)}, {foundCoords.lng.toFixed(7)}
             </div>
           </div>
+
           <div
             ref={mapRef}
             style={{
-              height:     '180px',
+              height:       '180px',
               borderRadius: '12px',
-              border:     '1px solid rgba(0,0,0,0.08)',
-              overflow:   'hidden',
-              background: '#f0f0eb',
+              border:       '1px solid rgba(0,0,0,0.08)',
+              overflow:     'hidden',
+              background:   '#f0f0eb',
             }}
           />
         </div>
       )}
 
-      {/* GPS not found — fallback to Plus Code */}
+      {/* GPS not found — fallback */}
       {status === 'notfound' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div style={{
@@ -334,7 +434,8 @@ export default function ExifLocationCapture({
             onClick={() => {
               setPreviews([])
               setStatus('idle')
-              inputRef.current?.click()
+              setFromGallery(false)
+              cameraRef.current?.click()
             }}
             style={{
               padding:      '12px',
@@ -344,7 +445,7 @@ export default function ExifLocationCapture({
               cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
-            📸 Retake photos with location on
+            📷 Retake photos with location on
           </button>
 
           <div style={{ fontSize: '12px', color: '#b0a898', textAlign: 'center', fontWeight: 500 }}>
@@ -366,12 +467,12 @@ export default function ExifLocationCapture({
                 }}
                 placeholder="e.g. GW4G+FH Nairobi"
                 style={{
-                  flex:      1,
-                  padding:   '11px 12px',
-                  background: '#f5f5f5',
-                  border:    manualStatus === 'error'   ? '2px solid #dc2626'
-                           : manualStatus === 'success' ? '2px solid #1a6b4a'
-                           :                             '2px solid transparent',
+                  flex:         1,
+                  padding:      '11px 12px',
+                  background:   '#f5f5f5',
+                  border:       manualStatus === 'error'   ? '2px solid #dc2626'
+                              : manualStatus === 'success' ? '2px solid #1a6b4a'
+                              :                             '2px solid transparent',
                   borderRadius: '10px',
                   fontSize: '14px', fontWeight: 600,
                   color: '#0f0e0c', outline: 'none',
@@ -383,9 +484,9 @@ export default function ExifLocationCapture({
                 onClick={() => void handleManualPlusCode()}
                 disabled={!manualPlusCode.trim() || manualStatus === 'loading'}
                 style={{
-                  padding:   '11px 16px',
-                  background: manualPlusCode.trim() ? '#1a6b4a' : '#ccc',
-                  color:     '#fff', border: 'none',
+                  padding:      '11px 16px',
+                  background:   manualPlusCode.trim() ? '#1a6b4a' : '#ccc',
+                  color:        '#fff', border: 'none',
                   borderRadius: '10px',
                   fontSize: '13px', fontWeight: 700,
                   cursor:    manualPlusCode.trim() ? 'pointer' : 'not-allowed',
@@ -423,11 +524,11 @@ export default function ExifLocationCapture({
                 <div
                   ref={mapRef}
                   style={{
-                    height:     '160px',
+                    height:       '160px',
                     borderRadius: '12px',
-                    border:     '1px solid rgba(0,0,0,0.08)',
-                    overflow:   'hidden',
-                    background: '#f0f0eb',
+                    border:       '1px solid rgba(0,0,0,0.08)',
+                    overflow:     'hidden',
+                    background:   '#f0f0eb',
                   }}
                 />
               </div>
