@@ -58,6 +58,8 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
   const [fromSuggestions, setFromSuggestions] = useState<NominatimResult[]>([])
   const [fromLocation,    setFromLocation]    = useState<{ lat: number; lng: number; label: string } | null>(null)
   const [searching,       setSearching]       = useState(false)
+  const [accuracyMetres,  setAccuracyMetres]  = useState<number | null>(null)
+  const [gpsStatus,       setGpsStatus]       = useState<'denied' | 'unavailable' | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   // Reset state when property changes
@@ -67,6 +69,8 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     setFromSuggestions([])
     setFromLocation(null)
     setSearching(false)
+    setAccuracyMetres(null)
+    setGpsStatus(null)
   }, [property?.title])
 
   async function searchLocation(query: string) {
@@ -237,9 +241,11 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
             type="button"
             onClick={() => {
               setFromQuery('Getting location…')
+              setGpsStatus(null)
               navigator.geolocation.getCurrentPosition(
                 async (pos) => {
-                  const { latitude: lat, longitude: lng } = pos.coords
+                  const { latitude: lat, longitude: lng, accuracy } = pos.coords
+                  setAccuracyMetres(Math.round(accuracy))
                   try {
                     const res   = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
                     const data  = await res.json() as { display_name?: string }
@@ -251,8 +257,11 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
                     setFromQuery('Current location')
                   }
                 },
-                () => setFromQuery(''),
-                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 },
+                (err) => {
+                  setFromQuery('')
+                  setGpsStatus(err.code === 1 ? 'denied' : 'unavailable')
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
               )
             }}
             style={{
@@ -400,6 +409,50 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
               )}
             </div>
 
+            {/* Accuracy badge */}
+            {accuracyMetres !== null && (
+              <div style={{
+                display:        'flex',
+                alignItems:     'center',
+                justifyContent: 'space-between',
+                padding:        '8px 14px',
+                margin:         '0 16px',
+                background:     accuracyMetres <= 50
+                  ? 'rgba(26,107,74,0.08)'
+                  : accuracyMetres <= 200
+                  ? 'rgba(232,160,32,0.08)'
+                  : 'rgba(220,38,38,0.08)',
+                border: `1px solid ${
+                  accuracyMetres <= 50
+                    ? 'rgba(26,107,74,0.2)'
+                    : accuracyMetres <= 200
+                    ? 'rgba(232,160,32,0.2)'
+                    : 'rgba(220,38,38,0.2)'
+                }`,
+                borderRadius: '10px',
+                marginTop:    '0',
+              }}>
+                <div style={{
+                  fontSize:  '12px',
+                  fontWeight: 600,
+                  color:      accuracyMetres <= 50  ? '#1a6b4a'
+                            : accuracyMetres <= 200 ? '#b07a10'
+                            :                        '#dc2626',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}>
+                  {accuracyMetres <= 50  && '✅'}
+                  {accuracyMetres > 50  && accuracyMetres <= 200 && '⚠️'}
+                  {accuracyMetres > 200 && '🔴'}
+                  Your location: ±{accuracyMetres}m accuracy
+                </div>
+                <div style={{ fontSize: '11px', color: '#b0a898' }}>
+                  {accuracyMetres <= 50  && 'Good GPS'}
+                  {accuracyMetres > 50  && accuracyMetres <= 200 && 'Approximate'}
+                  {accuracyMetres > 200 && 'Very rough'}
+                </div>
+              </div>
+            )}
+
             {/* Matatu route chips */}
             {property.matatuRoutes.length > 0 && (
               <div style={{ padding: '8px 16px', background: '#f5f5f2', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
@@ -444,26 +497,50 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
 
             {/* Open in Google Maps + Close */}
             <div style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column' as const, gap: '8px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <button
-                type="button"
-                onClick={() => {
-                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-                  if (isIOS) {
-                    window.open(`maps://maps.apple.com/?saddr=${fromLocation.lat},${fromLocation.lng}&daddr=${property.latitude},${property.longitude}&dirflg=d`)
-                  } else {
-                    window.open(`https://www.google.com/maps/dir/${fromLocation.lat},${fromLocation.lng}/${property.latitude},${property.longitude}`)
-                  }
-                }}
+              <a
+                href={fromLocation
+                  ? `https://www.google.com/maps/dir/${fromLocation.lat},${fromLocation.lng}/${property.latitude},${property.longitude}`
+                  : `https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`
+                }
+                target="_blank"
+                rel="noreferrer"
                 style={{
-                  width: '100%', padding: '13px',
-                  background: '#1a6b4a', color: '#fff',
-                  border: 'none', borderRadius: '12px',
-                  fontSize: '13px', fontWeight: 700, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  display:        'flex',
+                  alignItems:     'center',
+                  justifyContent: 'center',
+                  gap:            '8px',
+                  width:          '100%',
+                  padding:        '16px',
+                  background:     '#1a6b4a',
+                  color:          '#fff',
+                  borderRadius:   '14px',
+                  fontSize:       '15px',
+                  fontWeight:     700,
+                  textDecoration: 'none',
+                  boxSizing:      'border-box' as const,
                 }}
               >
-                🗺 Open in Google Maps
-              </button>
+                <span style={{ fontSize: '20px' }}>🗺</span>
+                Open in Google Maps
+                <span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.8)' }}>
+                  for turn-by-turn
+                </span>
+              </a>
+
+              <div style={{
+                textAlign:  'center',
+                fontSize:   '11px',
+                color:      '#b0a898',
+                lineHeight: 1.5,
+              }}>
+                Google Maps uses your phone GPS directly for precise navigation.
+                {accuracyMetres !== null && accuracyMetres > 100 && (
+                  <span style={{ color: '#e8a020', display: 'block', marginTop: '2px' }}>
+                    Your browser location is approximate — Google Maps will be more accurate.
+                  </span>
+                )}
+              </div>
+
               <button
                 onClick={onClose}
                 style={{
@@ -485,8 +562,46 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
             <div style={{ fontSize: '13px', color: '#6b6055' }}>Calculating route…</div>
           </div>
         ) : (
-          // No location selected
-          <div style={{ padding: '10px 16px 12px' }}>
+          // No location selected — or GPS failed
+          <div style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column' as const, gap: '8px' }}>
+            {gpsStatus && (
+              <div style={{
+                padding:       '16px',
+                background:    '#f5f5f5',
+                borderRadius:  '14px',
+                textAlign:     'center',
+                display:       'flex',
+                flexDirection: 'column' as const,
+                gap:           '10px',
+              }}>
+                <div style={{ fontSize: '13px', color: '#6b6055', lineHeight: 1.5 }}>
+                  {gpsStatus === 'denied'
+                    ? 'Location access was denied. Open Google Maps for precise directions from your current position.'
+                    : 'Could not get your location in the browser. Open Google Maps for precise directions from your current position.'
+                  }
+                </div>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display:        'flex',
+                    alignItems:     'center',
+                    justifyContent: 'center',
+                    gap:            '8px',
+                    padding:        '14px',
+                    background:     '#1a6b4a',
+                    color:          '#fff',
+                    borderRadius:   '12px',
+                    fontSize:       '14px',
+                    fontWeight:     700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  🗺 Open Google Maps
+                </a>
+              </div>
+            )}
             <button
               onClick={onClose}
               style={{
