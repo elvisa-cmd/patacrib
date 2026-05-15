@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
+import BackButton from '@/components/ui/BackButton'
 import { ImageGallery } from '@/components/property/ImageGallery'
 import { VirtualTour } from '@/components/property/VirtualTour'
 import PropertyInfo from '@/components/property/PropertyInfo'
@@ -133,7 +134,12 @@ export default async function PropertyDetailPage({
     <div className="min-h-screen bg-bg">
       <Nav />
 
-      <main>
+      <main style={{ position: 'relative' }}>
+        {/* Floating back button */}
+        <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20 }}>
+          <BackButton href="/browse" />
+        </div>
+
         <ImageGallery
           images={detailedProperty.images}
           title={detailedProperty.title}

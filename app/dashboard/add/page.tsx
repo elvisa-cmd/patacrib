@@ -1,8 +1,8 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import AddPropertyForm from '@/components/dashboard/AddPropertyForm'
+import BackButton from '@/components/ui/BackButton'
 
 export default async function AddPropertyPage() {
   const session = await getServerSession(authOptions)
@@ -20,21 +20,9 @@ export default async function AddPropertyPage() {
         position:     'relative',
       }}>
         {/* Back button */}
-        <Link href="/dashboard/admin" style={{
-          display:        'inline-flex',
-          alignItems:     'center',
-          justifyContent: 'center',
-          width:          '36px',
-          height:         '36px',
-          background:     'rgba(255,255,255,0.15)',
-          borderRadius:   '50%',
-          marginBottom:   '16px',
-          textDecoration: 'none',
-          fontSize:       '18px',
-          color:          '#fff',
-        }}>
-          ←
-        </Link>
+        <div style={{ marginBottom: '16px' }}>
+          <BackButton href="/dashboard/admin" />
+        </div>
 
         <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 4px', letterSpacing: '-0.4px' }}>
           List your property

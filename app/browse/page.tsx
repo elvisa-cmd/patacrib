@@ -77,7 +77,7 @@ export default async function BrowsePage({
   return (
     <div className="h-screen overflow-hidden bg-bg flex flex-col">
       <Nav />
-      <div className="flex flex-col md:flex-row flex-1 overflow-hidden" style={{ paddingTop: '60px' }}>
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
 
         {/* Sidebar — hidden on mobile */}
         <div className="hidden md:flex md:flex-col w-[280px] flex-shrink-0 border-r border-border overflow-y-auto">

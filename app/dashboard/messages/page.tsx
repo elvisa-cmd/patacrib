@@ -76,7 +76,7 @@ export default async function MessagesPage({
   return (
     <div className="min-h-screen bg-bg">
       <Nav />
-      <div className="pt-[60px]">
+      <div>
         <MessagesContainer
           conversations={serialized}
           userId={userId}

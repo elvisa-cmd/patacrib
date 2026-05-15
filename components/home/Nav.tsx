@@ -6,7 +6,7 @@ import NavMobileMenu from './NavMobileMenu'
 
 const GUEST_LINKS = [
   { label: 'Browse',       href: '/browse' },
-  { label: 'Map',          href: '/browse?view=map' },
+  { label: 'Map',          href: '/browse/map' },
   { label: 'Estates',      href: '/browse?view=estates' },
   { label: 'Landlords',    href: '/signup' },
   { label: 'How it works', href: '/#how-it-works' },
@@ -14,7 +14,7 @@ const GUEST_LINKS = [
 
 const AUTH_LINKS = [
   { label: 'Browse', href: '/browse' },
-  { label: 'Map',    href: '/browse?view=map' },
+  { label: 'Map',    href: '/browse/map' },
 ]
 
 export default async function Nav() {
