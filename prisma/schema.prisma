@@ -62,6 +62,8 @@ model Property {
   powerBackup   Boolean  @default(false)
   borehole      Boolean  @default(false)
 
+  plusCode  String?
+
   status    String   @default("available") // available | taken | maintenance
   createdAt DateTime @default(now())
   adminId   String

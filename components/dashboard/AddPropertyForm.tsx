@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import GoogleMapsLocationPicker from '@/components/shared/GoogleMapsLocationPicker'
+import PlusCodePicker from '@/components/shared/PlusCodePicker'
 import TourRecorder from '@/components/shared/TourRecorder'
 import PhotoUpload from './PhotoUpload'
 import ListingPreview from './ListingPreview'
@@ -120,9 +120,10 @@ export default function AddPropertyForm() {
   const [address,         setAddress]         = useState('')
   const [estate,          setEstate]          = useState('')
   const [city,            setCity]            = useState('Nairobi')
-  const [lat,             setLat]             = useState<number | null>(null)
-  const [lng,             setLng]             = useState<number | null>(null)
-  const [capturedAddress, setCapturedAddress] = useState('')
+  const [lat,              setLat]              = useState<number | null>(null)
+  const [lng,              setLng]              = useState<number | null>(null)
+  const [capturedAddress,  setCapturedAddress]  = useState('')
+  const [capturedPlusCode, setCapturedPlusCode] = useState('')
 
   // Section 3 — Photos
   const [images, setImages] = useState<string[]>([])
@@ -155,7 +156,7 @@ export default function AddPropertyForm() {
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
     if (lat === null || lng === null) {
-      setError('Please set the property location using Google Maps before submitting.')
+      setError('Please enter your Plus Code to set the property location.')
       return
     }
 
@@ -179,6 +180,7 @@ export default function AddPropertyForm() {
           city,
           latitude:      lat,
           longitude:     lng,
+          plusCode:      capturedPlusCode || undefined,
           images,
           videoUrl:      videoUrl      || undefined,
           tourImageUrl:  tourImageUrl  || undefined,
@@ -334,22 +336,25 @@ export default function AddPropertyForm() {
               <SectionHeader num={2} title="Location & GPS" />
 
               <div className="mb-5">
-                <GoogleMapsLocationPicker
-                  onCapture={(capLat, capLng, capAddress) => {
+                <PlusCodePicker
+                  onCapture={(capLat, capLng, capAddress, capPlusCode) => {
                     setLat(capLat)
                     setLng(capLng)
                     setCapturedAddress(capAddress)
+                    setCapturedPlusCode(capPlusCode)
                     if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
                   }}
                   onClear={() => {
                     setLat(null)
                     setLng(null)
                     setCapturedAddress('')
+                    setCapturedPlusCode('')
                   }}
                   captured={lat !== null}
                   capturedAddress={capturedAddress}
                   capturedLat={lat ?? undefined}
                   capturedLng={lng ?? undefined}
+                  capturedPlusCode={capturedPlusCode || undefined}
                 />
               </div>
 

@@ -94,6 +94,7 @@ export default async function PropertyDetailPage({
     safetyScore:   property.safetyScore,
     powerBackup:   property.powerBackup,
     borehole:      property.borehole,
+    plusCode:      property.plusCode,
     status:        property.status,
     createdAt:     property.createdAt.toISOString(),
     adminId:       property.adminId,
@@ -173,6 +174,36 @@ export default async function PropertyDetailPage({
 
           <div className="flex-1 min-w-0 order-2 md:order-1">
             <PropertyInfo property={detailedProperty} />
+
+            {detailedProperty.plusCode && (
+              <div className="px-0 mb-4">
+                <a
+                  href={`https://plus.codes/${detailedProperty.plusCode}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display:        'inline-flex',
+                    alignItems:     'center',
+                    gap:            '6px',
+                    padding:        '6px 12px',
+                    background:     'rgba(26,107,74,0.08)',
+                    border:         '1px solid rgba(26,107,74,0.2)',
+                    borderRadius:   '20px',
+                    fontSize:       '12px',
+                    fontWeight:     600,
+                    color:          '#1a6b4a',
+                    textDecoration: 'none',
+                    fontFamily:     'monospace',
+                  }}
+                >
+                  📍 {detailedProperty.plusCode}
+                  <span style={{ fontSize: '10px', fontWeight: 400, fontFamily: 'sans-serif', color: '#4a9870' }}>
+                    Open in maps ↗
+                  </span>
+                </a>
+              </div>
+            )}
+
             <KenyaDetails
               waterSchedule={detailedProperty.waterSchedule}
               matatuRoutes={detailedProperty.matatuRoutes}

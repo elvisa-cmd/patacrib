@@ -51,6 +51,7 @@ export const CreatePropertySchema = z.object({
   safetyScore: z.number().min(0).max(10).optional(),
   powerBackup: z.boolean().default(false),
   borehole: z.boolean().default(false),
+  plusCode: z.string().optional(),
   status: z.enum(['available', 'taken', 'maintenance']).default('available'),
 })
 

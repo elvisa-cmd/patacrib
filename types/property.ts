@@ -20,6 +20,7 @@ export type SerializedProperty = {
   powerBackup: boolean
   videoUrl?: string | null
   tourImageUrl?: string | null
+  plusCode?: string | null
 }
 
 export type BrowseProperty = SerializedProperty & {
