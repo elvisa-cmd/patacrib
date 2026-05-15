@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import FeaturedStrip from './FeaturedStrip'
+import HeroSlider from './HeroSlider'
 import MapSection from './MapSection'
 import StatsBar from './StatsBar'
 import NavigationModal from '@/components/shared/NavigationModal'
@@ -34,7 +34,7 @@ export default function HomeContent({
 
   return (
     <>
-      <FeaturedStrip properties={properties} dbError={dbError} />
+      <HeroSlider properties={properties} dbError={dbError} />
       <MapSection
         properties={properties}
         selectedId={selectedId}
