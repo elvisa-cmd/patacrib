@@ -42,6 +42,8 @@ interface NominatimResult {
   lat:          string
   lon:          string
   display_name: string
+  namedetails?: { name?: string }
+  address?:     { road?: string; suburb?: string; neighbourhood?: string; city?: string }
 }
 
 function arrivalTime(minsFromNow: number): string {
@@ -71,12 +73,26 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     if (query.length < 3) { setFromSuggestions([]); return }
     setSearching(true)
     try {
-      const res  = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', Kenya')}&format=json&limit=5&countrycodes=ke`,
-        { headers: { 'Accept-Language': 'en' } },
-      )
+      const base = 'https://nominatim.openstreetmap.org/search?' + new URLSearchParams({
+        format:           'json',
+        limit:            '8',
+        countrycodes:     'ke',
+        addressdetails:   '1',
+        namedetails:      '1',
+        dedupe:           '1',
+        'accept-language':'en',
+      })
+      const res  = await fetch(`${base}&q=${encodeURIComponent(query)}`)
       const data = await res.json() as NominatimResult[]
-      setFromSuggestions(data)
+
+      if (data.length === 0) {
+        // Retry with Nairobi context for specific buildings
+        const res2  = await fetch(`${base}&q=${encodeURIComponent(query + ' Nairobi')}`)
+        const data2 = await res2.json() as NominatimResult[]
+        setFromSuggestions(data2)
+      } else {
+        setFromSuggestions(data)
+      }
     } catch {
       setFromSuggestions([])
     } finally {
@@ -203,9 +219,11 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
                   >
                     <span style={{ flexShrink: 0, marginTop: '1px' }}>📍</span>
                     <div>
-                      <div style={{ fontWeight: 500 }}>{s.display_name.split(',')[0]}</div>
+                      <div style={{ fontWeight: 500 }}>
+                        {s.namedetails?.name ?? s.display_name.split(',')[0]}
+                      </div>
                       <div style={{ fontSize: '11px', color: '#b0a898', marginTop: '2px' }}>
-                        {s.display_name.split(',').slice(1, 3).join(',')}
+                        {s.display_name.split(',').slice(1, 4).join(',').trim()}
                       </div>
                     </div>
                   </div>
@@ -245,6 +263,47 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
             }}
           >
             <span>📡</span> Use my current location
+          </button>
+
+          {/* Paste coordinates fallback */}
+          <button
+            type="button"
+            onClick={() => {
+              const input = prompt('Paste Google Maps link or coordinates (lat, lng):')
+              if (!input) return
+
+              // "lat, lng" or "lat lng"
+              const coordMatch = input.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/)
+              if (coordMatch) {
+                const lat = parseFloat(coordMatch[1])
+                const lng = parseFloat(coordMatch[2])
+                if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                  setFromLocation({ lat, lng, label: `${lat.toFixed(5)}, ${lng.toFixed(5)}` })
+                  setFromQuery(`${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+                  setFromSuggestions([])
+                  return
+                }
+              }
+
+              // Google Maps URL: ?q=-1.2921,36.8219 or /@-1.2921,36.8219
+              const urlMatch = input.match(/[?&@](-?\d+\.?\d*),(-?\d+\.?\d*)/)
+              if (urlMatch) {
+                const lat = parseFloat(urlMatch[1])
+                const lng = parseFloat(urlMatch[2])
+                setFromLocation({ lat, lng, label: 'Custom location' })
+                setFromQuery('Custom location')
+                setFromSuggestions([])
+              }
+            }}
+            style={{
+              background: 'none', border: 'none',
+              color: '#b0a898', fontSize: '11px',
+              cursor: 'pointer', padding: '2px 0',
+              textDecoration: 'underline',
+              display: 'block',
+            }}
+          >
+            Paste Google Maps link or coordinates
           </button>
         </div>
 
