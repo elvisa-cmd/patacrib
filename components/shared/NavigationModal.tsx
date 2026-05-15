@@ -4,6 +4,29 @@ import { useState, useEffect, useRef } from 'react'
 import dynamic                          from 'next/dynamic'
 import type { NavRoute }                from './NavigationMapInner'
 
+function isIOS(): boolean {
+  if (typeof window === 'undefined') return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+function getMapsUrl(
+  userLat: number | null,
+  userLng: number | null,
+  destLat: number,
+  destLng: number,
+): string {
+  const dest = `${destLat},${destLng}`
+  if (isIOS()) {
+    return userLat !== null && userLng !== null
+      ? `maps://maps.apple.com/?saddr=${userLat},${userLng}&daddr=${dest}&dirflg=d`
+      : `maps://maps.apple.com/?daddr=${dest}&dirflg=d`
+  }
+  return userLat !== null && userLng !== null
+    ? `https://www.google.com/maps/dir/${userLat},${userLng}/${dest}`
+    : `https://www.google.com/maps/dir/?api=1&destination=${dest}`
+}
+
 const NavigationMap = dynamic(
   () => import('./NavigationMap'),
   {
@@ -240,6 +263,14 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           <button
             type="button"
             onClick={() => {
+              if (
+                typeof window !== 'undefined' &&
+                window.location.protocol !== 'https:' &&
+                !window.location.hostname.includes('localhost')
+              ) {
+                setGpsStatus('unavailable')
+                return
+              }
               setFromQuery('Getting location…')
               setGpsStatus(null)
               navigator.geolocation.getCurrentPosition(
@@ -350,8 +381,9 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           <div style={{
             position: 'absolute', inset: 0, zIndex: 500,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(250,248,245,0.82)',
-            backdropFilter: 'blur(2px)',
+            background:           'rgba(250,248,245,0.82)',
+            backdropFilter:       'blur(2px)',
+            WebkitBackdropFilter: 'blur(2px)',
           }}>
             <div style={{ textAlign: 'center', padding: '24px' }}>
               <div style={{ fontSize: '40px', marginBottom: '10px' }}>🗺</div>
@@ -495,51 +527,56 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
               </div>
             )}
 
-            {/* Open in Google Maps + Close */}
+            {/* Open in Maps + Close */}
             <div style={{ padding: '10px 16px 12px', display: 'flex', flexDirection: 'column' as const, gap: '8px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <a
-                href={fromLocation
-                  ? `https://www.google.com/maps/dir/${fromLocation.lat},${fromLocation.lng}/${property.latitude},${property.longitude}`
-                  : `https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`
-                }
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display:        'flex',
-                  alignItems:     'center',
-                  justifyContent: 'center',
-                  gap:            '8px',
-                  width:          '100%',
-                  padding:        '16px',
-                  background:     '#1a6b4a',
-                  color:          '#fff',
-                  borderRadius:   '14px',
-                  fontSize:       '15px',
-                  fontWeight:     700,
-                  textDecoration: 'none',
-                  boxSizing:      'border-box' as const,
-                }}
-              >
-                <span style={{ fontSize: '20px' }}>🗺</span>
-                Open in Google Maps
-                <span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.8)' }}>
-                  for turn-by-turn
-                </span>
-              </a>
+              {(() => {
+                const ios     = isIOS()
+                const mapsUrl = getMapsUrl(
+                  fromLocation?.lat ?? null,
+                  fromLocation?.lng ?? null,
+                  property.latitude,
+                  property.longitude,
+                )
+                return (
+                  <>
+                    <a
+                      href={mapsUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display:        'flex',
+                        alignItems:     'center',
+                        justifyContent: 'center',
+                        gap:            '8px',
+                        width:          '100%',
+                        padding:        '16px',
+                        background:     '#1a6b4a',
+                        color:          '#fff',
+                        borderRadius:   '14px',
+                        fontSize:       '15px',
+                        fontWeight:     700,
+                        textDecoration: 'none',
+                        boxSizing:      'border-box' as const,
+                      }}
+                    >
+                      <span style={{ fontSize: '20px' }}>{ios ? '🍎' : '🗺'}</span>
+                      Open in {ios ? 'Apple Maps' : 'Google Maps'}
+                      <span style={{ fontSize: '12px', fontWeight: 400, color: 'rgba(255,255,255,0.8)' }}>
+                        for turn-by-turn
+                      </span>
+                    </a>
 
-              <div style={{
-                textAlign:  'center',
-                fontSize:   '11px',
-                color:      '#b0a898',
-                lineHeight: 1.5,
-              }}>
-                Google Maps uses your phone GPS directly for precise navigation.
-                {accuracyMetres !== null && accuracyMetres > 100 && (
-                  <span style={{ color: '#e8a020', display: 'block', marginTop: '2px' }}>
-                    Your browser location is approximate — Google Maps will be more accurate.
-                  </span>
-                )}
-              </div>
+                    <div style={{ textAlign: 'center', fontSize: '11px', color: '#b0a898', lineHeight: 1.5 }}>
+                      {ios ? 'Apple Maps' : 'Google Maps'} uses your phone GPS directly for precise navigation.
+                      {accuracyMetres !== null && accuracyMetres > 100 && (
+                        <span style={{ color: '#e8a020', display: 'block', marginTop: '2px' }}>
+                          Your browser location is approximate — {ios ? 'Apple Maps' : 'Google Maps'} will be more accurate.
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )
+              })()}
 
               <button
                 onClick={onClose}
@@ -574,32 +611,41 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
                 flexDirection: 'column' as const,
                 gap:           '10px',
               }}>
-                <div style={{ fontSize: '13px', color: '#6b6055', lineHeight: 1.5 }}>
-                  {gpsStatus === 'denied'
-                    ? 'Location access was denied. Open Google Maps for precise directions from your current position.'
-                    : 'Could not get your location in the browser. Open Google Maps for precise directions from your current position.'
-                  }
-                </div>
-                <a
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${property.latitude},${property.longitude}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display:        'flex',
-                    alignItems:     'center',
-                    justifyContent: 'center',
-                    gap:            '8px',
-                    padding:        '14px',
-                    background:     '#1a6b4a',
-                    color:          '#fff',
-                    borderRadius:   '12px',
-                    fontSize:       '14px',
-                    fontWeight:     700,
-                    textDecoration: 'none',
-                  }}
-                >
-                  🗺 Open Google Maps
-                </a>
+                {(() => {
+                  const ios     = isIOS()
+                  const mapsUrl = getMapsUrl(null, null, property.latitude, property.longitude)
+                  const appName = ios ? 'Apple Maps' : 'Google Maps'
+                  return (
+                    <>
+                      <div style={{ fontSize: '13px', color: '#6b6055', lineHeight: 1.5 }}>
+                        {gpsStatus === 'denied'
+                          ? `Location access was denied. Open ${appName} for precise directions from your current position.`
+                          : `Could not get your location in the browser. Open ${appName} for precise directions from your current position.`
+                        }
+                      </div>
+                      <a
+                        href={mapsUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display:        'flex',
+                          alignItems:     'center',
+                          justifyContent: 'center',
+                          gap:            '8px',
+                          padding:        '14px',
+                          background:     '#1a6b4a',
+                          color:          '#fff',
+                          borderRadius:   '12px',
+                          fontSize:       '14px',
+                          fontWeight:     700,
+                          textDecoration: 'none',
+                        }}
+                      >
+                        {ios ? '🍎' : '🗺'} Open {appName}
+                      </a>
+                    </>
+                  )
+                })()}
               </div>
             )}
             <button

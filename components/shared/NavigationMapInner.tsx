@@ -98,7 +98,9 @@ export default function NavigationMapInner({
         attributionControl: false,
         dragging:           true,
         touchZoom:          true,
-      })
+        // fix iOS Safari tap delay — cast because @types/leaflet omits these options
+        ...({ tap: false, tapTolerance: 15 } as object),
+      } as import('leaflet').MapOptions)
       mapInstRef.current = map
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map)
