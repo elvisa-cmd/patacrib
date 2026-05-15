@@ -37,12 +37,7 @@ export interface NavigationMapInnerProps {
   travelMode: 'walking' | 'driving' | 'matatu'
 }
 
-type GpsStatus = 'locating' | 'refining' | 'locked' | 'unavailable' | 'unavailable_cbd'
-
 const CBD: [number, number] = [-1.286389, 36.817223]
-const TARGET_ACCURACY = 20   // metres — stop acquiring when we hit this
-const MAX_ATTEMPTS    = 5    // max watchPosition callbacks before we accept best
-const SAFETY_TIMEOUT  = 15000 // ms — always resolve after this regardless
 
 const C = {
   accent: '#1a6b4a',
@@ -109,22 +104,6 @@ function haversineM(lat1: number, lng1: number, lat2: number, lng2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-function getBadgeConfig(status: GpsStatus, acc: number | null): {
-  text: string
-  icon: 'spinner' | 'dot' | 'check' | 'warn'
-  warn: boolean
-} {
-  if (status === 'unavailable')     return { text: 'Location unavailable · showing property only', icon: 'warn',    warn: true  }
-  if (status === 'unavailable_cbd') return { text: 'No GPS · distances shown from CBD',            icon: 'warn',    warn: true  }
-  if (status === 'locating' || acc === null)
-    return { text: '📡 Getting your precise location…', icon: 'spinner', warn: false }
-  if (acc > 50)
-    return { text: `⚠️ Low accuracy ±${Math.round(acc)}m — move away from buildings`, icon: 'warn', warn: true }
-  if (acc > 20)
-    return { text: `📍 Location found · refining… ±${Math.round(acc)}m`, icon: 'dot', warn: false }
-  return { text: `✅ Precise location locked · ±${Math.round(acc)}m`, icon: 'check', warn: false }
-}
-
 export default function NavigationMapInner({
   property,
   onRouteReady,
@@ -135,16 +114,17 @@ export default function NavigationMapInner({
   const leafletRef        = useRef<typeof import('leaflet') | null>(null)
   const userMarkerRef     = useRef<import('leaflet').Marker | null>(null)
   const routeLineRef      = useRef<import('leaflet').Layer | null>(null)
-  const accuracyCircleRef = useRef<import('leaflet').Circle | null>(null)
-  const acqWatchRef       = useRef<number | null>(null)   // accuracy-targeting watch
+  const accuracyCircleRef = useRef<any>(null)
+  const watchIdRef        = useRef<number | null>(null)   // acquisition watch
   const navWatchRef       = useRef<number | null>(null)   // live navigation watch
   const lastOsrmLocRef    = useRef<[number, number] | null>(null)
   const userLocRef        = useRef<[number, number] | null>(null)
-  const retryFnRef        = useRef<(() => void) | null>(null)
+  const startPreciseRef   = useRef<(() => void) | null>(null)
 
-  const [gpsStatus,  setGpsStatus]  = useState<GpsStatus>('locating')
-  const [accuracy,   setAccuracy]   = useState<number | null>(null)
-  const [showRetry,  setShowRetry]  = useState(false)
+  const [accuracyLabel, setAccuracyLabel] = useState('📡 Getting your precise location…')
+  const [accuracyColor, setAccuracyColor] = useState('#b0a898')
+  const [showRetry,     setShowRetry]     = useState(false)
+  const [gpsLocked,     setGpsLocked]     = useState(false)
 
   useEffect(() => {
     if (!mapRef.current || mapInstRef.current) return
@@ -275,7 +255,14 @@ export default function NavigationMapInner({
           (pos) => {
             if (cancelled) return
             const { latitude, longitude, heading, accuracy: acc } = pos.coords
-            setAccuracy(Math.round(acc))
+
+            const label = acc <= 15 ? `✅ Navigating · ±${Math.round(acc)}m`
+              : acc <= 50           ? `📍 Good GPS · ±${Math.round(acc)}m`
+              : `⚠️ Move outside for better GPS…`
+            const color = acc <= 15 ? '#1a6b4a' : acc <= 50 ? '#e8a020' : '#dc2626'
+            setAccuracyLabel(label)
+            setAccuracyColor(color)
+
             placeUserDot(latitude, longitude, heading ?? undefined, false)
             drawAccuracyCircle(latitude, longitude, acc)
             map.panTo([latitude, longitude], { animate: true })
@@ -302,17 +289,17 @@ export default function NavigationMapInner({
         )
       }
 
-      // ── GPS acquisition: watchPosition targeting accuracy ─────────────────────
-      function startGpsAcquisition() {
-        // Clear any previous acquisition watch
-        if (acqWatchRef.current !== null) {
-          navigator.geolocation.clearWatch(acqWatchRef.current)
-          acqWatchRef.current = null
+      // ── Precise GPS acquisition ───────────────────────────────────────────────
+      function startPreciseLocation() {
+        if (watchIdRef.current !== null) {
+          navigator.geolocation.clearWatch(watchIdRef.current)
+          watchIdRef.current = null
         }
 
-        setGpsStatus('locating')
-        setAccuracy(null)
+        setAccuracyLabel('📡 Getting your precise location…')
+        setAccuracyColor('#b0a898')
         setShowRetry(false)
+        setGpsLocked(false)
 
         let bestPos:  GeolocationPosition | null = null
         let attempts  = 0
@@ -322,64 +309,71 @@ export default function NavigationMapInner({
           if (resolved || cancelled) return
           resolved = true
           clearTimeout(safetyTimer)
-          if (acqWatchRef.current !== null) {
-            navigator.geolocation.clearWatch(acqWatchRef.current)
-            acqWatchRef.current = null
+          if (watchIdRef.current !== null) {
+            navigator.geolocation.clearWatch(watchIdRef.current)
+            watchIdRef.current = null
           }
-          setGpsStatus('locked')
-          setAccuracy(Math.round(pos.coords.accuracy))
-          setShowRetry(pos.coords.accuracy > 50)
+
+          const acc   = pos.coords.accuracy
+          const label = acc <= 15 ? `✅ Navigating · ±${Math.round(acc)}m`
+            : acc <= 50           ? `📍 Good GPS · ±${Math.round(acc)}m`
+            : `⚠️ Move outside for better GPS…`
+          const color = acc <= 15 ? '#1a6b4a' : acc <= 50 ? '#e8a020' : '#dc2626'
+          setAccuracyLabel(label)
+          setAccuracyColor(color)
+          setGpsLocked(true)
+          setShowRetry(acc > 50)
+
           placeUserDot(pos.coords.latitude, pos.coords.longitude, pos.coords.heading ?? undefined, true)
-          drawAccuracyCircle(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy)
+          drawAccuracyCircle(pos.coords.latitude, pos.coords.longitude, acc)
+
           const distM = haversineM(pos.coords.latitude, pos.coords.longitude, property.latitude, property.longitude)
-          onLocationUpdate({ lat: pos.coords.latitude, lng: pos.coords.longitude, heading: pos.coords.heading ?? undefined, arrived: false, distMetres: distM, accuracy: Math.round(pos.coords.accuracy) })
+          onLocationUpdate({ lat: pos.coords.latitude, lng: pos.coords.longitude, heading: pos.coords.heading ?? undefined, arrived: false, distMetres: distM, accuracy: Math.round(acc) })
           void calculateRoute([pos.coords.latitude, pos.coords.longitude])
           startNavWatch()
         }
 
-        // Safety timeout — use whatever we have after 15 s
+        // Hard stop after 20 s — use whatever we have
         const safetyTimer = setTimeout(() => {
           if (resolved || cancelled) return
           if (bestPos) {
             finish(bestPos)
           } else {
             resolved = true
-            setGpsStatus('unavailable_cbd')
+            setAccuracyLabel('⚠️ No GPS — showing distance from CBD')
+            setAccuracyColor('#dc2626')
             setShowRetry(true)
             void calculateRoute(CBD)
           }
-        }, SAFETY_TIMEOUT)
+        }, 20000)
 
-        acqWatchRef.current = navigator.geolocation.watchPosition(
+        watchIdRef.current = navigator.geolocation.watchPosition(
           (pos) => {
             if (resolved || cancelled) return
             attempts++
 
-            // Keep the best (most accurate) reading
             if (!bestPos || pos.coords.accuracy < bestPos.coords.accuracy) {
               bestPos = pos
-              setAccuracy(Math.round(pos.coords.accuracy))
 
-              // Update status based on live accuracy
-              if (pos.coords.accuracy > 50) {
-                setGpsStatus('locating')
-              } else {
-                setGpsStatus('refining')
-              }
+              const acc   = pos.coords.accuracy
+              const label = acc > 50
+                ? `📡 Getting your precise location… ±${Math.round(acc)}m`
+                : `📍 Refining location… ±${Math.round(acc)}m`
+              const color = acc > 50 ? '#b0a898' : '#e8a020'
+              setAccuracyLabel(label)
+              setAccuracyColor(color)
 
-              // Update map with best-so-far position
               placeUserDot(pos.coords.latitude, pos.coords.longitude, pos.coords.heading ?? undefined, !userMarkerRef.current)
-              drawAccuracyCircle(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy)
+              drawAccuracyCircle(pos.coords.latitude, pos.coords.longitude, acc)
 
               const distM = haversineM(pos.coords.latitude, pos.coords.longitude, property.latitude, property.longitude)
-              onLocationUpdate({ lat: pos.coords.latitude, lng: pos.coords.longitude, heading: pos.coords.heading ?? undefined, arrived: false, distMetres: distM, accuracy: Math.round(pos.coords.accuracy) })
+              onLocationUpdate({ lat: pos.coords.latitude, lng: pos.coords.longitude, heading: pos.coords.heading ?? undefined, arrived: false, distMetres: distM, accuracy: Math.round(acc) })
 
-              // Emit route estimate from first fix so times are never blank
               if (attempts === 1) void calculateRoute([pos.coords.latitude, pos.coords.longitude])
             }
 
-            // Finish when accurate enough or we've tried enough times
-            if (pos.coords.accuracy <= TARGET_ACCURACY || attempts >= MAX_ATTEMPTS) {
+            // Stop at 15 m accuracy or after 8 attempts
+            if (pos.coords.accuracy <= 15 || attempts >= 8) {
               finish(bestPos!)
             }
           },
@@ -387,21 +381,21 @@ export default function NavigationMapInner({
             if (resolved || cancelled) return
             clearTimeout(safetyTimer)
             resolved = true
-            if (acqWatchRef.current !== null) {
-              navigator.geolocation.clearWatch(acqWatchRef.current)
-              acqWatchRef.current = null
+            if (watchIdRef.current !== null) {
+              navigator.geolocation.clearWatch(watchIdRef.current)
+              watchIdRef.current = null
             }
 
             if (err.code === 1) {
-              // Permission denied — no point retrying
-              setGpsStatus('unavailable')
+              setAccuracyLabel('Location permission denied')
+              setAccuracyColor('#dc2626')
               setShowRetry(false)
               void calculateRoute(CBD)
             } else if (bestPos) {
-              // Error but we already have a rough position — use it
               finish(bestPos)
             } else {
-              setGpsStatus('unavailable_cbd')
+              setAccuracyLabel('⚠️ No GPS — showing distance from CBD')
+              setAccuracyColor('#dc2626')
               setShowRetry(true)
               void calculateRoute(CBD)
             }
@@ -411,22 +405,23 @@ export default function NavigationMapInner({
       }
 
       if (!navigator.geolocation) {
-        setGpsStatus('unavailable_cbd')
+        setAccuracyLabel('⚠️ GPS not available on this device')
+        setAccuracyColor('#dc2626')
         void calculateRoute(CBD)
         return
       }
 
-      retryFnRef.current = startGpsAcquisition
-      startGpsAcquisition()
+      startPreciseRef.current = startPreciseLocation
+      startPreciseLocation()
     }
 
     init()
 
     return () => {
       cancelled = true
-      if (acqWatchRef.current !== null) {
-        navigator.geolocation.clearWatch(acqWatchRef.current)
-        acqWatchRef.current = null
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current)
+        watchIdRef.current = null
       }
       if (navWatchRef.current !== null) {
         navigator.geolocation.clearWatch(navWatchRef.current)
@@ -450,71 +445,97 @@ export default function NavigationMapInner({
     )
   }
 
-  const badge = getBadgeConfig(gpsStatus, accuracy)
-
   return (
     <div className="relative w-full h-full" style={{ minHeight: '300px' }}>
       <div ref={mapRef} className="w-full h-full" aria-label="Navigation map" />
 
-      {/* GPS status badge */}
+      {/* Accuracy label bar */}
       <div
-        className={`
-          absolute top-3 left-1/2 -translate-x-1/2 z-[1000]
-          flex items-center gap-2 px-3 py-1.5
-          rounded-full shadow-md pointer-events-none
-          ${badge.warn ? 'bg-white/95 border border-amber-300' : 'bg-black/70 backdrop-blur-sm'}
-        `}
+        style={{
+          position:       'absolute',
+          top:            '12px',
+          left:           '50%',
+          transform:      'translateX(-50%)',
+          zIndex:         1000,
+          display:        'flex',
+          alignItems:     'center',
+          gap:            '8px',
+          background:     'rgba(0,0,0,0.72)',
+          backdropFilter: 'blur(4px)',
+          borderRadius:   '20px',
+          padding:        '6px 14px',
+          boxShadow:      '0 2px 12px rgba(0,0,0,0.2)',
+          maxWidth:       'calc(100vw - 32px)',
+        }}
       >
-        {badge.icon === 'spinner' && (
-          <span className="w-3 h-3 border-2 border-blue-300/40 border-t-blue-400 rounded-full animate-spin flex-shrink-0" aria-hidden="true" />
+        {!gpsLocked && (
+          <span
+            style={{
+              width:        '10px',
+              height:       '10px',
+              border:       '2px solid rgba(255,255,255,0.3)',
+              borderTop:    '2px solid #fff',
+              borderRadius: '50%',
+              display:      'inline-block',
+              animation:    'spin 0.8s linear infinite',
+              flexShrink:   0,
+            }}
+          />
         )}
-        {badge.icon === 'dot' && (
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse flex-shrink-0" aria-hidden="true" />
-        )}
-        {badge.icon === 'check' && (
-          <span className="text-[10px] font-bold flex-shrink-0" style={{ color: C.accent }} aria-hidden="true">✓</span>
-        )}
-        {badge.icon === 'warn' && (
-          <span className="text-amber-500 text-xs flex-shrink-0" aria-hidden="true">⚠</span>
-        )}
-        <span className={`font-sans text-[11px] font-semibold whitespace-nowrap ${badge.warn ? 'text-amber-700' : 'text-white'}`}>
-          {badge.text}
+        <span style={{ fontSize: '11px', fontWeight: 600, color: accuracyColor, whiteSpace: 'nowrap' }}>
+          {accuracyLabel}
         </span>
-      </div>
-
-      {/* Re-center + Retry GPS buttons */}
-      <div className="absolute bottom-4 right-4 z-[1000] flex flex-col gap-2 items-end">
-        {(gpsStatus === 'refining' || gpsStatus === 'locked') && (
-          <button
-            type="button"
-            onClick={recenterOnMe}
-            aria-label="Re-center on my location"
-            className="w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center border border-gray-200 hover:bg-gray-50 transition-colors"
-            style={{ fontSize: '18px' }}
-          >
-            ◎
-          </button>
-        )}
         {showRetry && (
           <button
             type="button"
-            onClick={() => retryFnRef.current?.()}
+            onClick={() => startPreciseRef.current?.()}
             style={{
-              background:   'rgba(26,107,74,0.1)',
-              color:        '#1a6b4a',
-              border:       '1px solid rgba(26,107,74,0.3)',
-              borderRadius: '20px',
-              padding:      '6px 14px',
-              fontSize:     '12px',
-              fontWeight:   600,
+              background:   'rgba(26,107,74,0.25)',
+              color:        '#7fe0b4',
+              border:       '1px solid rgba(26,107,74,0.4)',
+              borderRadius: '10px',
+              padding:      '2px 10px',
+              fontSize:     '11px',
+              fontWeight:   700,
               cursor:       'pointer',
               whiteSpace:   'nowrap',
+              flexShrink:   0,
             }}
           >
-            🔄 Retry GPS
+            🔄 Retry
           </button>
         )}
       </div>
+
+      {/* Re-center button */}
+      {gpsLocked && (
+        <button
+          type="button"
+          onClick={recenterOnMe}
+          aria-label="Re-center on my location"
+          style={{
+            position:      'absolute',
+            bottom:        '16px',
+            right:         '16px',
+            zIndex:        1000,
+            width:         '40px',
+            height:        '40px',
+            background:    '#fff',
+            border:        '1px solid #e0dbd4',
+            borderRadius:  '50%',
+            boxShadow:     '0 2px 8px rgba(0,0,0,0.18)',
+            fontSize:      '18px',
+            cursor:        'pointer',
+            display:       'flex',
+            alignItems:    'center',
+            justifyContent:'center',
+          }}
+        >
+          ◎
+        </button>
+      )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   )
 }
