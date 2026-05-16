@@ -21,11 +21,19 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
   const typeLabel =
     PROPERTY_TYPE_LABELS[property.propertyType] ?? property.propertyType
 
+  const isCommercial = ['commercial', 'office'].includes(
+    property.propertyType?.toLowerCase() ?? ''
+  )
+
   const specs = [
-    { value: String(property.bedrooms),   label: 'Bedrooms'   },
-    { value: String(property.bathrooms),  label: 'Bathrooms'  },
-    { value: typeLabel,                   label: 'Type'       },
-    { value: property.status === 'available' ? 'Available' : 'Taken', label: 'Status' },
+    ...(!isCommercial && property.bedrooms > 0
+      ? [{ value: String(property.bedrooms), label: 'Bedrooms' }]
+      : []),
+    ...(!isCommercial
+      ? [{ value: String(property.bathrooms), label: 'Bathrooms' }]
+      : []),
+    { value: typeLabel,                                                 label: 'Type'    },
+    { value: property.status === 'available' ? 'Available' : 'Taken', label: 'Status'  },
     { value: property.priceType === 'month' ? '/mo' : '/yr',          label: 'Billing' },
   ]
 
@@ -57,7 +65,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       </p>
 
       {/* Specs row */}
-      <div className="grid grid-cols-5 border border-border mb-8">
+      <div className="grid border border-border mb-8" style={{ gridTemplateColumns: `repeat(${specs.length}, 1fr)` }}>
         {specs.map((spec, i) => (
           <div
             key={spec.label}

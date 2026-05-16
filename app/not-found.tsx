@@ -1,6 +1,6 @@
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]">
+    <div className="min-h-screen flex items-center justify-center bg-[#faf8f5]" style={{ paddingBottom: '80px' }}>
       <div className="text-center px-6">
         <div className="text-6xl mb-6">🏠</div>
         <h2 className="font-serif text-3xl text-[#0f0e0c] mb-3">

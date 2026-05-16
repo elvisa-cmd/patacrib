@@ -40,6 +40,7 @@ export default function HomeContent({
         count={properties.length}
         avgPrice={properties.reduce((s, p) => s + (p.price || 0), 0) / (properties.length || 1)}
         tourCount={properties.filter(p => p.videoUrl || p.tourImageUrl).length}
+        properties={properties.slice(0, 3)}
       />
       <MapSection
         properties={properties}

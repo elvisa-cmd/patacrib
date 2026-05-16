@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { prisma } from '@/lib/db'
 import { BrowseMap } from '@/components/browse/BrowseMap'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title:       'Property Map — Browse GPS-Pinned Rentals',
   description: 'Interactive map of GPS-verified rental properties across Kenya. See exact property locations, price heatmaps and get precise directions.',

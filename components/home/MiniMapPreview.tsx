@@ -2,12 +2,18 @@
 import Link from 'next/link'
 
 interface Props {
-  count:    number
-  avgPrice: number
-  tourCount: number
+  count:      number
+  avgPrice:   number
+  tourCount:  number
+  properties?: Array<{
+    id:      string
+    price:   number
+    estate?: string | null
+    city?:   string | null
+  }>
 }
 
-export default function MiniMapPreview({ count, avgPrice, tourCount }: Props) {
+export default function MiniMapPreview({ count, avgPrice, tourCount, properties }: Props) {
   return (
     <div style={{ padding: '0 12px', marginBottom: '16px' }}>
 
@@ -63,49 +69,32 @@ export default function MiniMapPreview({ count, avgPrice, tourCount }: Props) {
           <div style={{ position: 'absolute', width: '50px', height: '50px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(26,107,74,0.16) 0%,transparent 70%)', top: '50%', left: '12%' }} />
           <div style={{ position: 'absolute', width: '45px', height: '45px', borderRadius: '50%', background: 'radial-gradient(circle,rgba(26,107,74,0.14) 0%,transparent 70%)', top: '25%', left: '65%' }} />
 
-          {/* Price pins */}
-          <div style={{ position: 'absolute', top: '12%', left: '40%', transform: 'translate(-50%,-100%)' }}>
-            <div style={{
-              background:  '#0f0e0c',
-              color:       '#fff',
-              fontSize:    '9px',
-              fontWeight:  700,
-              padding:     '3px 8px',
-              borderRadius:'20px',
-              whiteSpace:  'nowrap',
-              boxShadow:   '0 2px 8px rgba(0,0,0,0.2)',
-            }}>
-              KSh 45K
-            </div>
-          </div>
-          <div style={{ position: 'absolute', top: '48%', left: '12%', transform: 'translate(-50%,-100%)' }}>
-            <div style={{
-              background:  'rgba(255,255,255,0.95)',
-              color:       '#1a6b4a',
-              fontSize:    '9px',
-              fontWeight:  700,
-              padding:     '3px 8px',
-              borderRadius:'20px',
-              whiteSpace:  'nowrap',
-              boxShadow:   '0 2px 6px rgba(0,0,0,0.1)',
-            }}>
-              KSh 38K
-            </div>
-          </div>
-          <div style={{ position: 'absolute', top: '22%', left: '66%', transform: 'translate(-50%,-100%)' }}>
-            <div style={{
-              background:  'rgba(255,255,255,0.95)',
-              color:       '#1a6b4a',
-              fontSize:    '9px',
-              fontWeight:  700,
-              padding:     '3px 8px',
-              borderRadius:'20px',
-              whiteSpace:  'nowrap',
-              boxShadow:   '0 2px 6px rgba(0,0,0,0.1)',
-            }}>
-              KSh 70K
-            </div>
-          </div>
+          {/* Price pins — real data */}
+          {properties && properties.slice(0, 3).map((p, i) => {
+            const positions = [
+              { top: '12%', left: '40%' },
+              { top: '48%', left: '12%' },
+              { top: '22%', left: '66%' },
+            ]
+            const pos     = positions[i]
+            const isFirst = i === 0
+            return (
+              <div key={p.id} style={{ position: 'absolute', top: pos.top, left: pos.left, transform: 'translate(-50%,-100%)' }}>
+                <div style={{
+                  background:   isFirst ? '#0f0e0c' : 'rgba(255,255,255,0.95)',
+                  color:        isFirst ? '#fff'    : '#1a6b4a',
+                  fontSize:     '9px',
+                  fontWeight:   700,
+                  padding:      '3px 8px',
+                  borderRadius: '20px',
+                  whiteSpace:   'nowrap',
+                  boxShadow:    '0 2px 8px rgba(0,0,0,0.15)',
+                }}>
+                  KSh {Math.round(p.price / 1000)}K
+                </div>
+              </div>
+            )
+          })}
 
           {/* Stats pill */}
           <div style={{
