@@ -18,7 +18,7 @@ export default async function ContactPage() {
               We&apos;d love to hear from you.
             </h1>
             <p className="font-sans font-light text-[15px] text-muted leading-[1.8]">
-              Whether you&apos;re a landlord with questions, a seeker who needs help, or a partner who
+              Whether you&apos;re a lister with questions, a seeker who needs help, or a partner who
               wants to work with us — our inbox is always open.
             </p>
           </div>
@@ -39,7 +39,7 @@ export default async function ContactPage() {
                     desc:  'Questions about the platform, feedback, or anything else.',
                   },
                   {
-                    label: 'Landlords',
+                    label: 'Listers',
                     email: 'landlords@patacrib.co.ke',
                     desc:  'Help listing a property, managing your account, or understanding features.',
                   },

@@ -49,7 +49,7 @@ export default async function TermsPage() {
 
           <Section title="2. Description of Service">
             <P>
-              PataKrib is a property listing platform connecting landlords and property seekers across
+              PataKrib is a property listing platform connecting listers and property seekers across
               Kenya. We provide GPS-verified rental listings, in-app messaging, navigation tools, and
               neighbourhood intelligence including matatu routes, water schedules, and safety scores.
             </P>
@@ -75,7 +75,7 @@ export default async function TermsPage() {
             </P>
           </Section>
 
-          <Section title="4. Landlord Responsibilities">
+          <Section title="4. Lister Responsibilities">
             <P>If you list a property on PataKrib, you agree to the following:</P>
             <UL items={[
               'All listings must be real properties that you own or are legally authorised to rent.',
@@ -92,14 +92,14 @@ export default async function TermsPage() {
             <P>If you use PataKrib to search for a property, you agree to:</P>
             <UL items={[
               'Use the platform in good faith and only make genuine inquiries.',
-              'Not spam landlords with unsolicited or abusive messages.',
+              'Not spam listers with unsolicited or abusive messages.',
               'Report suspicious or fraudulent listings to our support team.',
               'Always inspect a property in person before paying any deposit or signing any agreement.',
               'Conduct your own due diligence on any property before committing.',
             ]} />
             <P>
               PataKrib is not responsible for any transactions, agreements, or financial exchanges
-              between landlords and seekers. These are solely between the parties involved.
+              between listers and seekers. These are solely between the parties involved.
             </P>
           </Section>
 
@@ -125,7 +125,7 @@ export default async function TermsPage() {
             <UL items={[
               'Location data is used solely to display property positions on the map.',
               'We do not continuously track users\' locations.',
-              'A landlord\'s GPS is captured once at listing time and stored with the listing.',
+              'A lister\'s GPS is captured once at listing time and stored with the listing.',
               'Seekers who use navigation features grant temporary location access via their browser.',
               'Location permissions are controlled by your browser — you may revoke them at any time.',
             ]} />
@@ -134,13 +134,13 @@ export default async function TermsPage() {
           <Section title="8. Payments and Transactions">
             <P>
               PataKrib does not process, hold, or facilitate any payments. All financial transactions
-              are directly and exclusively between landlords and seekers. We are not responsible for
+              are directly and exclusively between listers and seekers. We are not responsible for
               any financial disputes, losses, or fraudulent transactions that arise from use of the
               platform.
             </P>
             <P>
               Never pay a deposit or advance rent without physically inspecting a property and
-              verifying the landlord's identity. PataKrib will never ask you to send money through
+              verifying the lister's identity. PataKrib will never ask you to send money through
               the platform.
             </P>
           </Section>

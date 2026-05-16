@@ -103,7 +103,7 @@ export default async function DashboardPage() {
           {greeting} 👋
         </p>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 20px', letterSpacing: '-0.5px' }}>
-          {session.user.name ?? 'Landlord'}
+          {session.user.name ?? 'Lister'}
         </h1>
 
         {/* 2×2 stats */}

@@ -60,7 +60,7 @@ export default async function PrivacyPage() {
               'Password — stored as a one-way bcrypt hash; we never see your plain-text password.',
             ]} />
 
-            <p className="font-sans font-bold text-[13px] text-ink mb-2">Property information (landlords only):</p>
+            <p className="font-sans font-bold text-[13px] text-ink mb-2">Property information (listers only):</p>
             <UL items={[
               'Property address, description, and rental details.',
               'GPS coordinates captured at listing time.',
@@ -81,7 +81,7 @@ export default async function PrivacyPage() {
               'Your device\'s location when you use the map or in-app navigation features.',
               'Location access is only requested with your explicit browser permission.',
               'Real-time navigation location is never stored permanently on our servers.',
-              'Landlord GPS is captured once at listing time and stored with the listing.',
+              'Lister GPS is captured once at listing time and stored with the listing.',
             ]} />
           </Section>
 
@@ -89,11 +89,11 @@ export default async function PrivacyPage() {
             <P>We use the information we collect to:</P>
             <UL items={[
               'Provide and operate the PataKrib service.',
-              'Connect property seekers with landlords.',
+              'Connect property seekers with listers.',
               'Display property locations accurately on our map.',
-              'Enable in-app messaging between seekers and landlords.',
+              'Enable in-app messaging between seekers and listers.',
               'Show you relevant property listings and search results.',
-              'Track property views and saves for landlord analytics.',
+              'Track property views and saves for lister analytics.',
               'Send important service notifications (e.g., new messages, account updates).',
               'Detect and prevent fraudulent or abusive activity.',
               'Improve and develop the platform.',
@@ -106,7 +106,7 @@ export default async function PrivacyPage() {
             </P>
             <P>We share information only in the following limited circumstances:</P>
             <UL items={[
-              'Between seekers and landlords as part of the service — your name and messages are shared when you initiate a conversation.',
+              'Between seekers and listers as part of the service — your name and messages are shared when you initiate a conversation.',
               'With Supabase, our database provider, whose servers are hosted in the European Union and comply with GDPR.',
               'With Vercel, our hosting provider, for the purpose of delivering the web application.',
               'When required by Kenyan law, a court order, or to protect the rights and safety of our users.',

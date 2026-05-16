@@ -441,7 +441,7 @@ export default function SignupPage() {
                   type="tel"
                   value={phone}
                   onChange={setPhone}
-                  helper="📞 For direct landlord contact"
+                  helper="📞 For direct lister contact"
                   optional
                   autoComplete="tel"
                 />

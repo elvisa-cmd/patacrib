@@ -48,10 +48,10 @@ export default async function AboutPage() {
               </p>
               <div className="flex flex-col gap-4">
                 {[
-                  { label: 'GPS-verified pins', desc: 'Accurate to 3 metres — landlords capture location at the property entrance.' },
+                  { label: 'GPS-verified pins', desc: 'Accurate to 3 metres — listers capture location at the property entrance.' },
                   { label: 'Neighbourhood intelligence', desc: 'Water schedule, matatu routes, safety score, and borehole status on every listing.' },
                   { label: 'In-app navigation', desc: 'Get directions without leaving PataKrib — walk, matatu, or drive.' },
-                  { label: 'Zero hidden fees', desc: 'Free for seekers, free for landlords during beta. No commissions, no listing fees.' },
+                  { label: 'Zero hidden fees', desc: 'Free for seekers, free for listers during beta. No commissions, no listing fees.' },
                 ].map(item => (
                   <div key={item.label} className="flex gap-3">
                     <span className="w-1.5 h-1.5 rounded-full bg-accent mt-2 flex-shrink-0" />
@@ -120,7 +120,7 @@ export default async function AboutPage() {
             <div className="flex flex-col gap-2">
               {[
                 { label: 'General', email: 'hello@patacrib.co.ke' },
-                { label: 'Landlords', email: 'landlords@patacrib.co.ke' },
+                { label: 'Listers', email: 'landlords@patacrib.co.ke' },
                 { label: 'Press', email: 'press@patacrib.co.ke' },
               ].map(({ label, email }) => (
                 <div key={email} className="flex items-center gap-3">

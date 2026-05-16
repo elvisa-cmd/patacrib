@@ -90,7 +90,7 @@ export default function PricingPage() {
                 'Browse all GPS-verified listings',
                 'Save favourites across devices',
                 'In-app navigation to any property',
-                'Message landlords directly',
+                'Message listers directly',
                 'View safety scores and matatu routes',
                 'No account needed to browse',
               ]}
@@ -98,7 +98,7 @@ export default function PricingPage() {
               ctaHref="/browse"
             />
             <PricingCard
-              tier="Landlord Beta"
+              tier="Lister Beta"
               price="Free"
               tagline="Free while we\'re in beta"
               highlight
@@ -114,11 +114,11 @@ export default function PricingPage() {
               ctaHref="/signup"
             />
             <PricingCard
-              tier="Landlord Pro"
+              tier="Lister Pro"
               price="Coming soon"
               tagline="Premium features, launching soon"
               features={[
-                'Everything in Landlord Beta',
+                'Everything in Lister Beta',
                 'Featured placement in search results',
                 'Priority support',
                 'Advanced analytics and insights',
@@ -139,11 +139,11 @@ export default function PricingPage() {
               {[
                 {
                   q: 'Is PataKrib really free?',
-                  a: 'Yes. During our beta period, all features for both seekers and landlords are completely free. We will give plenty of notice before introducing any paid plans.',
+                  a: 'Yes. During our beta period, all features for both seekers and listers are completely free. We will give plenty of notice before introducing any paid plans.',
                 },
                 {
                   q: 'Does PataKrib take a commission?',
-                  a: 'No. We are a listing platform, not an agent. We do not take any cut of rental transactions. All money goes directly between landlord and seeker.',
+                  a: 'No. We are a listing platform, not an agent. We do not take any cut of rental transactions. All money goes directly between lister and seeker.',
                 },
                 {
                   q: 'When will the paid Pro plan launch?',
@@ -151,7 +151,7 @@ export default function PricingPage() {
                 },
                 {
                   q: 'What happens to my listings when paid plans launch?',
-                  a: 'Existing listings will remain active. We will grandfather early landlords into a generous free tier as a thank-you for supporting us in beta.',
+                  a: 'Existing listings will remain active. We will grandfather early listers into a generous free tier as a thank-you for supporting us in beta.',
                 },
               ].map(({ q, a }) => (
                 <div key={q}>
