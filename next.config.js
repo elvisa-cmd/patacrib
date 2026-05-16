@@ -51,13 +51,19 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 })
 
 const nextConfig = {
-  reactStrictMode: false,
+  reactStrictMode:  false,
+  compress:         true,
+  poweredByHeader:  false,
+  generateEtags:    true,
+  experimental: {
+    optimizePackageImports: ['leaflet'],
+  },
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '*.supabase.co'         },
-      { protocol: 'https', hostname: 'images.unsplash.com'   },
-      { protocol: 'https', hostname: 'res.cloudinary.com'    },
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: '*.supabase.co'            },
+      { protocol: 'https', hostname: 'images.unsplash.com'      },
+      { protocol: 'https', hostname: 'res.cloudinary.com'       },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com'},
     ],
     formats: ['image/avif', 'image/webp'],
   },

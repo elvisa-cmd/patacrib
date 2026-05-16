@@ -175,16 +175,26 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="min-h-screen bg-bg">
+      {/* RealEstateListing + Product schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type':    'RealEstateListing',
+            '@type':    ['RealEstateListing', 'Product'],
             name:       property.title,
             description: property.description ?? `${property.propertyType} for rent in ${property.estate || property.city}`,
             url:        `https://patacrib.vercel.app/property/${property.id}`,
             image:      property.images || [],
+            brand: {
+              '@type': 'Brand',
+              name:    'PataKrib',
+            },
+            provider: {
+              '@type': 'RealEstateAgent',
+              name:    'PataKrib',
+              url:     'https://patacrib.vercel.app',
+            },
             offers: {
               '@type':    'Offer',
               price:      property.price,
@@ -200,10 +210,10 @@ export default async function PropertyDetailPage({
                 : 'https://schema.org/OutOfStock',
             },
             address: {
-              '@type':          'PostalAddress',
-              streetAddress:    property.address || '',
-              addressLocality:  property.estate || property.city || 'Nairobi',
-              addressCountry:   'KE',
+              '@type':         'PostalAddress',
+              streetAddress:   property.address || '',
+              addressLocality: property.estate || property.city || 'Nairobi',
+              addressCountry:  'KE',
             },
             ...(property.latitude && property.longitude ? {
               geo: {
@@ -213,6 +223,58 @@ export default async function PropertyDetailPage({
               },
             } : {}),
             ...(property.bedrooms > 0 ? { numberOfRooms: property.bedrooms } : {}),
+            additionalProperty: [
+              property.matatuRoutes?.length ? {
+                '@type': 'PropertyValue',
+                name:    'Matatu Routes',
+                value:   property.matatuRoutes.join(', '),
+              } : null,
+              property.waterSchedule ? {
+                '@type': 'PropertyValue',
+                name:    'Water Schedule',
+                value:   property.waterSchedule,
+              } : null,
+              property.safetyScore ? {
+                '@type': 'PropertyValue',
+                name:    'Safety Score',
+                value:   property.safetyScore,
+              } : null,
+              property.powerBackup ? {
+                '@type': 'PropertyValue',
+                name:    'Power Backup',
+                value:   'Generator available',
+              } : null,
+            ].filter(Boolean),
+          }),
+        }}
+      />
+      {/* BreadcrumbList schema */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type':    'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type':  'ListItem',
+                position: 1,
+                name:     'Home',
+                item:     'https://patacrib.vercel.app',
+              },
+              {
+                '@type':  'ListItem',
+                position: 2,
+                name:     'Browse',
+                item:     'https://patacrib.vercel.app/browse',
+              },
+              {
+                '@type':  'ListItem',
+                position: 3,
+                name:     property.title,
+                item:     `https://patacrib.vercel.app/property/${property.id}`,
+              },
+            ],
           }),
         }}
       />
