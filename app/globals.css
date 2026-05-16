@@ -78,3 +78,10 @@ body {
   animation: progress-bar 450ms ease-out forwards;
   transform-origin: left;
 }
+
+.leaflet-container {
+  font-family: inherit !important;
+}
+.leaflet-control-attribution {
+  display: none !important;
+}
