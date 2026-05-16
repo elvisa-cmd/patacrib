@@ -55,7 +55,7 @@ export default function HeroSlider({ properties, dbError }: Props) {
   function prev() { goTo(current - 1) }
 
   useEffect(() => {
-    timerRef.current = setInterval(next, 4000)
+    timerRef.current = setInterval(next, 6000)
     return () => clearInterval(timerRef.current)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, total])
@@ -93,12 +93,16 @@ export default function HeroSlider({ properties, dbError }: Props) {
     <>
     <style>{`
       @keyframes kenburns {
-        0%   { transform: scale(1.08); }
-        100% { transform: scale(1);    }
+        0%   { transform: scale(1.08) translateX(0px);  }
+        100% { transform: scale(1)    translateX(-4px); }
       }
       @keyframes slideUp {
         0%   { opacity: 0; transform: translateY(20px); }
         100% { opacity: 1; transform: translateY(0);    }
+      }
+      @keyframes progress {
+        0%   { width: 0%;   }
+        100% { width: 100%; }
       }
     `}</style>
     <div style={{ padding: '0 12px', marginBottom: '8px' }}>
@@ -122,7 +126,6 @@ export default function HeroSlider({ properties, dbError }: Props) {
         {/* Slides */}
         {properties.map((prop, i) => {
           const isActive = i === current
-          const isPrev   = i === (current - 1 + total) % total
           return (
             <div
               key={prop.id}
@@ -130,33 +133,33 @@ export default function HeroSlider({ properties, dbError }: Props) {
                 position:   'absolute',
                 inset:      0,
                 opacity:    isActive ? 1 : 0,
-                transform:  isActive ? 'translateX(0%) scale(1)'
-                          : isPrev  ? 'translateX(-100%) scale(0.95)'
-                          :           'translateX(100%) scale(0.95)',
-                transition: dragging ? 'none' : 'all 0.6s cubic-bezier(0.25,0.46,0.45,0.94)',
+                transition: dragging ? 'none' : 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex:     isActive ? 2 : 1,
               }}
             >
               {prop.images?.[0] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
+                  key={isActive ? `slide-img-${current}` : prop.id}
                   src={prop.images[0]}
                   alt={prop.title}
                   style={{
                     width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                    animation: isActive ? 'kenburns 6s ease-out forwards' : 'none',
-                    transform: isActive ? undefined : 'scale(1.05)',
+                    animation: isActive ? 'kenburns 7s ease-out forwards' : 'none',
                   }}
                   draggable={false}
                 />
               ) : (
-                <div style={{
-                  width: '100%', height: '100%',
-                  background: BG_COLORS[i % BG_COLORS.length],
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '60px',
-                  animation: isActive ? 'kenburns 6s ease-out forwards' : 'none',
-                }}>
+                <div
+                  key={isActive ? `slide-bg-${current}` : prop.id}
+                  style={{
+                    width: '100%', height: '100%',
+                    background: BG_COLORS[i % BG_COLORS.length],
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '60px',
+                    animation: isActive ? 'kenburns 7s ease-out forwards' : 'none',
+                  }}
+                >
                   {getIcon(prop.propertyType)}
                 </div>
               )}
@@ -254,6 +257,25 @@ export default function HeroSlider({ properties, dbError }: Props) {
             {p.title} · {location}
           </div>
         </div>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        height:       '2px',
+        background:   'rgba(0,0,0,0.08)',
+        borderRadius: '1px',
+        marginTop:    '6px',
+        overflow:     'hidden',
+      }}>
+        <div
+          key={`progress-${current}`}
+          style={{
+            height:       '100%',
+            background:   '#1a6b4a',
+            borderRadius: '1px',
+            animation:    'progress 6s linear forwards',
+          }}
+        />
       </div>
 
       {/* Action buttons below the card */}
