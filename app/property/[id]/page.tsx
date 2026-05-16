@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
-import BackButton from '@/components/ui/BackButton'
 import { ImageGallery } from '@/components/property/ImageGallery'
 import { VirtualTour } from '@/components/property/VirtualTour'
 import PropertyInfo from '@/components/property/PropertyInfo'
@@ -136,9 +135,29 @@ export default async function PropertyDetailPage({
 
       <main style={{ position: 'relative' }}>
         {/* Floating back button */}
-        <div style={{ position: 'absolute', top: '12px', left: '12px', zIndex: 20 }}>
-          <BackButton href="/browse" />
-        </div>
+        <a href="/browse" style={{
+          position:             'absolute',
+          top:                  '14px',
+          left:                 '14px',
+          width:                '38px',
+          height:               '38px',
+          background:           'rgba(255,255,255,0.92)',
+          border:               '1px solid rgba(255,255,255,0.6)',
+          borderRadius:         '12px',
+          display:              'flex',
+          alignItems:           'center',
+          justifyContent:       'center',
+          textDecoration:       'none',
+          backdropFilter:       'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          boxShadow:            '0 2px 8px rgba(0,0,0,0.1)',
+          zIndex:               20,
+        }}>
+          <svg width="16" height="16" fill="none" stroke="#0f0e0c" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+        </a>
 
         <ImageGallery
           images={detailedProperty.images}

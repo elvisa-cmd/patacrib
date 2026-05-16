@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import AddPropertyForm from '@/components/dashboard/AddPropertyForm'
-import BackButton from '@/components/ui/BackButton'
 
 export default async function AddPropertyPage() {
   const session = await getServerSession(authOptions)
@@ -21,7 +20,24 @@ export default async function AddPropertyPage() {
       }}>
         {/* Back button */}
         <div style={{ marginBottom: '16px' }}>
-          <BackButton href="/dashboard/admin" />
+          <a href="/dashboard" style={{
+            display:              'inline-flex',
+            alignItems:           'center',
+            justifyContent:       'center',
+            width:                '36px',
+            height:               '36px',
+            background:           'rgba(255,255,255,0.15)',
+            border:               '1px solid rgba(255,255,255,0.3)',
+            borderRadius:         '10px',
+            textDecoration:       'none',
+            backdropFilter:       'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+          }}>
+            <svg width="16" height="16" fill="none" stroke="#ffffff" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+              <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+          </a>
         </div>
 
         <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#fff', margin: '0 0 4px', letterSpacing: '-0.4px' }}>
