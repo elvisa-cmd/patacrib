@@ -1,5 +1,16 @@
+import type { Metadata } from 'next'
 import { prisma } from '@/lib/db'
 import { BrowseMap } from '@/components/browse/BrowseMap'
+
+export const metadata: Metadata = {
+  title:       'Property Map — Browse GPS-Pinned Rentals',
+  description: 'Interactive map of GPS-verified rental properties across Kenya. See exact property locations, price heatmaps and get precise directions.',
+  openGraph: {
+    title:       'Property Map | PataKrib',
+    description: 'Interactive map of GPS-verified rental properties across Kenya.',
+    images:      ['/og-image.png'],
+  },
+}
 
 const BackArrow = ({ stroke = '#0f0e0c' }: { stroke?: string }) => (
   <svg width="16" height="16" fill="none" stroke={stroke} strokeWidth="2.5"

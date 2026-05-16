@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 import NavigationModal from '@/components/shared/NavigationModal'
 
 const BrowseMapInner = dynamic(
@@ -45,12 +46,15 @@ export function BrowseMap({ properties }: { properties: any[] }) {
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-[1000] bg-white shadow-2xl border border-border w-[90%] md:w-[380px] overflow-hidden">
           <a href={`/property/${selected.id}`} style={{ textDecoration: 'none', display: 'block' }}>
             {selected.images?.[0] && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={selected.images[0]}
-                alt={selected.title}
-                className="w-full h-28 object-cover"
-              />
+              <div style={{ position: 'relative', height: '112px' }}>
+                <Image
+                  src={selected.images[0]}
+                  alt={selected.title}
+                  fill
+                  sizes="380px"
+                  style={{ objectFit: 'cover' }}
+                />
+              </div>
             )}
 
             <div className="p-3">

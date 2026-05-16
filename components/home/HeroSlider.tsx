@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Image                            from 'next/image'
 import type { SerializedProperty }      from '@/types/property'
 
 interface Props {
@@ -138,16 +139,18 @@ export default function HeroSlider({ properties, dbError }: Props) {
               }}
             >
               {prop.images?.[0] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   key={isActive ? `slide-img-${current}` : prop.id}
                   src={prop.images[0]}
                   alt={prop.title}
+                  fill
+                  sizes="100vw"
+                  priority={isActive && i === 0}
+                  draggable={false}
                   style={{
-                    width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                    objectFit: 'cover',
                     animation: isActive ? 'kenburns 7s ease-out forwards' : 'none',
                   }}
-                  draggable={false}
                 />
               ) : (
                 <div

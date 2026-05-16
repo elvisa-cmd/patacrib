@@ -1,0 +1,20 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0f1a12"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f2a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a6b4a;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#grad)" opacity="0.6"/>
+  <circle cx="900" cy="200" r="300" fill="#1a6b4a" opacity="0.08"/>
+  <circle cx="1100" cy="500" r="200" fill="#4dbe87" opacity="0.05"/>
+  <text x="80" y="200" font-family="Georgia, serif" font-size="72" font-weight="bold" fill="#ffffff" letter-spacing="-2">Pata<tspan fill="#4dbe87">Krib</tspan></text>
+  <text x="80" y="270" font-family="Arial, sans-serif" font-size="28" fill="rgba(255,255,255,0.7)" letter-spacing="0">GPS-Verified Rentals Across Kenya</text>
+  <rect x="80" y="310" width="500" height="2" fill="#1a6b4a" opacity="0.5"/>
+  <text x="80" y="370" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.6)">📍 Precise GPS locations</text>
+  <text x="80" y="410" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.6)">🎥 Virtual property tours</text>
+  <text x="80" y="450" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.6)">🚌 Matatu routes included</text>
+  <text x="80" y="490" font-family="Arial, sans-serif" font-size="22" fill="rgba(255,255,255,0.6)">🗺 Turn-by-turn directions</text>
+  <text x="80" y="580" font-family="Arial, sans-serif" font-size="20" fill="rgba(255,255,255,0.4)">patacrib.vercel.app</text>
+</svg>

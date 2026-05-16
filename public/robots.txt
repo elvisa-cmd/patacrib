@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Allow: /browse
+Allow: /browse/map
+Allow: /property/
+Allow: /about
+Allow: /contact
+Allow: /pricing
+
+Disallow: /dashboard/
+Disallow: /dashboard/admin/
+Disallow: /dashboard/add/
+Disallow: /dashboard/edit/
+Disallow: /api/
+Disallow: /login
+Disallow: /signup
+
+Sitemap: https://patacrib.vercel.app/sitemap.xml

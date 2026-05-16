@@ -1,4 +1,15 @@
+import type { Metadata } from 'next'
 import { getServerSession } from 'next-auth'
+
+export const metadata: Metadata = {
+  title:       'Browse Rental Properties in Kenya',
+  description: 'Find apartments, houses and commercial spaces for rent across Kenya. Filter by location, price and property type. GPS-verified listings with virtual tours.',
+  openGraph: {
+    title:       'Browse Rental Properties in Kenya | PataKrib',
+    description: 'GPS-verified rentals across Nairobi, Mombasa, Kisumu and all of Kenya.',
+    images:      ['/og-image.png'],
+  },
+}
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'

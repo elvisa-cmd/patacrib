@@ -1,8 +1,52 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import Nav from '@/components/home/Nav'
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ id: string }> }
+): Promise<Metadata> {
+  const { id } = await params
+  const property = await prisma.property.findUnique({
+    where:  { id },
+    select: { id: true, title: true, price: true, propertyType: true, estate: true, city: true, bedrooms: true, images: true, description: true },
+  })
+
+  if (!property) {
+    return {
+      title:       'Property Not Found',
+      description: 'This property listing could not be found on PataKrib.',
+    }
+  }
+
+  const title = `${property.title} — KSh ${property.price?.toLocaleString('en-KE')}/mo`
+  const description = `${property.propertyType || 'Property'} for rent in ${property.estate || property.city || 'Kenya'}.${property.bedrooms > 0 ? ` ${property.bedrooms} bedrooms.` : ''} KSh ${property.price?.toLocaleString('en-KE')} per month. GPS-verified location with precise directions.`
+  const image = property.images?.[0] || '/og-image.png'
+  const url   = `https://patacrib.vercel.app/property/${property.id}`
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: 'PataKrib',
+      locale:   'en_KE',
+      type:     'website',
+      images:   [{ url: image, width: 1200, height: 630, alt: property.title }],
+    },
+    twitter: {
+      card:        'summary_large_image',
+      title,
+      description,
+      images:      [image],
+    },
+  }
+}
 import { ImageGallery } from '@/components/property/ImageGallery'
 import { VirtualTour } from '@/components/property/VirtualTour'
 import PropertyInfo from '@/components/property/PropertyInfo'
@@ -131,6 +175,47 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="min-h-screen bg-bg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type':    'RealEstateListing',
+            name:       property.title,
+            description: property.description ?? `${property.propertyType} for rent in ${property.estate || property.city}`,
+            url:        `https://patacrib.vercel.app/property/${property.id}`,
+            image:      property.images || [],
+            offers: {
+              '@type':    'Offer',
+              price:      property.price,
+              priceCurrency: 'KES',
+              priceSpecification: {
+                '@type':       'UnitPriceSpecification',
+                price:         property.price,
+                priceCurrency: 'KES',
+                unitText:      'MONTH',
+              },
+              availability: property.status === 'available'
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
+            },
+            address: {
+              '@type':          'PostalAddress',
+              streetAddress:    property.address || '',
+              addressLocality:  property.estate || property.city || 'Nairobi',
+              addressCountry:   'KE',
+            },
+            ...(property.latitude && property.longitude ? {
+              geo: {
+                '@type':    'GeoCoordinates',
+                latitude:   property.latitude,
+                longitude:  property.longitude,
+              },
+            } : {}),
+            ...(property.bedrooms > 0 ? { numberOfRooms: property.bedrooms } : {}),
+          }),
+        }}
+      />
       <Nav />
 
       <main style={{ position: 'relative' }}>
