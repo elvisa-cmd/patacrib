@@ -35,24 +35,38 @@ const FILTER_OPTIONS = [
 
 type FilterKey = (typeof FILTER_OPTIONS)[number]['key']
 
-function pricePinHtml(price: number, selected: boolean): string {
-  const bg    = selected ? C.accent : C.white
-  const color = selected ? C.white  : C.ink
-  const bdr   = selected ? C.accent : C.border
-  const label =
+function escHtml(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function pricePinHtml(price: number, selected: boolean, estate?: string | null): string {
+  const bg     = selected ? C.accent : C.white
+  const color  = selected ? C.white  : C.ink
+  const bdr    = selected ? C.accent : C.border
+  const nameFg = selected ? 'rgba(255,255,255,0.75)' : '#87837c'
+  const label  =
     price >= 1_000_000 ? `KSh ${(price / 1_000_000).toFixed(1)}M` :
     price >= 1_000     ? `KSh ${Math.round(price / 1_000)}K` :
                          `KSh ${price}`
+  const nameRow = estate
+    ? `<div style="font-size:9px;font-weight:600;color:${nameFg};margin-bottom:2px;
+         max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+         ${escHtml(estate.slice(0, 18))}
+       </div>`
+    : ''
   return `
-    <div style="background:${bg};color:${color};border:1.5px solid ${bdr};padding:4px 10px;
-      font-family:sans-serif;font-size:11px;font-weight:700;white-space:nowrap;
-      box-shadow:0 2px 8px rgba(0,0,0,0.14);
-      transform:${selected ? 'scale(1.08)' : 'scale(1)'};transition:all 0.15s;cursor:pointer;">
-      ${label}
-    </div>
-    <div style="width:0;height:0;
-      border-left:5px solid transparent;border-right:5px solid transparent;
-      border-top:7px solid ${selected ? C.accent : C.white};margin:0 auto;"></div>`
+    <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+      <div style="background:${bg};color:${color};border:1.5px solid ${bdr};padding:5px 11px 4px;
+        font-family:sans-serif;white-space:nowrap;
+        box-shadow:0 2px 8px rgba(0,0,0,0.14);border-radius:8px;text-align:center;
+        transform:${selected ? 'scale(1.08)' : 'scale(1)'};transition:all 0.15s;">
+        ${nameRow}
+        <div style="font-size:11px;font-weight:700;">${label}</div>
+      </div>
+      <div style="width:0;height:0;
+        border-left:5px solid transparent;border-right:5px solid transparent;
+        border-top:7px solid ${selected ? C.accent : C.white};margin:0 auto;"></div>
+    </div>`
 }
 
 const USER_PIN_HTML = `
@@ -220,9 +234,9 @@ export default function LeafletMap({
     visibleProperties.forEach((p) => {
       const icon = L.divIcon({
         className:  '',
-        html:       pricePinHtml(p.price, p.id === selectedId),
-        iconSize:   [90, 34],
-        iconAnchor: [45, 34],
+        html:       pricePinHtml(p.price, p.id === selectedId, p.estate),
+        iconSize:   [120, 50],
+        iconAnchor: [60, 50],
       })
 
       if (markersRef.current.has(p.id)) {
@@ -230,7 +244,9 @@ export default function LeafletMap({
       } else {
         const marker = L.marker([p.latitude, p.longitude], { icon })
           .addTo(map)
-          .on('click', () => onSelectRef.current(p.id))
+          .on('click', () => {
+            window.location.href = `/property/${p.id}`
+          })
         markersRef.current.set(p.id, marker)
       }
     })
@@ -392,6 +408,13 @@ export default function LeafletMap({
                 </div>
               </div>
 
+              <a
+                href={`/property/${selectedProperty.id}`}
+                className="flex-shrink-0 bg-surface border border-border2 text-ink font-sans font-bold text-[10px] uppercase tracking-[0.8px] px-3 py-2.5 hover:bg-surface2 transition-colors"
+                aria-label={`View ${selectedProperty.title}`}
+              >
+                View
+              </a>
               <button
                 onClick={() => onNavigate?.(selectedProperty)}
                 className="flex-shrink-0 bg-accent text-white font-sans font-bold text-[10px] uppercase tracking-[0.8px] px-3 py-2.5 hover:bg-accent-d transition-colors"

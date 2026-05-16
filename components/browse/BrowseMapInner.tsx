@@ -3,13 +3,14 @@
 import { useEffect, useRef } from 'react'
 
 interface Property {
-  id:        string
-  title:     string
-  price:     number
-  latitude:  number
-  longitude: number
-  address:   string
-  estate:    string | null
+  id:          string
+  title:       string
+  price:       number
+  latitude:    number
+  longitude:   number
+  address:     string
+  estate:      string | null
+  propertyType?: string
 }
 
 interface Props {
@@ -20,6 +21,54 @@ interface Props {
 
 const DEFAULT_LAT = -1.286389
 const DEFAULT_LNG = 36.817223
+
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function pinHtml(prop: Property, selected: boolean): string {
+  const priceLabel =
+    prop.price >= 1_000_000
+      ? `${(prop.price / 1_000_000).toFixed(1)}M`
+      : prop.price >= 1_000
+      ? `${Math.round(prop.price / 1_000)}K`
+      : String(prop.price)
+
+  const name = esc((prop.estate || prop.title).slice(0, 18))
+
+  const bg       = selected ? '#1a6b4a' : '#ffffff'
+  const fg       = selected ? '#ffffff' : '#0f0e0c'
+  const nameFg   = selected ? 'rgba(255,255,255,0.75)' : '#87837c'
+  const border   = selected ? '#1a6b4a' : 'rgba(0,0,0,0.18)'
+  const tipColor = selected ? '#1a6b4a' : '#ffffff'
+
+  return `
+    <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+      <div style="
+        background:${bg};color:${fg};
+        border:2px solid ${border};
+        padding:5px 11px 4px;
+        font-family:sans-serif;
+        white-space:nowrap;
+        box-shadow:0 3px 10px rgba(0,0,0,0.18);
+        border-radius:8px;
+        text-align:center;
+        transform:${selected ? 'scale(1.08)' : 'scale(1)'};
+        transition:transform 0.12s;
+      ">
+        <div style="font-size:9px;font-weight:600;color:${nameFg};margin-bottom:1px;
+          max-width:110px;overflow:hidden;text-overflow:ellipsis;">
+          ${name}
+        </div>
+        <div style="font-size:12px;font-weight:800;">KSh ${priceLabel}</div>
+      </div>
+      <div style="width:0;height:0;
+        border-left:6px solid transparent;border-right:6px solid transparent;
+        border-top:8px solid ${tipColor};margin-top:-1px;"></div>
+      <div style="width:5px;height:5px;background:${selected ? '#1a6b4a' : '#87837c'};
+        border-radius:50%;margin-top:-1px;"></div>
+    </div>`
+}
 
 export default function BrowseMapInner({
   properties,
@@ -117,46 +166,21 @@ export default function BrowseMapInner({
 
       mappable.forEach((prop) => {
         const isSelected = prop.id === selectedId
-        const label =
-          prop.price >= 1_000_000
-            ? `${(prop.price / 1_000_000).toFixed(1)}M`
-            : prop.price >= 1_000
-            ? `${Math.round(prop.price / 1_000)}K`
-            : String(prop.price)
 
         const icon = L.divIcon({
-          html: `
-            <div style="display:flex;flex-direction:column;align-items:center;">
-              <div style="
-                background:${isSelected ? '#1a6b4a' : 'white'};
-                color:${isSelected ? 'white' : '#0f0e0c'};
-                border:2px solid ${isSelected ? '#1a6b4a' : 'rgba(0,0,0,0.2)'};
-                padding:4px 10px;
-                font-family:sans-serif;font-size:12px;font-weight:800;
-                white-space:nowrap;
-                box-shadow:0 2px 8px rgba(0,0,0,0.15);
-                cursor:pointer;border-radius:2px;
-              ">KSh ${label}</div>
-              <div style="
-                width:0;height:0;
-                border-left:5px solid transparent;
-                border-right:5px solid transparent;
-                border-top:7px solid ${isSelected ? '#1a6b4a' : 'white'};
-              "></div>
-            </div>`,
+          html:       pinHtml(prop, isSelected),
           className:  '',
-          iconSize:   [80, 32],
-          iconAnchor: [40, 32],
+          iconSize:   [120, 52],
+          iconAnchor: [60, 52],
         })
 
         const marker = L.marker([prop.latitude, prop.longitude], { icon }).addTo(map)
+
+        // Always navigate directly to property on click
         marker.on('click', () => {
-          if (window.innerWidth < 768) {
-            window.location.href = `/property/${prop.id}`
-          } else {
-            onSelectProperty(prop.id)
-          }
+          window.location.href = `/property/${prop.id}`
         })
+
         markersRef.current.push(marker)
       })
 

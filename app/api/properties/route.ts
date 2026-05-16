@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { CreatePropertySchema, SearchFiltersSchema } from '@/lib/validations'
 import { findNearbyProperties } from '@/lib/geo'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
@@ -79,6 +80,12 @@ export async function POST(req: Request) {
   const property = await prisma.property.create({
     data: { ...parsed.data, adminId: session.user.userId },
   })
+
+  // Bust caches so the new property appears immediately on all pages
+  revalidateTag('listings', { expire: 0 })
+  revalidatePath('/')
+  revalidatePath('/browse')
+  revalidatePath('/browse/map')
 
   return NextResponse.json({ property }, { status: 201 })
 }

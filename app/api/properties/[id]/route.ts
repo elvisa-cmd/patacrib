@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { UpdatePropertySchema } from '@/lib/validations'
+import { revalidatePath, revalidateTag } from 'next/cache'
 
 type Ctx = { params: Promise<{ id: string }> }
 
@@ -65,6 +66,12 @@ export async function PATCH(req: Request, { params }: Ctx) {
     data: parsed.data,
   })
 
+  revalidateTag('listings', { expire: 0 })
+  revalidatePath('/')
+  revalidatePath('/browse')
+  revalidatePath('/browse/map')
+  revalidatePath(`/property/${id}`)
+
   return NextResponse.json({ property: updated })
 }
 
@@ -85,6 +92,11 @@ export async function DELETE(_req: Request, { params }: Ctx) {
   }
 
   await prisma.property.delete({ where: { id } })
+
+  revalidateTag('listings', { expire: 0 })
+  revalidatePath('/')
+  revalidatePath('/browse')
+  revalidatePath('/browse/map')
 
   return NextResponse.json({ deleted: true })
 }
