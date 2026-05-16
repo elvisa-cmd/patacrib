@@ -106,26 +106,40 @@ export default async function HomePage() {
       </div>
 
       {/* Search bar */}
-      <a
-        href="/browse"
+      <form
+        action="/browse"
+        method="GET"
         style={{
-          margin:         '12px 16px',
-          background:     '#fff',
-          border:         '1px solid rgba(0,0,0,0.07)',
-          borderRadius:   '14px',
-          padding:        '11px 14px',
-          display:        'flex',
-          gap:            '10px',
-          alignItems:     'center',
-          textDecoration: 'none',
-          cursor:         'pointer',
+          margin:      '12px 16px',
+          background:  '#fff',
+          border:      '1px solid rgba(0,0,0,0.07)',
+          borderRadius:'14px',
+          padding:     '11px 14px',
+          display:     'flex',
+          gap:         '10px',
+          alignItems:  'center',
         }}
       >
-        <span style={{ fontSize: '16px' }}>🔍</span>
-        <span style={{ fontSize: '13px', color: '#b5b1aa', fontWeight: 500 }}>
-          Search estates, areas, price range…
-        </span>
-      </a>
+        <span style={{ fontSize: '16px', flexShrink: 0 }}>🔍</span>
+        <input
+          name="q"
+          type="text"
+          placeholder="Search estates, areas, price range…"
+          autoComplete="off"
+          spellCheck={false}
+          style={{
+            flex:       1,
+            border:     'none',
+            outline:    'none',
+            background: 'transparent',
+            fontSize:   '13px',
+            color:      '#0f0e0c',
+            fontWeight: 500,
+            fontFamily: 'inherit',
+            minWidth:   0,
+          }}
+        />
+      </form>
 
       {/* Category pills */}
       <div
