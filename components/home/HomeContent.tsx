@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import HeroSlider from './HeroSlider'
+import MiniMapPreview from './MiniMapPreview'
 import MapSection from './MapSection'
 import StatsBar from './StatsBar'
 import NavigationModal from '@/components/shared/NavigationModal'
@@ -35,6 +36,11 @@ export default function HomeContent({
   return (
     <>
       <HeroSlider properties={properties} dbError={dbError} />
+      <MiniMapPreview
+        count={properties.length}
+        avgPrice={properties.reduce((s, p) => s + (p.price || 0), 0) / (properties.length || 1)}
+        tourCount={properties.filter(p => p.videoUrl || p.tourImageUrl).length}
+      />
       <MapSection
         properties={properties}
         selectedId={selectedId}
