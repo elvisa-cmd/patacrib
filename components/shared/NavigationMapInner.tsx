@@ -68,6 +68,7 @@ export default function NavigationMapInner({
   property,
   userLocation,
   onRouteReady,
+  travelMode,
 }: NavigationMapInnerProps) {
   const mapRef          = useRef<HTMLDivElement>(null)
   const mapInstRef      = useRef<import('leaflet').Map | null>(null)
@@ -159,7 +160,7 @@ export default function NavigationMapInner({
 
     return () => { cancelRouteRef.current = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation])
+  }, [userLocation, travelMode])
 
   async function drawRoute(
     L:   typeof import('leaflet'),

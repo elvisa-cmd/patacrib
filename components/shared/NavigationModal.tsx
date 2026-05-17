@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import dynamic                          from 'next/dynamic'
 import type { NavRoute }                from './NavigationMapInner'
+import type { RouteStep }               from '@/lib/routing'
 import PhotoLocationCapture             from '@/components/shared/PhotoLocationCapture'
 
 function isIOS(): boolean {
@@ -70,6 +71,21 @@ interface NominatimResult {
   address?:     { road?: string; suburb?: string; neighbourhood?: string; city?: string }
 }
 
+function getStepIcon(step: RouteStep): string {
+  switch (step.direction) {
+    case 'arrive':       return '📍'
+    case 'left':         return '⬅️'
+    case 'right':        return '➡️'
+    case 'slight-left':  return '↖️'
+    case 'slight-right': return '↗️'
+    case 'u-turn':       return '↩️'
+    default:
+      if (step.arrow === '↻') return '🔄'
+      if (step.arrow === '🏠') return '📍'
+      return '⬆️'
+  }
+}
+
 function arrivalTime(minsFromNow: number): string {
   const d = new Date(Date.now() + minsFromNow * 60_000)
   return d.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit', hour12: true })
@@ -84,6 +100,7 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
   const [searching,       setSearching]       = useState(false)
   const [accuracyMetres,  setAccuracyMetres]  = useState<number | null>(null)
   const [gpsStatus,       setGpsStatus]       = useState<'denied' | 'unavailable' | null>(null)
+  const [activeStep,      setActiveStep]      = useState(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>()
 
   // Reset state when property changes
@@ -96,6 +113,9 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
     setAccuracyMetres(null)
     setGpsStatus(null)
   }, [property?.title])
+
+  // Reset active step when a new route is calculated
+  useEffect(() => { setActiveStep(0) }, [route])
 
   async function searchLocation(query: string) {
     if (query.length < 3) { setFromSuggestions([]); return }
@@ -187,9 +207,9 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
 
           <div style={{ marginBottom: '12px' }}>
             <PhotoLocationCapture
-              onLocationFound={(lat, lng) => {
-                setFromLocation({ lat, lng, label: 'My current location' })
-                setFromQuery('My current location')
+              onLocationFound={(lat, lng, address) => {
+                setFromLocation({ lat, lng, label: address })
+                setFromQuery(address)
               }}
               onFail={() => {}}
             />
@@ -382,6 +402,31 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           </p>
         </div>
 
+        {/* Confirmed origin chip */}
+        {fromLocation && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '8px 14px',
+            background: 'rgba(26,107,74,0.06)',
+            borderRadius: '10px',
+            marginBottom: '8px',
+          }}>
+            <div style={{
+              width: '8px', height: '8px',
+              background: '#1a6b4a', borderRadius: '50%',
+              flexShrink: 0,
+            }} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '10px', color: '#b0a898', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: '1px' }}>
+                From
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f0e0c', lineHeight: 1.3 }}>
+                {fromLocation.label}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TO — fixed destination */}
         <div style={{ marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', fontWeight: 600, color: '#b0a898', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
@@ -542,23 +587,127 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
 
             {/* Step-by-step directions */}
             {route.steps.length > 0 && (
-              <div style={{ maxHeight: '112px', overflowY: 'auto', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                {route.steps.map((step, i) => (
-                  <div key={i} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '8px 16px', borderBottom: '1px solid rgba(0,0,0,0.04)',
-                  }}>
-                    <span style={{ fontSize: '18px', flexShrink: 0, color: '#6b6055' }}>{step.arrow}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '12px', fontWeight: 700, color: '#0f0e0c', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
-                        {step.instruction}
-                      </p>
-                      {step.distance && (
-                        <p style={{ fontSize: '9px', color: '#b0a898', margin: 0 }}>{step.distance}</p>
-                      )}
-                    </div>
+              <div style={{ padding: '10px 16px 4px', borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+
+                {/* Header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '8px',
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: '#0f0e0c' }}>
+                    Turn by turn
                   </div>
-                ))}
+                  <div style={{ fontSize: '11px', color: '#1a6b4a', fontWeight: 600 }}>
+                    {route.distanceText} · {currentMins} min
+                  </div>
+                </div>
+
+                {/* Steps list */}
+                <div style={{
+                  display: 'flex', flexDirection: 'column' as const, gap: '5px',
+                  maxHeight: '200px', overflowY: 'auto' as const,
+                }}
+                className="scrollbar-none">
+                  {route.steps.map((step, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setActiveStep(i)}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '8px',
+                        padding: '8px 10px',
+                        background: i === activeStep
+                          ? 'rgba(26,107,74,0.08)'
+                          : i < activeStep
+                          ? 'rgba(0,0,0,0.02)'
+                          : '#fff',
+                        border: `1px solid ${i === activeStep
+                          ? 'rgba(26,107,74,0.2)'
+                          : 'rgba(0,0,0,0.06)'}`,
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{
+                        width: '26px', height: '26px',
+                        borderRadius: '50%',
+                        background: i === activeStep
+                          ? '#1a6b4a'
+                          : i < activeStep
+                          ? 'rgba(0,0,0,0.06)'
+                          : '#f5f5f5',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
+                        fontSize: '13px',
+                      }}>
+                        {i < activeStep
+                          ? <span style={{ color: '#b0a898', fontSize: '11px' }}>✓</span>
+                          : <span>{getStepIcon(step)}</span>
+                        }
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: '12px',
+                          fontWeight: i === activeStep ? 700 : 500,
+                          color: i < activeStep ? '#b0a898' : '#0f0e0c',
+                          marginBottom: '1px',
+                          lineHeight: 1.4,
+                          textDecoration: i < activeStep ? 'line-through' : 'none',
+                        }}>
+                          {step.instruction}
+                        </div>
+                        {step.distance && (
+                          <div style={{
+                            fontSize: '10px',
+                            color: i === activeStep ? '#1a6b4a' : '#b0a898',
+                            fontWeight: i === activeStep ? 600 : 400,
+                          }}>
+                            {step.distance}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Next step button */}
+                {activeStep < route.steps.length - 1 && (
+                  <button
+                    onClick={() => setActiveStep(prev => Math.min(prev + 1, route.steps.length - 1))}
+                    style={{
+                      width: '100%', marginTop: '6px',
+                      padding: '10px',
+                      background: '#1a6b4a', color: '#fff',
+                      border: 'none', borderRadius: '10px',
+                      fontSize: '12px', fontWeight: 700,
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', gap: '6px',
+                    }}
+                  >
+                    Next step
+                    <svg width="12" height="12" fill="none" stroke="#fff"
+                      strokeWidth="2.5" strokeLinecap="round"
+                      strokeLinejoin="round" viewBox="0 0 24 24">
+                      <path d="M5 12h14M12 5l7 7-7 7"/>
+                    </svg>
+                  </button>
+                )}
+
+                {/* Arrived */}
+                {activeStep === route.steps.length - 1 && (
+                  <div style={{
+                    marginTop: '6px', padding: '10px',
+                    background: 'rgba(26,107,74,0.08)',
+                    border: '1px solid rgba(26,107,74,0.2)',
+                    borderRadius: '10px',
+                    textAlign: 'center',
+                    fontSize: '12px', fontWeight: 700, color: '#1a6b4a',
+                  }}>
+                    📍 You have arrived at your destination
+                  </div>
+                )}
+
               </div>
             )}
 

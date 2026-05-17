@@ -336,9 +336,9 @@ export default function LeafletMap({
       {gpsDenied && (
         <div className="absolute top-10 left-3 z-[1000]" style={{ maxWidth: '280px' }}>
           <PhotoLocationCapture
-            onLocationFound={(lat, lng) => {
+            onLocationFound={(lat, lng, address) => {
               setUserLocation([lat, lng])
-              setLocationLabel('My current location')
+              setLocationLabel(address || 'My current location')
               setGpsDenied(false)
               mapRef.current?.flyTo([lat, lng], 14)
             }}

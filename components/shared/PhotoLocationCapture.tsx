@@ -1,22 +1,21 @@
 'use client'
 import { useRef, useState } from 'react'
 
-type Status = 'idle' | 'capturing' | 'processing' | 'done' | 'failed' | 'denied'
+type Status = 'idle' | 'capturing' | 'processing' | 'done' | 'failed'
 
 interface Props {
-  onLocationFound: (lat: number, lng: number) => void
+  onLocationFound: (lat: number, lng: number, address: string) => void
   onFail: () => void
 }
 
 export default function PhotoLocationCapture({ onLocationFound, onFail }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<Status>('idle')
-  const [accuracy, setAccuracy] = useState<number | null>(null)
+  const [locationName, setLocationName] = useState('')
 
   async function handlePhoto(files: FileList | null) {
     if (!files || files.length === 0) return
     const file = files[0]
-
     setStatus('processing')
 
     try {
@@ -26,40 +25,35 @@ export default function PhotoLocationCapture({ onLocationFound, onFail }: Props)
       if (gps && gps.latitude && gps.longitude) {
         const { latitude: lat, longitude: lng } = gps
 
-        // Validate coordinates are real
-        if (lat === 0 && lng === 0) {
-          throw new Error('Invalid GPS')
-        }
+        if (lat === 0 && lng === 0) throw new Error('Invalid GPS')
 
-        // Get accuracy if available
-        const full = await exifr.parse(file, ['GPSHPositioningError', 'GPSDOP'])
-        if (full?.GPSHPositioningError) {
-          setAccuracy(Math.round(parseFloat(full.GPSHPositioningError)))
-        }
+        // Reverse geocode to get location name
+        let name = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
+            { headers: { 'Accept-Language': 'en' } }
+          )
+          const data = await res.json()
+          if (data.display_name) {
+            const parts = data.display_name.split(',')
+            name = parts.slice(0, 2).join(',').trim()
+          }
+        } catch { /* keep coordinate fallback */ }
 
-        // IMMEDIATELY discard the photo from memory
-        // Revoke any object URLs, clear file reference
-        URL.revokeObjectURL(URL.createObjectURL(file))
-
-        // Clear the input so no photo is retained
-        if (inputRef.current) {
-          inputRef.current.value = ''
-        }
+        // Discard photo immediately
+        if (inputRef.current) inputRef.current.value = ''
 
         setStatus('done')
-        onLocationFound(lat, lng)
+        setLocationName(name)
+        onLocationFound(lat, lng, name)
       } else {
         throw new Error('No GPS in photo')
       }
     } catch (err) {
       console.error('EXIF GPS failed:', err)
+      if (inputRef.current) inputRef.current.value = ''
       setStatus('failed')
-
-      // Clear input
-      if (inputRef.current) {
-        inputRef.current.value = ''
-      }
-
       onFail()
     }
   }
@@ -72,7 +66,7 @@ export default function PhotoLocationCapture({ onLocationFound, onFail }: Props)
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-      {/* Hidden camera input - capture only, no gallery */}
+      {/* Hidden camera input — capture only, no gallery */}
       <input
         ref={inputRef}
         type="file"
@@ -172,42 +166,46 @@ export default function PhotoLocationCapture({ onLocationFound, onFail }: Props)
           background: 'rgba(26,107,74,0.08)',
           border: '1px solid rgba(26,107,74,0.2)',
           borderRadius: '14px',
-          display: 'flex', alignItems: 'center', gap: '10px',
+          display: 'flex', alignItems: 'flex-start', gap: '10px',
         }}>
           <div style={{
             width: '32px', height: '32px',
-            background: '#1a6b4a',
-            borderRadius: '50%',
+            background: '#1a6b4a', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            color: '#fff', fontSize: '16px',
+            flexShrink: 0, color: '#fff', fontSize: '16px',
           }}>
             ✓
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#1a6b4a', marginBottom: '1px' }}>
-              Location found
-              {accuracy && (
-                <span style={{ fontWeight: 400, color: '#6b6055', marginLeft: '6px', fontSize: '11px' }}>
-                  ±{accuracy}m accuracy
-                </span>
-              )}
+            <div style={{
+              fontSize: '11px', fontWeight: 600,
+              color: '#1a6b4a', marginBottom: '2px',
+              textTransform: 'uppercase' as const, letterSpacing: '0.05em',
+            }}>
+              Your location
             </div>
-            <div style={{ fontSize: '11px', color: '#6b6055' }}>
-              Photo discarded · location only kept
+            <div style={{
+              fontSize: '14px', fontWeight: 700,
+              color: '#0f0e0c', marginBottom: '2px',
+              lineHeight: 1.3,
+            }}>
+              {locationName || 'Location found'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#b0a898' }}>
+              📷 Photo discarded · GPS only
             </div>
           </div>
           <button
             type="button"
-            onClick={() => { setStatus('idle'); setAccuracy(null) }}
+            onClick={() => { setStatus('idle'); setLocationName('') }}
             style={{
               background: 'none', border: 'none',
-              color: '#1a6b4a', fontSize: '12px',
-              fontWeight: 600, cursor: 'pointer',
-              fontFamily: 'inherit', flexShrink: 0,
+              color: '#b0a898', fontSize: '18px',
+              cursor: 'pointer', lineHeight: 1,
+              padding: '0', flexShrink: 0,
             }}
           >
-            Retake
+            ×
           </button>
         </div>
       )}
