@@ -142,7 +142,9 @@ export default function TourRecorder({ onUpload, propertyId }: Props) {
     setState('uploading')
 
     try {
-      const blob = new Blob(chunksRef.current)
+      const blob = new Blob(chunksRef.current, {
+        type: chunksRef.current[0]?.type || 'video/webm',
+      })
       const file = new File([blob], `tour-${Date.now()}.webm`, { type: blob.type })
 
       const formData = new FormData()
@@ -150,15 +152,21 @@ export default function TourRecorder({ onUpload, propertyId }: Props) {
       if (propertyId) formData.append('propertyId', propertyId)
 
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
-      if (!res.ok) throw new Error('Upload failed')
+      if (!res.ok) {
+        const errData = await res.json() as { error?: string }
+        throw new Error(errData.error || 'Upload failed')
+      }
 
-      const data      = await res.json()
-      const videoUrl  = data.url ?? data.videoUrl ?? data.secure_url
+      const data     = await res.json() as { url?: string; videoUrl?: string; secure_url?: string }
+      const videoUrl = data.url || data.videoUrl || data.secure_url
+      if (!videoUrl) throw new Error('No URL returned from server')
 
       setState('done')
       onUpload(videoUrl)
-    } catch {
-      setError('Upload failed. Please try again.')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      console.error('Tour upload error:', message)
+      setError('Upload failed: ' + message)
       setState('preview')
     }
   }
