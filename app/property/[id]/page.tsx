@@ -79,7 +79,9 @@ export default async function PropertyDetailPage({
     getServerSession(authOptions).catch(() => null),
   ])
 
-  if (!rawProperty || !rawProperty.admin) notFound()
+  if (!rawProperty) notFound()
+
+  console.log('[property-detail] id:', id, '| found:', rawProperty.title, '| admin:', rawProperty.admin?.name ?? 'NULL')
 
   const property = rawProperty
   const userId   = session?.user?.userId ?? null
@@ -143,9 +145,9 @@ export default async function PropertyDetailPage({
     createdAt:     property.createdAt.toISOString(),
     adminId:       property.adminId,
     admin: {
-      name:  property.admin.name,
-      email: property.admin.email,
-      phone: property.admin.phone,
+      name:  property.admin?.name  ?? '',
+      email: property.admin?.email ?? '',
+      phone: property.admin?.phone ?? null,
     },
   }
 
@@ -171,7 +173,7 @@ export default async function PropertyDetailPage({
     powerBackup:   p.powerBackup,
   }))
 
-  const totalListings = property.admin._count.properties
+  const totalListings = property.admin?._count?.properties ?? 0
 
   return (
     <div className="min-h-screen bg-bg">
