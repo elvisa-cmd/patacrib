@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import type { NavigationMapInnerProps } from './NavigationMapInner'
+import type { NavProperty } from './NavigationMapInner'
 
 const NavigationMapInner = dynamic(
   () => import('./NavigationMapInner'),
@@ -15,6 +15,11 @@ const NavigationMapInner = dynamic(
   },
 )
 
-export default function NavigationMap(props: NavigationMapInnerProps) {
+interface Props {
+  property: NavProperty
+  onClose:  () => void
+}
+
+export default function NavigationMap(props: Props) {
   return <NavigationMapInner {...props} />
 }
