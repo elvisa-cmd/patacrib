@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import dynamic                          from 'next/dynamic'
 import type { NavRoute }                from './NavigationMapInner'
+import PhotoLocationCapture             from '@/components/shared/PhotoLocationCapture'
 
 function isIOS(): boolean {
   if (typeof window === 'undefined') return false
@@ -183,6 +184,29 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           <div style={{ fontSize: '11px', fontWeight: 600, color: '#b0a898', marginBottom: '6px', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
             Your location
           </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <PhotoLocationCapture
+              onLocationFound={(lat, lng) => {
+                setFromLocation({ lat, lng, label: 'My current location' })
+                setFromQuery('My current location')
+              }}
+              onFail={() => {}}
+            />
+          </div>
+
+          {/* Divider */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '10px',
+            marginBottom: '12px',
+          }}>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+            <span style={{ fontSize: '11px', color: '#b0a898', fontWeight: 500 }}>
+              or type your location
+            </span>
+            <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.08)' }} />
+          </div>
+
           <div style={{ position: 'relative' }}>
             <div style={{
               display: 'flex', alignItems: 'center', gap: '10px',
@@ -345,6 +369,17 @@ export default function NavigationModal({ isOpen, onClose, property }: Navigatio
           >
             Paste Google Maps link or coordinates
           </button>
+
+          <p style={{
+            fontSize: '11px',
+            color: '#b0a898',
+            textAlign: 'center',
+            lineHeight: 1.5,
+            margin: '4px 0 0',
+          }}>
+            🔒 Your photo never leaves your device.
+            Only the GPS coordinates are used.
+          </p>
         </div>
 
         {/* TO — fixed destination */}
