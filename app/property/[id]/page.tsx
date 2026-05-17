@@ -142,7 +142,7 @@ export default async function PropertyDetailPage({
     borehole:      property.borehole,
     plusCode:      property.plusCode,
     status:        property.status,
-    createdAt:     property.createdAt.toISOString(),
+    createdAt:     property.createdAt instanceof Date ? property.createdAt.toISOString() : String(property.createdAt),
     adminId:       property.adminId,
     admin: {
       name:  property.admin?.name  ?? '',
@@ -165,7 +165,7 @@ export default async function PropertyDetailPage({
     longitude:     p.longitude,
     images:        p.images,
     status:        p.status,
-    createdAt:     p.createdAt.toISOString(),
+    createdAt:     p.createdAt instanceof Date ? p.createdAt.toISOString() : String(p.createdAt),
     propertyType:  p.propertyType,
     safetyScore:   p.safetyScore,
     matatuRoutes:  p.matatuRoutes,

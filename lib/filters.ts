@@ -21,14 +21,19 @@ export interface SearchFilters {
 export function buildPropertyFilter(
   filters: SearchFilters
 ): Prisma.PropertyWhereInput {
-  const where: Prisma.PropertyWhereInput = { status: 'available' }
+  const where: Prisma.PropertyWhereInput = {}
 
   if (filters.q) {
-    where.OR = [
-      { title:       { contains: filters.q, mode: 'insensitive' } },
-      { description: { contains: filters.q, mode: 'insensitive' } },
-      { estate:      { contains: filters.q, mode: 'insensitive' } },
-      { address:     { contains: filters.q, mode: 'insensitive' } },
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        OR: [
+          { title:       { contains: filters.q, mode: 'insensitive' } },
+          { description: { contains: filters.q, mode: 'insensitive' } },
+          { estate:      { contains: filters.q, mode: 'insensitive' } },
+          { address:     { contains: filters.q, mode: 'insensitive' } },
+        ],
+      },
     ]
   }
 
@@ -73,9 +78,14 @@ export function buildPropertyFilter(
   }
 
   if (filters.tour === 'true') {
-    where.OR = [
-      { videoUrl:     { not: null } },
-      { tourImageUrl: { not: null } },
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        OR: [
+          { videoUrl:     { not: null } },
+          { tourImageUrl: { not: null } },
+        ],
+      },
     ]
   }
 
