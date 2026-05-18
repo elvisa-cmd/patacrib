@@ -62,6 +62,19 @@ model Property {
   powerBackup   Boolean  @default(false)
   borehole      Boolean  @default(false)
 
+  // Property Intelligence fields
+  waterSource     String?
+  nearestStage    String?
+  safetyLevel     String?
+  internetOptions String[] @default([])
+  petsAllowed     Boolean  @default(false)
+  smokingAllowed  Boolean  @default(false)
+  parkingSpaces   Int      @default(0)
+  furnished       String?
+  availableFrom   DateTime?
+  depositMonths   Int      @default(2)
+  areaAvgRent     Int?
+
   plusCode  String?
 
   status    String   @default("available") // available | taken | maintenance

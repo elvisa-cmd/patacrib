@@ -53,6 +53,18 @@ export const CreatePropertySchema = z.object({
   borehole: z.boolean().default(false),
   plusCode: z.string().optional(),
   status: z.enum(['available', 'taken', 'maintenance']).default('available'),
+  // Intelligence fields
+  waterSource:     z.string().optional(),
+  nearestStage:    z.string().optional(),
+  safetyLevel:     z.string().optional(),
+  internetOptions: z.array(z.string()).default([]),
+  petsAllowed:     z.boolean().default(false),
+  smokingAllowed:  z.boolean().default(false),
+  parkingSpaces:   z.number().int().min(0).default(0),
+  furnished:       z.string().optional(),
+  availableFrom:   z.string().datetime().optional().or(z.literal('')).or(z.undefined()),
+  depositMonths:   z.number().int().min(0).default(2),
+  areaAvgRent:     z.number().int().positive().optional(),
 })
 
 export const UpdatePropertySchema = CreatePropertySchema.partial()

@@ -55,6 +55,7 @@ import PropertyMap from '@/components/property/PropertyMap'
 import PriceCard from '@/components/property/PriceCard'
 import MobilePropertyBar from '@/components/property/MobilePropertyBar'
 import NearbyProperties from '@/components/property/NearbyProperties'
+import IntelligenceCard from '@/components/property/IntelligenceCard'
 import type { DetailedProperty, SerializedProperty } from '@/types/property'
 
 export default async function PropertyDetailPage({
@@ -149,6 +150,19 @@ export default async function PropertyDetailPage({
       email: property.admin?.email ?? '',
       phone: property.admin?.phone ?? null,
     },
+    waterSource:     property.waterSource     ?? null,
+    nearestStage:    property.nearestStage    ?? null,
+    safetyLevel:     property.safetyLevel     ?? null,
+    internetOptions: property.internetOptions ?? [],
+    petsAllowed:     property.petsAllowed     ?? false,
+    smokingAllowed:  property.smokingAllowed  ?? false,
+    parkingSpaces:   property.parkingSpaces   ?? 0,
+    furnished:       property.furnished       ?? null,
+    availableFrom:   property.availableFrom instanceof Date
+      ? property.availableFrom.toISOString()
+      : (property.availableFrom ?? null),
+    depositMonths:   property.depositMonths   ?? 2,
+    areaAvgRent:     property.areaAvgRent     ?? null,
   }
 
   const nearbyProperties: SerializedProperty[] = nearby.map((p) => ({
@@ -348,6 +362,26 @@ export default async function PropertyDetailPage({
 
           <div className="flex-1 min-w-0 order-2 md:order-1">
             <PropertyInfo property={detailedProperty} />
+
+            <IntelligenceCard
+              waterSchedule={detailedProperty.waterSchedule}
+              waterSource={detailedProperty.waterSource}
+              borehole={detailedProperty.borehole}
+              matatuRoutes={detailedProperty.matatuRoutes}
+              nearestStage={detailedProperty.nearestStage}
+              safetyScore={detailedProperty.safetyScore}
+              safetyLevel={detailedProperty.safetyLevel}
+              powerBackup={detailedProperty.powerBackup}
+              internetOptions={detailedProperty.internetOptions}
+              petsAllowed={detailedProperty.petsAllowed}
+              smokingAllowed={detailedProperty.smokingAllowed}
+              parkingSpaces={detailedProperty.parkingSpaces}
+              furnished={detailedProperty.furnished}
+              availableFrom={detailedProperty.availableFrom}
+              depositMonths={detailedProperty.depositMonths}
+              areaAvgRent={detailedProperty.areaAvgRent}
+              price={detailedProperty.price}
+            />
 
             {detailedProperty.plusCode && (
               <div className="px-0 mb-4">

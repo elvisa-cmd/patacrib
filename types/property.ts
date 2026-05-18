@@ -42,4 +42,16 @@ export type DetailedProperty = SerializedProperty & {
     email: string
     phone: string | null
   }
+  // Intelligence fields
+  waterSource: string | null
+  nearestStage: string | null
+  safetyLevel: string | null
+  internetOptions: string[]
+  petsAllowed: boolean
+  smokingAllowed: boolean
+  parkingSpaces: number
+  furnished: string | null
+  availableFrom: string | null
+  depositMonths: number
+  areaAvgRent: number | null
 }

@@ -141,7 +141,19 @@ export default function AddPropertyForm() {
   const [powerBackup,   setPowerBackup]   = useState(false)
   const [borehole,      setBorehole]      = useState(false)
 
-  // Section 6 — Features & amenities
+  // Section 6 — Property Intelligence
+  const [waterSource,     setWaterSource]     = useState('')
+  const [nearestStage,    setNearestStage]    = useState('')
+  const [safetyLevel,     setSafetyLevel]     = useState('')
+  const [internetOptions, setInternetOptions] = useState<string[]>([])
+  const [petsAllowed,     setPetsAllowed]     = useState(false)
+  const [smokingAllowed,  setSmokingAllowed]  = useState(false)
+  const [parkingSpaces,   setParkingSpaces]   = useState(0)
+  const [furnished,       setFurnished]       = useState('')
+  const [depositMonths,   setDepositMonths]   = useState(2)
+  const [areaAvgRent,     setAreaAvgRent]     = useState('')
+
+  // Section 7 — Features & amenities
   const [features,  setFeatures]  = useState<string[]>([])
   const [amenities, setAmenities] = useState<string[]>([])
 
@@ -190,6 +202,16 @@ export default function AddPropertyForm() {
           safetyScore:   safetyScore ? Number(safetyScore) : undefined,
           powerBackup,
           borehole,
+          waterSource:     waterSource     || undefined,
+          nearestStage:    nearestStage    || undefined,
+          safetyLevel:     safetyLevel     || undefined,
+          internetOptions,
+          petsAllowed,
+          smokingAllowed,
+          parkingSpaces,
+          furnished:       furnished       || undefined,
+          depositMonths,
+          areaAvgRent:     areaAvgRent ? Number(areaAvgRent) : undefined,
           status: 'available',
         }),
       })
@@ -581,9 +603,134 @@ export default function AddPropertyForm() {
               </div>
             </section>
 
-            {/* ── Section 6: Features & amenities ──────────────────── */}
+            {/* ── Section 6: Property Intelligence ─────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={6} title="Features & amenities" />
+              <div className="flex items-center gap-3 mb-1">
+                <span className="w-6 h-6 bg-accent flex items-center justify-center font-sans font-bold text-[11px] text-white flex-shrink-0">6</span>
+                <h2 className="font-sans font-bold text-[13px] text-ink uppercase tracking-[1px]">Property Intelligence</h2>
+                <span className="font-sans text-[9px] border border-border text-muted px-2 py-0.5 uppercase tracking-wide">Optional</span>
+              </div>
+              <p className="font-sans text-[11px] text-muted mb-6 ml-9">PataKrib&apos;s unique data — helps renters make confident decisions</p>
+
+              <div className={GRID2}>
+                <div>
+                  <label className={LABEL}>Water source</label>
+                  <input
+                    type="text"
+                    value={waterSource}
+                    onChange={e => setWaterSource(e.target.value)}
+                    placeholder="e.g. Nairobi Water, Tanker"
+                    className={INPUT}
+                  />
+                </div>
+                <div>
+                  <label className={LABEL}>Nearest matatu stage</label>
+                  <input
+                    type="text"
+                    value={nearestStage}
+                    onChange={e => setNearestStage(e.target.value)}
+                    placeholder="e.g. Westlands stage"
+                    className={INPUT}
+                  />
+                </div>
+              </div>
+
+              <div className={GRID2}>
+                <div>
+                  <label className={LABEL}>Safety level</label>
+                  <select value={safetyLevel} onChange={e => setSafetyLevel(e.target.value)} className={INPUT}>
+                    <option value="">Select…</option>
+                    <option value="Very safe">Very safe</option>
+                    <option value="Safe">Safe</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Use caution">Use caution</option>
+                  </select>
+                </div>
+                <div>
+                  <label className={LABEL}>Furnished</label>
+                  <select value={furnished} onChange={e => setFurnished(e.target.value)} className={INPUT}>
+                    <option value="">Unfurnished</option>
+                    <option value="Fully furnished">Fully furnished</option>
+                    <option value="Semi-furnished">Semi-furnished</option>
+                    <option value="Unfurnished">Unfurnished</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className={GRID2}>
+                <div>
+                  <label className={LABEL}>Deposit (months)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={12}
+                    value={depositMonths}
+                    onChange={e => setDepositMonths(Number(e.target.value))}
+                    className={INPUT}
+                  />
+                </div>
+                <div>
+                  <label className={LABEL}>Parking spaces</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={parkingSpaces}
+                    onChange={e => setParkingSpaces(Number(e.target.value))}
+                    className={INPUT}
+                  />
+                </div>
+              </div>
+
+              <div className={GRID2}>
+                <div>
+                  <label className={LABEL}>Area avg rent (KSh/mo)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={areaAvgRent}
+                    onChange={e => setAreaAvgRent(e.target.value)}
+                    placeholder="e.g. 40000"
+                    className={INPUT}
+                  />
+                </div>
+              </div>
+
+              <div className={`${FIELD}`}>
+                <label className={LABEL}>Internet options</label>
+                <TagInput
+                  tags={internetOptions}
+                  onAdd={t => setInternetOptions(prev => [...prev, t])}
+                  onRemove={t => setInternetOptions(prev => prev.filter(o => o !== t))}
+                  placeholder="e.g. Safaricom Home, Zuku — press Enter to add"
+                />
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={petsAllowed}
+                    onChange={e => setPetsAllowed(e.target.checked)}
+                    className="w-4 h-4 accent-accent"
+                  />
+                  <span className="font-sans text-[13px] text-ink">Pets allowed</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={smokingAllowed}
+                    onChange={e => setSmokingAllowed(e.target.checked)}
+                    className="w-4 h-4 accent-accent"
+                  />
+                  <span className="font-sans text-[13px] text-ink">Smoking allowed</span>
+                </label>
+              </div>
+            </section>
+
+            {/* ── Section 7: Features & amenities ──────────────────── */}
+            <section className={SECTION}>
+              <SectionHeader num={7} title="Features & amenities" />
 
               <div className={FIELD}>
                 <label className={LABEL}>Features</label>
@@ -607,9 +754,9 @@ export default function AddPropertyForm() {
 
             </section>
 
-            {/* ── Section 7: Submit ──────────────────────────────────── */}
+            {/* ── Section 8: Submit ──────────────────────────────────── */}
             <section className={SECTION}>
-              <SectionHeader num={7} title="Publish listing" />
+              <SectionHeader num={8} title="Publish listing" />
 
               {error && (
                 <div className="bg-red/10 border border-red/20 px-4 py-3 mb-5">
