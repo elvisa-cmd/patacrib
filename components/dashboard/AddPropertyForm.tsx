@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import ExifLocationCapture from '@/components/shared/ExifLocationCapture'
 import TourRecorder from '@/components/shared/TourRecorder'
 import ListingPreview from './ListingPreview'
@@ -160,6 +160,9 @@ export default function AddPropertyForm() {
   // Submit state
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
+
+  // Stable callback so TourRecorder never re-renders due to prop reference change
+  const handleVideoUpload = useCallback((url: string) => setVideoUrl(url), [])
 
   const doSubmit = async () => {
     if (title.length < 5)            { setError('Title must be at least 5 characters'); return }
@@ -476,7 +479,7 @@ export default function AddPropertyForm() {
                     </div>
                   </div>
                 ) : (
-                  <TourRecorder onUpload={(url) => setVideoUrl(url)} />
+                  <TourRecorder onUpload={handleVideoUpload} />
                 )}
               </div>
 
