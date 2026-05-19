@@ -50,6 +50,7 @@ export default function ResultsArea({ properties, totalCount, filters, savedIds 
         filterSummary={summary}
         currentSort={currentSort}
         savedIds={savedIds}
+        searchQuery={filters.q}
       />
     </div>
   )

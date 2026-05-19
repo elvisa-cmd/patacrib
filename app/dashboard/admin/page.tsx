@@ -19,8 +19,9 @@ export default async function DashboardPage() {
   const userId       = session.user.userId
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
-  const [properties, totalViews, unreadMessages, recentViews, weekViews] =
+  const [currentUser, properties, totalViews, unreadMessages, recentViews, weekViews] =
     await Promise.all([
+      prisma.user.findUnique({ where: { id: userId }, select: { phone: true } }),
       prisma.property.findMany({
         where:     { adminId: userId },
         orderBy:   { createdAt: 'desc' },
@@ -105,6 +106,32 @@ export default async function DashboardPage() {
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#fff', margin: '0 0 20px', letterSpacing: '-0.5px' }}>
           {session.user.name ?? 'Lister'}
         </h1>
+
+        {/* WhatsApp prompt — shown when phone not set */}
+        {!currentUser?.phone && (
+          <a href="/dashboard/profile" style={{
+            display:        'flex',
+            alignItems:     'center',
+            gap:            '10px',
+            padding:        '12px 14px',
+            background:     'rgba(37,211,102,0.12)',
+            border:         '1px solid rgba(37,211,102,0.25)',
+            borderRadius:   '12px',
+            textDecoration: 'none',
+            marginBottom:   '16px',
+          }}>
+            <span style={{ fontSize: '20px' }}>📱</span>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '13px', fontWeight: 700, color: '#4dbe87', margin: '0 0 2px' }}>
+                Add your WhatsApp number
+              </p>
+              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', margin: 0 }}>
+                Renters can&apos;t contact you without it
+              </p>
+            </div>
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '16px' }}>→</span>
+          </a>
+        )}
 
         {/* 2×2 stats */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>

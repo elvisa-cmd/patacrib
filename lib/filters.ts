@@ -32,6 +32,7 @@ export function buildPropertyFilter(
           { description: { contains: filters.q, mode: 'insensitive' } },
           { estate:      { contains: filters.q, mode: 'insensitive' } },
           { address:     { contains: filters.q, mode: 'insensitive' } },
+          { city:        { contains: filters.q, mode: 'insensitive' } },
         ],
       },
     ]

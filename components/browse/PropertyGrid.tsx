@@ -12,19 +12,46 @@ interface PropertyGridProps {
   filterSummary: string
   currentSort:   string
   savedIds?:     string[]
+  searchQuery?:  string
 }
 
-function EmptyState() {
+function EmptyState({ query }: { query?: string }) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center py-20 px-8 text-center">
-      <span className="text-[64px] leading-none mb-4" aria-hidden="true">🏠</span>
-      <p className="font-serif text-[24px] text-ink mb-2">No properties found</p>
-      <p className="font-sans text-[14px] text-muted mb-5">Try adjusting your search or filters</p>
+    <div className="flex-1 flex flex-col items-center justify-center py-16 px-8 text-center">
+      <span className="text-[56px] leading-none mb-4" aria-hidden="true">🏠</span>
+      <p className="font-serif text-[22px] text-ink mb-2">
+        No properties found{query ? ` for "${query}"` : ''}
+      </p>
+      <p className="font-sans text-[14px] text-muted mb-6 max-w-[280px] leading-relaxed">
+        Be the first to know when a property is listed in this area.
+      </p>
+
+      <form
+        action="/api/notify-me"
+        method="POST"
+        style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '320px', marginBottom: '16px' }}
+      >
+        <input type="hidden" name="query" value={query ?? ''} />
+        <input
+          type="email"
+          name="email"
+          placeholder="Your email address"
+          required
+          className="flex-1 font-sans text-[13px] text-ink bg-surface border border-border px-3 py-2.5 focus:outline-none focus:border-border2 transition-colors"
+        />
+        <button
+          type="submit"
+          className="font-sans font-bold text-[12px] uppercase tracking-[0.5px] bg-accent text-white px-4 py-2.5 hover:bg-accent-d transition-colors whitespace-nowrap"
+        >
+          Notify me
+        </button>
+      </form>
+
       <a
         href="/browse"
-        className="font-sans text-[13px] text-accent hover:text-accent-d transition-colors underline"
+        className="font-sans text-[13px] text-accent hover:text-accent-d transition-colors"
       >
-        Clear filters →
+        ← View all properties
       </a>
     </div>
   )
@@ -36,6 +63,7 @@ export default function PropertyGrid({
   filterSummary,
   currentSort,
   savedIds = [],
+  searchQuery,
 }: PropertyGridProps) {
   const [view, setView] = useState<'grid' | 'list' | 'map'>('grid')
   const router  = useRouter()
@@ -126,7 +154,7 @@ export default function PropertyGrid({
       {/* ── Grid / List view ───────────────────────────────────────── */}
       {view !== 'map' && (
         properties.length === 0 ? (
-          <EmptyState />
+          <EmptyState query={searchQuery} />
         ) : (
           <div className="flex-1 overflow-y-auto p-5">
             {view === 'grid' ? (

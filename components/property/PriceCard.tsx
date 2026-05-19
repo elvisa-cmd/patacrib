@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import { formatPrice } from '@/lib/price'
 import NavigationModal from '@/components/shared/NavigationModal'
 import ViewingModal    from '@/components/property/ViewingModal'
+import ContactButtons  from '@/components/property/ContactButtons'
 
 const MiniMap = dynamic(() => import('./PropertyMapInner'), {
   ssr: false,
@@ -19,20 +20,23 @@ const MiniMap = dynamic(() => import('./PropertyMapInner'), {
 })
 
 interface PriceCardProps {
-  price:         number
-  priceType:     string
-  propertyId:    string
-  adminId:       string
-  adminName:     string
-  isSaved:       boolean
-  isLoggedIn:    boolean
-  lat:           number
-  lng:           number
-  address:       string
-  title:         string
-  totalListings: number
-  estate:        string | null
-  matatuRoutes:  string[]
+  price:          number
+  priceType:      string
+  propertyId:     string
+  adminId:        string
+  adminName:      string
+  isSaved:        boolean
+  isLoggedIn:     boolean
+  lat:            number
+  lng:            number
+  address:        string
+  title:          string
+  totalListings:  number
+  estate:         string | null
+  matatuRoutes:   string[]
+  landlordPhone?: string | null
+  landlordName?:  string | null
+  city?:          string | null
 }
 
 function getInitials(name: string): string {
@@ -59,6 +63,9 @@ export default function PriceCard({
   totalListings,
   estate,
   matatuRoutes,
+  landlordPhone,
+  landlordName,
+  city,
 }: PriceCardProps) {
   const [saved,        setSaved]        = useState(initialSaved)
   const [saving,       setSaving]       = useState(false)
@@ -120,6 +127,18 @@ export default function PriceCard({
         </div>
 
         <div className="px-5 py-4">
+          <div className="mb-3">
+            <ContactButtons
+              propertyTitle={title}
+              propertyPrice={price}
+              propertyEstate={estate}
+              propertyCity={city ?? null}
+              propertyId={propertyId}
+              landlordPhone={landlordPhone}
+              landlordName={landlordName ?? adminName}
+            />
+          </div>
+
           <button
             type="button"
             onClick={() => {

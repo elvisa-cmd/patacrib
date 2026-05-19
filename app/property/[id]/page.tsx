@@ -357,6 +357,9 @@ export default async function PropertyDetailPage({
               totalListings={totalListings}
               estate={detailedProperty.estate}
               matatuRoutes={detailedProperty.matatuRoutes}
+              landlordPhone={detailedProperty.admin.phone}
+              landlordName={detailedProperty.admin.name}
+              city={detailedProperty.city}
             />
           </div>
 
