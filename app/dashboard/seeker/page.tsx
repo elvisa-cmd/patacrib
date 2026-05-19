@@ -9,7 +9,7 @@ export default async function SeekerDashboard() {
   const session = await getServerSession(authOptions)
 
   if (!session) redirect('/login')
-  if (session.user.userType === 'ADMIN') redirect('/dashboard/admin')
+  if (session.user.userType === 'ADMIN') redirect('/dashboard')
 
   const userId = session.user.userId
 

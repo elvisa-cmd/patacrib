@@ -20,7 +20,7 @@ const AUTH_LINKS = [
 export default async function Nav() {
   const session  = await getServerSession(authOptions)
   const isAdmin  = session?.user?.userType === 'ADMIN'
-  const dashHref = isAdmin ? '/dashboard/admin' : '/dashboard/seeker'
+  const dashHref = isAdmin ? '/dashboard' : '/dashboard/seeker'
   const links    = session ? AUTH_LINKS : GUEST_LINKS
 
   return (
