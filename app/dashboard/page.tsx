@@ -22,34 +22,47 @@ export default async function ListerDashboard() {
   // Only ADMIN (lister) accounts see this page — seekers go to their own dashboard
   if (user.userType === 'SEEKER') redirect('/dashboard/seeker')
 
-  const [myProperties, trendingProperties] = await Promise.all([
+  // Fetch properties and trending — separate queries so analytics failures don't kill the page
+  const [myPropertiesRaw, trendingProperties] = await Promise.all([
     prisma.property.findMany({
       where:   { adminId: user.id },
       orderBy: { createdAt: 'desc' },
-      include: { views: true, enquiries: true },
-    }),
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.property.findMany>>),
     prisma.property.findMany({
       where:   { status: 'available', NOT: { adminId: user.id } },
       orderBy: { createdAt: 'desc' },
       take:    8,
-    }),
+    }).catch(() => [] as Awaited<ReturnType<typeof prisma.property.findMany>>),
   ])
 
+  const myProperties = myPropertiesRaw
+  const propIds      = myProperties.map(p => p.id)
+
+  // Analytics — fetched separately so a missing table never crashes the page
   const now     = new Date()
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+  const [allViews, allEnquiries] = await Promise.all([
+    propIds.length > 0
+      ? prisma.propertyView.findMany({ where: { propertyId: { in: propIds } } }).catch(() => [])
+      : Promise.resolve([]),
+    propIds.length > 0
+      ? prisma.propertyEnquiry.findMany({ where: { propertyId: { in: propIds } } }).catch(() => [])
+      : Promise.resolve([]),
+  ])
 
   const totalListings        = myProperties.length
   const activeListings       = myProperties.filter(p => p.status === 'available').length
   const propertiesWithVideos = myProperties.filter(p => p.videoUrl).length
   const totalRent            = myProperties.reduce((s, p) => s + (p.price || 0), 0)
 
-  const totalViews     = myProperties.reduce((s, p) => s + p.views.length, 0)
-  const weekViews      = myProperties.reduce((s, p) => s + p.views.filter(v => v.viewedAt > weekAgo).length, 0)
-  const totalWhatsApp  = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'whatsapp').length, 0)
-  const weekWhatsApp   = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'whatsapp' && e.createdAt > weekAgo).length, 0)
-  const totalDirections = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'directions').length, 0)
-  const weekDirections  = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'directions' && e.createdAt > weekAgo).length, 0)
-  const totalSaves      = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'save').length, 0)
+  const totalViews      = allViews.length
+  const weekViews       = allViews.filter(v => new Date(v.viewedAt) > weekAgo).length
+  const totalWhatsApp   = allEnquiries.filter(e => e.type === 'whatsapp').length
+  const weekWhatsApp    = allEnquiries.filter(e => e.type === 'whatsapp'   && new Date(e.createdAt) > weekAgo).length
+  const totalDirections = allEnquiries.filter(e => e.type === 'directions').length
+  const weekDirections  = allEnquiries.filter(e => e.type === 'directions' && new Date(e.createdAt) > weekAgo).length
+  const totalSaves      = allEnquiries.filter(e => e.type === 'save').length
 
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -211,9 +224,9 @@ export default async function ListerDashboard() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
             {myProperties.map(p => {
-              const st          = statusStyle(p.status)
-              const propViews   = p.views.length
-              const propWa      = p.enquiries.filter(e => e.type === 'whatsapp').length
+              const st        = statusStyle(p.status)
+              const propViews = allViews.filter(v => v.propertyId === p.id).length
+              const propWa    = allEnquiries.filter(e => e.propertyId === p.id && e.type === 'whatsapp').length
               return (
                 <div key={p.id} style={{ background: '#fff', borderRadius: '18px', overflow: 'hidden', border: '1px solid #f0f0f0' }}>
 
