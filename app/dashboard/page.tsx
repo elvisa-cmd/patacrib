@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import Link from 'next/link'
+import ListerNav from '@/components/ui/ListerNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,6 +64,7 @@ export default async function ListerDashboard() {
 
   return (
     <div style={{ background: '#f4f6f9', minHeight: '100vh', paddingBottom: '100px' }}>
+      <ListerNav />
 
       {/* ── Dark header ──────────────────────────────────────────── */}
       <div style={{ background: '#0d0d0d', padding: '20px 20px 24px' }}>
@@ -71,6 +73,19 @@ export default async function ListerDashboard() {
           <div>
             <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.35)', marginBottom: '2px' }}>{greeting}</div>
             <div style={{ fontSize: '22px', fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>{firstName}</div>
+            <div style={{
+              fontSize: '11px', color: 'rgba(255,255,255,0.25)', marginTop: '4px',
+              display: 'flex', alignItems: 'center', gap: '5px',
+            }}>
+              <span style={{
+                background: '#1a6b4a', color: '#fff', fontSize: '9px', fontWeight: 700,
+                padding: '2px 7px', borderRadius: '20px',
+                letterSpacing: '0.05em', textTransform: 'uppercase',
+              }}>
+                Lister
+              </span>
+              Pata<span style={{ color: '#4dbe87' }}>Krib</span> portal
+            </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             {!user.phone && (
@@ -115,25 +130,57 @@ export default async function ListerDashboard() {
       {/* ── Body ─────────────────────────────────────────────────── */}
       <div style={{ padding: '20px 16px' }}>
 
-        {/* Analytics */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.3px' }}>Analytics</div>
-          <div style={{ fontSize: '11px', fontWeight: 600, color: '#888' }}>All time</div>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>
-          {[
-            { icon: '👁',  n: totalViews,      l: 'Total views',       trend: weekViews      > 0 ? `+${weekViews} this week`      : 'No views yet', up: weekViews      > 0 },
-            { icon: '📲', n: totalWhatsApp,   l: 'WhatsApp taps',     trend: weekWhatsApp   > 0 ? `+${weekWhatsApp} this week`   : 'None yet',     up: weekWhatsApp   > 0 },
-            { icon: '🗺',  n: totalDirections, l: 'Directions tapped', trend: weekDirections > 0 ? `+${weekDirections} this week` : 'None yet',     up: weekDirections > 0 },
-            { icon: '❤️', n: totalSaves,      l: 'Saves',             trend: totalSaves     > 0 ? `${totalSaves} total`          : 'None yet',     up: totalSaves     > 0 },
-          ].map((a, i) => (
-            <div key={i} style={{ background: '#fff', borderRadius: '14px', padding: '13px', border: '1px solid #f0f0f0' }}>
-              <div style={{ fontSize: '20px', marginBottom: '6px' }}>{a.icon}</div>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.8px', marginBottom: '2px', lineHeight: 1 }}>{a.n}</div>
-              <div style={{ fontSize: '10px', color: '#aaa', fontWeight: 500, marginBottom: '4px' }}>{a.l}</div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: a.up ? '#1a6b4a' : '#aaa' }}>{a.trend}</div>
+        {/* Analytics — prominent card */}
+        <div style={{
+          background: '#fff', borderRadius: '20px',
+          overflow: 'hidden', border: '1px solid #f0f0f0', marginBottom: '24px',
+        }}>
+          <div style={{
+            padding: '14px 16px', borderBottom: '1px solid #f8f8f8',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.3px' }}>
+              Your performance
             </div>
-          ))}
+            <div style={{
+              fontSize: '10px', fontWeight: 600, color: '#aaa',
+              background: '#f5f5f5', padding: '3px 10px', borderRadius: '20px',
+            }}>
+              All time
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1px', background: '#f8f8f8' }}>
+            {[
+              { icon: '👁',  n: totalViews,      l: 'Property views',     sub: weekViews      > 0 ? `+${weekViews} this week`      : 'No views yet',    good: weekViews      > 0 },
+              { icon: '📲', n: totalWhatsApp,   l: 'WhatsApp enquiries', sub: weekWhatsApp   > 0 ? `+${weekWhatsApp} this week`   : 'None yet',         good: weekWhatsApp   > 0 },
+              { icon: '🗺',  n: totalDirections, l: 'Directions tapped',  sub: weekDirections > 0 ? `+${weekDirections} this week` : 'None yet',         good: weekDirections > 0 },
+              { icon: '❤️', n: totalSaves,      l: 'Saved by renters',   sub: totalSaves     > 0 ? `${totalSaves} renters saved`  : 'None yet',         good: totalSaves     > 0 },
+            ].map((a, i) => (
+              <div key={i} style={{ background: '#fff', padding: '14px 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>{a.icon}</span>
+                  <span style={{ fontSize: '10px', fontWeight: 600, color: '#aaa' }}>{a.l}</span>
+                </div>
+                <div style={{ fontSize: '28px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-1px', lineHeight: 1, marginBottom: '4px' }}>
+                  {a.n}
+                </div>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: a.good ? '#1a6b4a' : '#ccc' }}>
+                  {a.sub}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Insight */}
+          <div style={{ padding: '12px 16px', background: '#fafafa', borderTop: '1px solid #f5f5f5', fontSize: '12px', color: '#888', lineHeight: 1.5 }}>
+            {totalViews === 0
+              ? '💡 No views yet. Share your listing on WhatsApp to get your first viewers.'
+              : totalWhatsApp === 0
+              ? `💡 ${totalViews} people viewed your listing but nobody tapped WhatsApp yet. Make sure your WhatsApp number is added.`
+              : `💡 ${Math.round((totalWhatsApp / totalViews) * 100)}% of viewers contacted you. ${totalWhatsApp / totalViews > 0.1 ? 'Great conversion rate!' : 'Try improving your photos and description.'}`
+            }
+          </div>
         </div>
 
         {/* My listings */}
