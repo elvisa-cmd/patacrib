@@ -22,6 +22,16 @@ export default function ContactButtons({
 }: Props) {
   const [copied, setCopied] = useState(false)
 
+  async function trackEnquiry(type: string) {
+    try {
+      await fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId, type }),
+      })
+    } catch { /* silent */ }
+  }
+
   const location       = propertyEstate || propertyCity || 'Nairobi'
   const priceFormatted = `KSh ${propertyPrice?.toLocaleString('en-KE')}`
   const propertyUrl    = `https://patacrib.vercel.app/property/${propertyId}`
@@ -82,6 +92,7 @@ export default function ContactButtons({
         href={waContactUrl}
         target="_blank"
         rel="noreferrer"
+        onClick={() => trackEnquiry('whatsapp')}
         style={{
           display:        'flex',
           alignItems:     'center',
@@ -108,7 +119,7 @@ export default function ContactButtons({
       {/* SECONDARY — Share + Share via WhatsApp */}
       <div style={{ display: 'flex', gap: '8px' }}>
         <button
-          onClick={handleShare}
+          onClick={() => { trackEnquiry('share'); handleShare() }}
           style={{
             flex:           1,
             padding:        '13px',
@@ -141,7 +152,7 @@ export default function ContactButtons({
         </button>
 
         <button
-          onClick={shareWhatsApp}
+          onClick={() => { trackEnquiry('share'); shareWhatsApp() }}
           style={{
             flex:           1,
             padding:        '13px',

@@ -84,6 +84,7 @@ model Property {
   admin         User           @relation(fields: [adminId], references: [id])
   savedBy       SavedProperty[]
   views         PropertyView[]
+  enquiries     PropertyEnquiry[]
   conversations Conversation[]
 }
 
@@ -104,9 +105,24 @@ model PropertyView {
   propertyId String
   userId     String?
   viewedAt   DateTime @default(now())
+  ip         String?
 
   property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
   user     User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([propertyId, viewedAt])
+}
+
+model PropertyEnquiry {
+  id         String   @id @default(cuid())
+  propertyId String
+  type       String
+  createdAt  DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
 }
 
 model Conversation {

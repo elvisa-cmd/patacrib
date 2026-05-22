@@ -25,6 +25,7 @@ export default async function ListerDashboard() {
     prisma.property.findMany({
       where:   { adminId: user.id },
       orderBy: { createdAt: 'desc' },
+      include: { views: true, enquiries: true },
     }),
     prisma.property.findMany({
       where:   { status: 'available', NOT: { adminId: user.id } },
@@ -33,10 +34,21 @@ export default async function ListerDashboard() {
     }),
   ])
 
+  const now     = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
   const totalListings        = myProperties.length
   const activeListings       = myProperties.filter(p => p.status === 'available').length
   const propertiesWithVideos = myProperties.filter(p => p.videoUrl).length
   const totalRent            = myProperties.reduce((s, p) => s + (p.price || 0), 0)
+
+  const totalViews     = myProperties.reduce((s, p) => s + p.views.length, 0)
+  const weekViews      = myProperties.reduce((s, p) => s + p.views.filter(v => v.viewedAt > weekAgo).length, 0)
+  const totalWhatsApp  = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'whatsapp').length, 0)
+  const weekWhatsApp   = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'whatsapp' && e.createdAt > weekAgo).length, 0)
+  const totalDirections = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'directions').length, 0)
+  const weekDirections  = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'directions' && e.createdAt > weekAgo).length, 0)
+  const totalSaves      = myProperties.reduce((s, p) => s + p.enquiries.filter(e => e.type === 'save').length, 0)
 
   const hour      = new Date().getHours()
   const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
@@ -103,6 +115,27 @@ export default async function ListerDashboard() {
       {/* ── Body ─────────────────────────────────────────────────── */}
       <div style={{ padding: '20px 16px' }}>
 
+        {/* Analytics */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.3px' }}>Analytics</div>
+          <div style={{ fontSize: '11px', fontWeight: 600, color: '#888' }}>All time</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>
+          {[
+            { icon: '👁',  n: totalViews,      l: 'Total views',       trend: weekViews      > 0 ? `+${weekViews} this week`      : 'No views yet', up: weekViews      > 0 },
+            { icon: '📲', n: totalWhatsApp,   l: 'WhatsApp taps',     trend: weekWhatsApp   > 0 ? `+${weekWhatsApp} this week`   : 'None yet',     up: weekWhatsApp   > 0 },
+            { icon: '🗺',  n: totalDirections, l: 'Directions tapped', trend: weekDirections > 0 ? `+${weekDirections} this week` : 'None yet',     up: weekDirections > 0 },
+            { icon: '❤️', n: totalSaves,      l: 'Saves',             trend: totalSaves     > 0 ? `${totalSaves} total`          : 'None yet',     up: totalSaves     > 0 },
+          ].map((a, i) => (
+            <div key={i} style={{ background: '#fff', borderRadius: '14px', padding: '13px', border: '1px solid #f0f0f0' }}>
+              <div style={{ fontSize: '20px', marginBottom: '6px' }}>{a.icon}</div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.8px', marginBottom: '2px', lineHeight: 1 }}>{a.n}</div>
+              <div style={{ fontSize: '10px', color: '#aaa', fontWeight: 500, marginBottom: '4px' }}>{a.l}</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: a.up ? '#1a6b4a' : '#aaa' }}>{a.trend}</div>
+            </div>
+          ))}
+        </div>
+
         {/* My listings */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
           <div style={{ fontSize: '14px', fontWeight: 800, color: '#0d0d0d', letterSpacing: '-0.3px' }}>My listings</div>
@@ -131,7 +164,9 @@ export default async function ListerDashboard() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
             {myProperties.map(p => {
-              const st = statusStyle(p.status)
+              const st          = statusStyle(p.status)
+              const propViews   = p.views.length
+              const propWa      = p.enquiries.filter(e => e.type === 'whatsapp').length
               return (
                 <div key={p.id} style={{ background: '#fff', borderRadius: '18px', overflow: 'hidden', border: '1px solid #f0f0f0' }}>
 
@@ -171,6 +206,12 @@ export default async function ListerDashboard() {
                         )}
                         {p.videoUrl && (
                           <span style={{ fontSize: '10px', fontWeight: 600, color: '#6366f1' }}>🎥 Tour</span>
+                        )}
+                        {propViews > 0 && (
+                          <span style={{ fontSize: '9px', color: '#aaa', fontWeight: 500 }}>👁 {propViews}</span>
+                        )}
+                        {propWa > 0 && (
+                          <span style={{ fontSize: '9px', color: '#128C7E', fontWeight: 500 }}>📲 {propWa}</span>
                         )}
                       </div>
                     </div>

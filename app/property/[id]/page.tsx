@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { headers } from 'next/headers'
 import Nav from '@/components/home/Nav'
 
 export async function generateMetadata(
@@ -110,10 +111,12 @@ export default async function PropertyDetailPage({
     console.error('[property-detail] DB error fetching nearby:', error)
   }
 
-  // Fire-and-forget view tracking
-  if (userId) {
+  // Fire-and-forget view tracking (logged-in users and anonymous)
+  {
+    const headersList = await headers()
+    const ip = (headersList.get('x-forwarded-for') ?? 'unknown').split(',')[0].trim()
     prisma.propertyView
-      .create({ data: { propertyId: id, userId } })
+      .create({ data: { propertyId: id, userId: userId ?? null, ip } })
       .catch(() => {})
   }
 

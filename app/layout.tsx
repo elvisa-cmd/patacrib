@@ -4,7 +4,7 @@ import './globals.css'
 import { Providers }         from './providers'
 import { PageLoader }        from '@/components/shared/PageLoader'
 import InstallPrompt         from '@/components/shared/InstallPrompt'
-import FloatingBottomNav     from '@/components/ui/FloatingBottomNav'
+import SmartBottomNav        from '@/components/ui/SmartBottomNav'
 import { Analytics }         from '@vercel/analytics/react'
 import { SpeedInsights }     from '@vercel/speed-insights/next'
 
@@ -188,10 +188,10 @@ export default function RootLayout({
           <div style={{ paddingBottom: '80px' }} className="md:pb-0">
             {children}
           </div>
+          <div className="md:hidden">
+            <SmartBottomNav />
+          </div>
         </Providers>
-        <div className="md:hidden">
-          <FloatingBottomNav />
-        </div>
         <InstallPrompt />
         <Analytics />
         <SpeedInsights />
