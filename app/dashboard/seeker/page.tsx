@@ -196,14 +196,18 @@ export default async function SeekerDashboard() {
                     href={`/property/${sp.property?.id}`}
                     className="border border-border hover:border-accent transition-colors block"
                   >
-                    {sp.property?.images?.[0] && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={sp.property.images[0]}
-                        alt={sp.property.title}
-                        className="w-full h-32 object-cover"
-                      />
-                    )}
+                    <div style={{ height: '128px', overflow: 'hidden', position: 'relative', background: '#f5f5f5' }}>
+                      {sp.property?.images?.[0] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={sp.property.images[0]}
+                          alt={sp.property.title}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                        />
+                      ) : (
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#e8f5ed,#c8e6d4)', fontSize: '32px', opacity: 0.6 }}>🏠</div>
+                      )}
+                    </div>
                     <div className="p-3">
                       <p className="text-xs text-accent font-bold uppercase tracking-wide">
                         {sp.property?.estate}
@@ -270,16 +274,16 @@ export default async function SeekerDashboard() {
                       href={`/property/${view.property?.id}`}
                       className="flex items-center gap-3 hover:bg-surface2 p-2 transition-colors block"
                     >
-                      <div className="w-10 h-8 bg-surface2 flex-shrink-0 overflow-hidden">
+                      <div style={{ width: '40px', height: '32px', flexShrink: 0, overflow: 'hidden', background: '#f5f5f5', borderRadius: '4px' }}>
                         {view.property?.images?.[0] ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={view.property.images[0]}
                             alt=""
-                            className="w-full h-full object-cover"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm">🏠</div>
+                          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>🏠</div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -308,10 +312,18 @@ export default async function SeekerDashboard() {
                   href={`/property/${p.id}`}
                   className="border border-border hover:border-accent transition-colors block"
                 >
-                  {p.images?.[0] && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.images[0]} alt={p.title} className="w-full h-40 object-cover" />
-                  )}
+                  <div style={{ height: '180px', background: '#f5f5f5', position: 'relative', overflow: 'hidden' }}>
+                    {p.images?.[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.images[0]}
+                        alt={p.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' }}
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#0a1a0f,#1a3a2a)', fontSize: '48px', opacity: 0.15 }}>🏠</div>
+                    )}
+                  </div>
                   <div className="p-4">
                     <p className="text-xs text-accent font-bold uppercase tracking-wide mb-1">{p.estate}</p>
                     <p className="font-bold text-sm text-ink mb-2 truncate">{p.title}</p>
