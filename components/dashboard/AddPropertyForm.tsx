@@ -171,7 +171,7 @@ export default function AddPropertyForm() {
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
     if (lat === null || lng === null) {
-      setError('Property location is required. Please upload photos taken at the property with location enabled.')
+      setError('GPS location is required. In the Photos & Location section, tap "Capture my location now" while standing at the property.')
       return
     }
 
@@ -259,20 +259,26 @@ export default function AddPropertyForm() {
           {/* Left — form sections */}
           <div className="flex-1 min-w-0">
 
-            {/* Camera location note */}
+            {/* Location tip */}
             <div style={{
               padding:      '12px 14px',
-              background:   'rgba(26,107,74,0.06)',
-              border:       '1px solid rgba(26,107,74,0.15)',
+              background:   'rgba(0,0,0,0.03)',
               borderRadius: '12px',
               fontSize:     '12px',
-              color:        '#1a6b4a',
+              color:        '#666',
               lineHeight:   1.6,
               marginBottom: '16px',
+              display:      'flex',
+              alignItems:   'flex-start',
+              gap:          '8px',
             }}>
-              📍 <strong>Important:</strong> Before taking photos, make sure your phone camera
-              has location access enabled. Go to Settings → Camera → Location → Allow.
-              This lets PataKrib verify the exact property location from your photos.
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>📱</span>
+              <span>
+                <strong>iPhone users:</strong> Before listing, go to
+                Settings → Safari → Location → Allow, so we can capture the exact property
+                location. If photos don&apos;t have GPS, tap <strong>Capture my location now</strong> inside
+                the Photos &amp; Location section below.
+              </span>
             </div>
 
             {/* ── Section 1: Basic info ─────────────────────────────── */}

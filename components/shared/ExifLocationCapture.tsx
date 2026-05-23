@@ -1,5 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import GPSCapture from '@/components/shared/GPSCapture'
 
 interface Props {
   onLocationFound:  (lat: number, lng: number, address: string, source: 'exif' | 'manual') => void
@@ -202,6 +203,16 @@ export default function ExifLocationCapture({
     }
   }
 
+  async function handleDeviceGPS(capLat: number, capLng: number) {
+    const addr = await reverseGeocode(capLat, capLng)
+    setFoundCoords({ lat: capLat, lng: capLng })
+    setAddress(addr)
+    setFromGallery(true)
+    setStatus('found')
+    onLocationFound(capLat, capLng, addr, 'manual')
+    await initMap(capLat, capLng)
+  }
+
   // ── render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -380,7 +391,16 @@ export default function ExifLocationCapture({
           </button>
 
           <div style={{ fontSize: '12px', color: '#b0a898', textAlign: 'center', fontWeight: 500 }}>
-            — or set location manually —
+            — or capture location via your device GPS —
+          </div>
+
+          {/* Browser Geolocation — works on iPhone where EXIF is stripped */}
+          <GPSCapture
+            onLocation={(capLat, capLng, accuracy) => void handleDeviceGPS(capLat, capLng)}
+          />
+
+          <div style={{ fontSize: '12px', color: '#b0a898', textAlign: 'center', fontWeight: 500 }}>
+            — or set location manually via Plus Code —
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
