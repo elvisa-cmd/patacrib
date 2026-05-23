@@ -47,8 +47,7 @@ export async function generateMetadata(
     },
   }
 }
-import { ImageGallery } from '@/components/property/ImageGallery'
-import { VirtualTour } from '@/components/property/VirtualTour'
+import { MasonryGallery } from '@/components/property/MasonryGallery'
 import PropertyInfo from '@/components/property/PropertyInfo'
 import KenyaDetails from '@/components/property/KenyaDetails'
 import PropertyMap from '@/components/property/PropertyMap'
@@ -295,15 +294,15 @@ export default async function PropertyDetailPage({
       <Nav />
 
       <main style={{ position: 'relative' }}>
-        {/* Floating back button */}
+        {/* Back button overlay on gallery */}
         <a href="/browse" style={{
           position:             'absolute',
           top:                  '14px',
           left:                 '14px',
           width:                '38px',
           height:               '38px',
-          background:           'rgba(255,255,255,0.92)',
-          border:               '1px solid rgba(255,255,255,0.6)',
+          background:           'rgba(0,0,0,0.45)',
+          border:               '1px solid rgba(255,255,255,0.15)',
           borderRadius:         '12px',
           display:              'flex',
           alignItems:           'center',
@@ -311,16 +310,15 @@ export default async function PropertyDetailPage({
           textDecoration:       'none',
           backdropFilter:       'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
-          boxShadow:            '0 2px 8px rgba(0,0,0,0.1)',
           zIndex:               20,
         }}>
-          <svg width="16" height="16" fill="none" stroke="#0f0e0c" strokeWidth="2.5"
+          <svg width="16" height="16" fill="none" stroke="#fff" strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
             <path d="M19 12H5M12 5l-7 7 7 7"/>
           </svg>
         </a>
 
-        <ImageGallery
+        <MasonryGallery
           images={detailedProperty.images}
           title={detailedProperty.title}
           status={detailedProperty.status}
@@ -329,13 +327,32 @@ export default async function PropertyDetailPage({
           estate={detailedProperty.estate}
         />
 
-        <div className="px-4 md:px-16 pt-6">
-          <VirtualTour
-            videoUrl={detailedProperty.videoUrl}
-            tourImageUrl={detailedProperty.tourImageUrl}
-            propertyTitle={detailedProperty.title}
-          />
-        </div>
+        {/* Inline video tour */}
+        {detailedProperty.videoUrl && (
+          <div className="px-4 md:px-16 pt-6">
+            <div style={{ background: '#fff', borderRadius: '16px', overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+              <div style={{ padding: '14px 16px 10px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #f5f5f5' }}>
+                <div style={{ width: '32px', height: '32px', background: '#1a6b4a', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px' }}>🎥</div>
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 800, color: '#0d0d0d', margin: 0 }}>Video Walkthrough</p>
+                  <p style={{ fontSize: '11px', color: '#aaa', margin: 0 }}>Recorded by landlord · GPS verified property</p>
+                </div>
+              </div>
+              <div style={{ aspectRatio: '16/9', background: '#000' }}>
+                <video
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster={detailedProperty.images?.[0] ?? undefined}
+                  style={{ width: '100%', height: '100%', display: 'block', objectFit: 'contain' }}
+                >
+                  <source src={detailedProperty.videoUrl} type="video/mp4" />
+                  <source src={detailedProperty.videoUrl} type="video/webm" />
+                </video>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="px-4 md:px-16 py-0 flex flex-col md:flex-row gap-6 md:gap-10 items-start pb-24 md:pb-0">
 

@@ -79,6 +79,9 @@ body {
   transform-origin: left;
 }
 
+img { max-width: 100%; display: block; }
+video { max-width: 100%; display: block; }
+
 .leaflet-container {
   font-family: inherit !important;
 }

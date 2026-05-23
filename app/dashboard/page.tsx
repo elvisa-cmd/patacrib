@@ -297,12 +297,17 @@ export default async function ListerDashboard() {
                       }}>
                         🎥 Virtual tour
                       </div>
-                      <video
-                        src={p.videoUrl}
-                        controls playsInline preload="metadata"
-                        poster={p.images?.[0] ?? undefined}
-                        style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '12px', background: '#0d0d0d', display: 'block' }}
-                      />
+                      <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden' }}>
+                        <video
+                          src={p.videoUrl}
+                          controls playsInline preload="metadata"
+                          poster={p.images?.[0] ?? undefined}
+                          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                        />
+                      </div>
+                      <p style={{ fontSize: '10px', color: '#aaa', marginTop: '5px', margin: '5px 0 0' }}>
+                        ✅ Visible to renters
+                      </p>
                     </div>
                   )}
 
