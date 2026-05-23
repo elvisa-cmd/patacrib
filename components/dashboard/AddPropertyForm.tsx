@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import ExifLocationCapture from '@/components/shared/ExifLocationCapture'
+import UnifiedPhotoLocation from '@/components/shared/UnifiedPhotoLocation'
 import TourRecorder from '@/components/shared/TourRecorder'
 import ListingPreview from './ListingPreview'
 
@@ -122,8 +122,7 @@ export default function AddPropertyForm() {
   const [lat,            setLat]            = useState<number | null>(null)
   const [lng,            setLng]            = useState<number | null>(null)
   const [capturedAddress, setCapturedAddress] = useState('')
-  const [locationSource, setLocationSource] = useState<'exif' | 'manual' | null>(null)
-  const [uploading,      setUploading]      = useState(false)
+  const [uploading,       setUploading]       = useState(false)
 
   // Section 3 — Photos
   const [images, setImages] = useState<string[]>([])
@@ -171,7 +170,7 @@ export default function AddPropertyForm() {
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
     if (lat === null || lng === null) {
-      setError('GPS location is required. In the Photos & Location section, tap "Take photo at property now" while standing at the property.')
+      setError('Please take at least one live photo at the property or paste a Google Maps link to set the location.')
       return
     }
 
@@ -258,27 +257,6 @@ export default function AddPropertyForm() {
 
           {/* Left — form sections */}
           <div className="flex-1 min-w-0">
-
-            {/* Location tip */}
-            <div style={{
-              padding:      '12px 14px',
-              background:   'rgba(0,0,0,0.03)',
-              borderRadius: '12px',
-              fontSize:     '12px',
-              color:        '#666',
-              lineHeight:   1.6,
-              marginBottom: '16px',
-              display:      'flex',
-              alignItems:   'flex-start',
-              gap:          '8px',
-            }}>
-              <span style={{ fontSize: '16px', flexShrink: 0 }}>📸</span>
-              <span>
-                You must take a live photo at the property to verify location.
-                Stand at the property and tap <strong>Take photo at property now</strong> when
-                you reach the Photos &amp; Location section.
-              </span>
-            </div>
 
             {/* ── Section 1: Basic info ─────────────────────────────── */}
             <section className={SECTION}>
@@ -380,15 +358,8 @@ export default function AddPropertyForm() {
             <section className={SECTION}>
               <SectionHeader num={2} title="Photos & location" />
 
-              <ExifLocationCapture
-                onLocationFound={(capLat, capLng, capAddress, source) => {
-                  setLat(capLat)
-                  setLng(capLng)
-                  setCapturedAddress(capAddress)
-                  setLocationSource(source)
-                  if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
-                }}
-                onPhotosSelected={async (files) => {
+              <UnifiedPhotoLocation
+                onPhotosChanged={async (files) => {
                   setUploading(true)
                   setImages([])
                   for (const file of files) {
@@ -401,6 +372,12 @@ export default function AddPropertyForm() {
                     } catch { /* skip failed upload */ }
                   }
                   setUploading(false)
+                }}
+                onLocationFound={(capLat, capLng, capAddress) => {
+                  setLat(capLat)
+                  setLng(capLng)
+                  setCapturedAddress(capAddress)
+                  if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
                 }}
               />
 
