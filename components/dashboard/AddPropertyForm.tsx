@@ -171,7 +171,7 @@ export default function AddPropertyForm() {
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
     if (lat === null || lng === null) {
-      setError('GPS location is required. In the Photos & Location section, tap "Capture my location now" while standing at the property.')
+      setError('GPS location is required. In the Photos & Location section, tap "Take photo at property now" while standing at the property.')
       return
     }
 
@@ -272,12 +272,11 @@ export default function AddPropertyForm() {
               alignItems:   'flex-start',
               gap:          '8px',
             }}>
-              <span style={{ fontSize: '16px', flexShrink: 0 }}>📱</span>
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>📸</span>
               <span>
-                <strong>iPhone users:</strong> Before listing, go to
-                Settings → Safari → Location → Allow, so we can capture the exact property
-                location. If photos don&apos;t have GPS, tap <strong>Capture my location now</strong> inside
-                the Photos &amp; Location section below.
+                You must take a live photo at the property to verify location.
+                Stand at the property and tap <strong>Take photo at property now</strong> when
+                you reach the Photos &amp; Location section.
               </span>
             </div>
 

@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import GPSCapture from '@/components/shared/GPSCapture'
+import LiveLocationCapture from '@/components/shared/LiveLocationCapture'
 
 interface Props {
   onLocationFound:  (lat: number, lng: number, address: string, source: 'exif' | 'manual') => void
@@ -20,10 +20,6 @@ export default function ExifLocationCapture({
   const [allFiles,       setAllFiles]       = useState<File[]>([])
   const [allPreviews,    setAllPreviews]    = useState<string[]>([])
   const [showAddOptions, setShowAddOptions] = useState(false)
-  const [manualPlusCode, setManualPlusCode] = useState('')
-  const [manualStatus,   setManualStatus]   = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
-  const [manualError,    setManualError]    = useState('')
-
   const mapRef          = useRef<HTMLDivElement>(null)
   const mapInstanceRef  = useRef<unknown>(null)
   const cameraRef       = useRef<HTMLInputElement>(null)
@@ -88,8 +84,6 @@ export default function ExifLocationCapture({
     const fileArray = Array.from(files)
     setPhotoCount(fileArray.length)
     setStatus('reading')
-    setManualPlusCode('')
-    setManualStatus('idle')
     setFromGallery(false)
     setShowAddOptions(false)
 
@@ -144,72 +138,13 @@ export default function ExifLocationCapture({
     setAllPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
-  async function handleManualPlusCode() {
-    if (!manualPlusCode.trim()) return
-    setManualStatus('loading')
-    setManualError('')
-
-    try {
-      const { OpenLocationCode } = await import('open-location-code')
-      let cleanCode = manualPlusCode.trim().toUpperCase()
-      let refLat    = -1.2864
-      let refLng    = 36.8172
-
-      if (cleanCode.includes(' ')) {
-        const parts    = cleanCode.split(' ')
-        cleanCode      = parts[0]
-        const cityName = parts.slice(1).join(' ')
-        try {
-          const res  = await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cityName + ' Kenya')}&format=json&limit=1`,
-            { headers: { 'Accept-Language': 'en' } },
-          )
-          const data = await res.json() as Array<{ lat: string; lon: string }>
-          if (data[0]) { refLat = parseFloat(data[0].lat); refLng = parseFloat(data[0].lon) }
-        } catch { /* use Nairobi */ }
-      }
-
-      if (!OpenLocationCode.isValid(cleanCode)) {
-        setManualStatus('error')
-        setManualError('Invalid Plus Code. Example: GW4G+FH or 6G3QGW4G+FH')
-        return
-      }
-
-      let lat: number, lng: number
-      if (OpenLocationCode.isShort(cleanCode)) {
-        const full    = OpenLocationCode.recoverNearest(cleanCode, refLat, refLng)
-        const decoded = OpenLocationCode.decode(full)
-        lat = decoded.latitudeCenter; lng = decoded.longitudeCenter
-      } else {
-        const decoded = OpenLocationCode.decode(cleanCode)
-        lat = decoded.latitudeCenter; lng = decoded.longitudeCenter
-      }
-
-      if (lat < -5 || lat > 5 || lng < 33 || lng > 42) {
-        setManualStatus('error')
-        setManualError('This location is not in Kenya.')
-        return
-      }
-
-      const addr = await reverseGeocode(lat, lng)
-      setManualStatus('success')
-      setFoundCoords({ lat, lng })
-      setAddress(addr)
-      onLocationFound(lat, lng, addr, 'manual')
-      await initMap(lat, lng)
-    } catch {
-      setManualStatus('error')
-      setManualError('Could not decode this Plus Code. Please check and try again.')
-    }
-  }
-
-  async function handleDeviceGPS(capLat: number, capLng: number) {
-    const addr = await reverseGeocode(capLat, capLng)
+  async function handleLiveLocation(capLat: number, capLng: number, capAddr: string) {
     setFoundCoords({ lat: capLat, lng: capLng })
-    setAddress(addr)
+    setAddress(capAddr)
     setFromGallery(true)
     setStatus('found')
-    onLocationFound(capLat, capLng, addr, 'manual')
+    onLocationFound(capLat, capLng, capAddr, 'manual')
+    await new Promise(r => setTimeout(r, 80))
     await initMap(capLat, capLng)
   }
 
@@ -390,88 +325,9 @@ export default function ExifLocationCapture({
             📷 Retake photos with location on
           </button>
 
-          <div style={{ fontSize: '12px', color: '#b0a898', textAlign: 'center', fontWeight: 500 }}>
-            — or capture location via your device GPS —
-          </div>
-
-          {/* Browser Geolocation — works on iPhone where EXIF is stripped */}
-          <GPSCapture
-            onLocation={(capLat, capLng, accuracy) => void handleDeviceGPS(capLat, capLng)}
+          <LiveLocationCapture
+            onLocationFound={(lat, lng, addr) => void handleLiveLocation(lat, lng, addr)}
           />
-
-          <div style={{ fontSize: '12px', color: '#b0a898', textAlign: 'center', fontWeight: 500 }}>
-            — or set location manually via Plus Code —
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <div style={{ fontSize: '12px', color: '#6b6055', lineHeight: 1.5 }}>
-              Open Google Maps → tap your blue dot → copy the Plus Code shown at top
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                type="text"
-                value={manualPlusCode}
-                onChange={e => { setManualPlusCode(e.target.value); setManualStatus('idle'); setManualError('') }}
-                placeholder="e.g. GW4G+FH Nairobi"
-                style={{
-                  flex: 1, padding: '11px 12px',
-                  background: '#f5f5f5',
-                  border: manualStatus === 'error'   ? '2px solid #dc2626'
-                        : manualStatus === 'success' ? '2px solid #1a6b4a'
-                        :                             '2px solid transparent',
-                  borderRadius: '10px',
-                  fontSize: '14px', fontWeight: 600,
-                  color: '#0f0e0c', outline: 'none', fontFamily: 'monospace',
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => void handleManualPlusCode()}
-                disabled={!manualPlusCode.trim() || manualStatus === 'loading'}
-                style={{
-                  padding: '11px 16px',
-                  background: manualPlusCode.trim() ? '#1a6b4a' : '#ccc',
-                  color: '#fff', border: 'none', borderRadius: '10px',
-                  fontSize: '13px', fontWeight: 700,
-                  cursor: manualPlusCode.trim() ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: '6px',
-                }}
-              >
-                {manualStatus === 'loading' ? (
-                  <div style={{
-                    width: '14px', height: '14px',
-                    border: '2px solid #fff', borderTopColor: 'transparent',
-                    borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                  }} />
-                ) : 'Set'}
-              </button>
-            </div>
-            {manualStatus === 'error' && (
-              <div style={{ fontSize: '12px', color: '#dc2626' }}>⚠️ {manualError}</div>
-            )}
-            {manualStatus === 'success' && foundCoords && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{
-                  padding: '10px 12px',
-                  background: 'rgba(26,107,74,0.08)',
-                  border: '1px solid rgba(26,107,74,0.2)',
-                  borderRadius: '10px',
-                  fontSize: '12px', color: '#1a6b4a', fontWeight: 600,
-                }}>
-                  ✅ Location set · {address}
-                </div>
-                <div
-                  ref={mapRef}
-                  style={{
-                    height: '160px', borderRadius: '12px',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                    overflow: 'hidden', background: '#f0f0eb',
-                  }}
-                />
-              </div>
-            )}
-          </div>
         </div>
       )}
 

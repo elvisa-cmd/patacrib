@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import type { Map as LMap } from 'leaflet'
 import type { SerializedProperty } from '@/types/property'
 import { calculateRoute } from '@/lib/utils'
-import PhotoLocationCapture from '@/components/shared/PhotoLocationCapture'
 
 export interface LeafletMapProps {
   properties:       SerializedProperty[]
@@ -108,7 +107,6 @@ export default function LeafletMap({
   const [activeFilter,  setActiveFilter]  = useState<FilterKey>('all')
   const [userLocation,  setUserLocation]  = useState<[number, number] | null>(null)
   const [locationLabel, setLocationLabel] = useState('Locating you…')
-  const [gpsDenied,     setGpsDenied]     = useState(false)
 
   // Keep callback ref current without re-running marker effects
   useEffect(() => { onSelectRef.current = onSelectProperty }, [onSelectProperty])
@@ -200,7 +198,6 @@ export default function LeafletMap({
       () => {
         setUserLocation(NAIROBI_CENTER)
         setLocationLabel('Nairobi CBD (default)')
-        setGpsDenied(true)
       },
       { enableHighAccuracy: true, timeout: 10_000 },
     )
@@ -332,22 +329,7 @@ export default function LeafletMap({
         </div>
       </div>
 
-      {/* ── Photo location fallback (when GPS denied) ── */}
-      {gpsDenied && (
-        <div className="absolute top-10 left-3 z-[1000]" style={{ maxWidth: '280px' }}>
-          <PhotoLocationCapture
-            onLocationFound={(lat, lng, address) => {
-              setUserLocation([lat, lng])
-              setLocationLabel(address || 'My current location')
-              setGpsDenied(false)
-              mapRef.current?.flyTo([lat, lng], 14)
-            }}
-            onFail={() => {}}
-          />
-        </div>
-      )}
-
-      {/* ── Filter chips ── */}
+{/* ── Filter chips ── */}
       <div className="absolute top-3 right-3 z-[1000] flex items-center gap-1">
         {FILTER_OPTIONS.map(({ key, label }) => (
           <button
