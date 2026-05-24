@@ -161,7 +161,8 @@ export default function AddPropertyForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  const videoInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef    = useRef<HTMLInputElement>(null)
+  const videoUploadToken = useRef(0)
 
   const doSubmit = async () => {
     if (title.length < 5)            { setError('Title must be at least 5 characters'); return }
@@ -444,34 +445,47 @@ export default function AddPropertyForm() {
                   type="file"
                   accept="video/*"
                   style={{ display: 'none' }}
-                  onChange={async e => {
+                  onChange={e => {
                     const file = e.target.files?.[0]
                     if (!file) return
-                    setVideoPreviewUrl(URL.createObjectURL(file))
-                    setVideoFileUploading(true)
-                    try {
-                      const fd = new FormData()
-                      fd.append('file', file)
-                      const res  = await fetch('/api/upload', { method: 'POST', body: fd })
-                      const data = await res.json() as { url?: string }
-                      if (res.ok && data.url) setVideoUrl(data.url)
-                    } catch { /* upload failed silently */ }
-                    setVideoFileUploading(false)
+                    // Reset input immediately (before any await) to avoid stale ref issues
                     e.target.value = ''
+
+                    const token = Date.now()
+                    videoUploadToken.current = token
+
+                    const objectUrl = URL.createObjectURL(file)
+                    setVideoPreviewUrl(objectUrl)
+                    setVideoUrl('')
+                    setVideoFileUploading(true)
+
+                    const fd = new FormData()
+                    fd.append('file', file)
+
+                    fetch('/api/upload', { method: 'POST', body: fd })
+                      .then(res => res.ok ? res.json() as Promise<{ url?: string }> : Promise.resolve({}))
+                      .then((data: { url?: string }) => {
+                        if (videoUploadToken.current !== token) return
+                        if (data.url) setVideoUrl(data.url)
+                      })
+                      .catch(() => { /* upload failed — preview stays, videoUrl stays empty */ })
+                      .finally(() => {
+                        if (videoUploadToken.current === token) setVideoFileUploading(false)
+                      })
                   }}
                 />
 
-                {(videoPreviewUrl ?? videoUrl) ? (
+                {(videoPreviewUrl || videoUrl) ? (
                   <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', background: '#000' }}>
                     <video
-                      src={videoUrl || videoPreviewUrl!}
+                      src={videoUrl || videoPreviewUrl ?? ''}
                       controls
                       playsInline
-                      style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }}
+                      style={{ width: '100%', aspectRatio: '16/9', display: 'block' }}
                     />
                     {videoFileUploading && (
                       <div style={{
-                        position: 'absolute', inset: 0,
+                        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                         background: 'rgba(0,0,0,0.55)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, color: '#fff', fontWeight: 600,
@@ -481,7 +495,13 @@ export default function AddPropertyForm() {
                     )}
                     <button
                       type="button"
-                      onClick={() => { setVideoUrl(''); setVideoPreviewUrl(null) }}
+                      onClick={() => {
+                        // Invalidate any in-flight upload
+                        videoUploadToken.current = 0
+                        setVideoUrl('')
+                        setVideoPreviewUrl(null)
+                        setVideoFileUploading(false)
+                      }}
                       style={{
                         position: 'absolute', top: 10, right: 10,
                         background: 'rgba(0,0,0,0.7)', color: '#fff',
