@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import UnifiedPhotoLocation from '@/components/shared/UnifiedPhotoLocation'
+import SmartPhotoLocation from '@/components/shared/SmartPhotoLocation'
 import TourRecorder from '@/components/shared/TourRecorder'
 import ListingPreview from './ListingPreview'
 
@@ -358,7 +358,7 @@ export default function AddPropertyForm() {
             <section className={SECTION}>
               <SectionHeader num={2} title="Photos & location" />
 
-              <UnifiedPhotoLocation
+              <SmartPhotoLocation
                 onPhotosChanged={async (files) => {
                   setUploading(true)
                   setImages([])
