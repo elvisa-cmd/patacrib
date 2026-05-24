@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   manifest:  '/manifest.json',
   appleWebApp: {
     capable:        true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title:          'PataKrib',
   },
   formatDetection: {
@@ -102,7 +102,7 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable':                'yes',
     'apple-mobile-web-app-capable':          'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'msapplication-TileColor':               '#1a6b4a',
     'msapplication-TileImage':               '/icons/icon-96x96.png',
     'msapplication-tap-highlight':           'no',
