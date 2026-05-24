@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useRef } from 'react'
 import SmartPhotoLocation from '@/components/shared/SmartPhotoLocation'
-import TourRecorder from '@/components/shared/TourRecorder'
 import ListingPreview from './ListingPreview'
 
 // ── Design-system constants ──────────────────────────────────────────────────
@@ -128,7 +127,9 @@ export default function AddPropertyForm() {
   const [images, setImages] = useState<string[]>([])
 
   // Section 4 — Virtual tour
-  const [videoUrl,         setVideoUrl]         = useState('')
+  const [videoUrl,          setVideoUrl]          = useState('')
+  const [videoPreviewUrl,   setVideoPreviewUrl]   = useState<string | null>(null)
+  const [videoFileUploading, setVideoFileUploading] = useState(false)
   const [tourImageUrl,     setTourImageUrl]     = useState('')
   const [tourImgUploading, setTourImgUploading] = useState(false)
   const [tourImgError,     setTourImgError]     = useState('')
@@ -160,8 +161,7 @@ export default function AddPropertyForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  // Stable callback so TourRecorder never re-renders due to prop reference change
-  const handleVideoUpload = useCallback((url: string) => setVideoUrl(url), [])
+  const videoInputRef = useRef<HTMLInputElement>(null)
 
   const doSubmit = async () => {
     if (title.length < 5)            { setError('Title must be at least 5 characters'); return }
@@ -430,38 +430,87 @@ export default function AddPropertyForm() {
               </div>
               <p className="font-sans text-[11px] text-muted mb-6 ml-9">Help seekers explore your property without visiting</p>
 
-              {/* Video tour — in-browser recorder */}
+              {/* Video tour — gallery upload */}
               <div className="mb-5">
                 <label style={{ fontSize: '13px', fontWeight: 600, color: '#0f0e0c', marginBottom: '8px', display: 'block' }}>
-                  Virtual Tour (optional)
+                  Video Tour (optional)
                 </label>
                 <p style={{ fontSize: '12px', color: '#6b6055', marginBottom: '12px' }}>
-                  Record a silent walkthrough of your property. Renters can view it before visiting.
+                  Upload a walkthrough video from your gallery. Renters can view it before visiting.
                 </p>
-                {videoUrl ? (
-                  <div>
-                    {/* Video preview player */}
-                    <div style={{ borderRadius: '10px', overflow: 'hidden', background: '#000', position: 'relative', marginBottom: '10px' }}>
-                      <video
-                        src={videoUrl}
-                        controls
-                        playsInline
-                        style={{ width: '100%', maxHeight: '260px', display: 'block', objectFit: 'contain' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: 'rgba(26,107,74,0.08)', borderRadius: '8px' }}>
-                      <span style={{ color: '#1a6b4a', fontSize: '13px', fontWeight: 600 }}>✅ Virtual tour uploaded</span>
-                      <button
-                        type="button"
-                        onClick={() => setVideoUrl('')}
-                        style={{ marginLeft: 'auto', fontSize: '12px', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                      >
-                        ✕ Remove &amp; re-record
-                      </button>
-                    </div>
+
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  style={{ display: 'none' }}
+                  onChange={async e => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setVideoPreviewUrl(URL.createObjectURL(file))
+                    setVideoFileUploading(true)
+                    try {
+                      const fd = new FormData()
+                      fd.append('file', file)
+                      const res  = await fetch('/api/upload', { method: 'POST', body: fd })
+                      const data = await res.json() as { url?: string }
+                      if (res.ok && data.url) setVideoUrl(data.url)
+                    } catch { /* upload failed silently */ }
+                    setVideoFileUploading(false)
+                    e.target.value = ''
+                  }}
+                />
+
+                {(videoPreviewUrl ?? videoUrl) ? (
+                  <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', background: '#000' }}>
+                    <video
+                      src={videoUrl || videoPreviewUrl!}
+                      controls
+                      playsInline
+                      style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', display: 'block' }}
+                    />
+                    {videoFileUploading && (
+                      <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'rgba(0,0,0,0.55)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 14, color: '#fff', fontWeight: 600,
+                      }}>
+                        Uploading…
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setVideoUrl(''); setVideoPreviewUrl(null) }}
+                      style={{
+                        position: 'absolute', top: 10, right: 10,
+                        background: 'rgba(0,0,0,0.7)', color: '#fff',
+                        border: 'none', borderRadius: 20,
+                        padding: '6px 12px', fontSize: 13,
+                        fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      ✕ Remove
+                    </button>
                   </div>
                 ) : (
-                  <TourRecorder onUpload={handleVideoUpload} />
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    style={{
+                      width: '100%', padding: '16px',
+                      background: '#f5f3ff', color: '#6366f1',
+                      border: '2px dashed #a5b4fc', borderRadius: 14,
+                      fontWeight: 700, fontSize: 15,
+                      cursor: 'pointer', textAlign: 'center',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    🎬 Upload video tour from gallery
+                    <div style={{ fontSize: 12, fontWeight: 400, marginTop: 4, color: '#818cf8' }}>
+                      Optional · Any length · Uploaded from your gallery
+                    </div>
+                  </button>
                 )}
               </div>
 

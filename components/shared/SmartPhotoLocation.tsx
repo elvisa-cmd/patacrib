@@ -323,7 +323,7 @@ export default function SmartPhotoLocation({ onPhotosChanged, onLocationFound, e
 
       {/* Minimum photos hint */}
       <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, textAlign: 'center' }}>
-        Minimum 3 photos · Entrance, living room, bedroom, kitchen
+        At least 3 photos · No maximum · Entrance, living room, bedroom, kitchen, bathroom
       </p>
     </div>
   )
