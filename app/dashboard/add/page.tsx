@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import AddPropertyForm from '@/components/dashboard/AddPropertyForm'
-import IOSInstallGate from '@/components/shared/IOSInstallGate'
 
 export default async function AddPropertyPage() {
   const session = await getServerSession(authOptions)
@@ -11,7 +10,6 @@ export default async function AddPropertyPage() {
   if (session.user.userType !== 'ADMIN') redirect('/dashboard')
 
   return (
-    <IOSInstallGate>
     <div className="min-h-screen" style={{ background: '#faf8f5' }}>
 
       {/* Green header */}
@@ -69,6 +67,5 @@ export default async function AddPropertyPage() {
         <AddPropertyForm />
       </main>
     </div>
-    </IOSInstallGate>
   )
 }

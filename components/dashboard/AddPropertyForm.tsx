@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import SmartPhotoLocation from '@/components/shared/SmartPhotoLocation'
+import ExifLocationCapture from '@/components/shared/ExifLocationCapture'
 import ListingPreview from './ListingPreview'
 
 // ── Design-system constants ──────────────────────────────────────────────────
@@ -121,6 +121,7 @@ export default function AddPropertyForm() {
   const [lat,            setLat]            = useState<number | null>(null)
   const [lng,            setLng]            = useState<number | null>(null)
   const [capturedAddress, setCapturedAddress] = useState('')
+  const [locationSource,  setLocationSource]  = useState<'exif' | 'manual' | null>(null)
   const [uploading,       setUploading]       = useState(false)
 
   // Section 3 — Photos
@@ -355,8 +356,15 @@ export default function AddPropertyForm() {
             <section className={SECTION}>
               <SectionHeader num={2} title="Photos & location" />
 
-              <SmartPhotoLocation
-                onPhotosChanged={async (files) => {
+              <ExifLocationCapture
+                onLocationFound={(capLat, capLng, capAddress, source) => {
+                  setLat(capLat)
+                  setLng(capLng)
+                  setCapturedAddress(capAddress)
+                  setLocationSource(source)
+                  if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
+                }}
+                onPhotosSelected={async (files) => {
                   setUploading(true)
                   setImages([])
                   for (const file of files) {
@@ -369,12 +377,6 @@ export default function AddPropertyForm() {
                     } catch { /* skip failed upload */ }
                   }
                   setUploading(false)
-                }}
-                onLocationFound={(capLat, capLng, capAddress) => {
-                  setLat(capLat)
-                  setLng(capLng)
-                  setCapturedAddress(capAddress)
-                  if (!address) setAddress(capAddress.split(',').slice(0, 2).join(','))
                 }}
               />
 
