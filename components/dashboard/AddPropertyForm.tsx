@@ -170,10 +170,6 @@ export default function AddPropertyForm() {
     if (!price || Number(price) <= 0) { setError('Price must be a positive number'); return }
     if (!propertyType)                { setError('Property type is required'); return }
     if (address.length < 5)          { setError('Address must be at least 5 characters'); return }
-    if (lat === null || lng === null) {
-      setError('Please take at least one live photo at the property or paste a Google Maps link to set the location.')
-      return
-    }
 
     setSubmitting(true)
     setError(null)
@@ -193,8 +189,8 @@ export default function AddPropertyForm() {
           address,
           estate:        estate        || undefined,
           city,
-          latitude:      lat,
-          longitude:     lng,
+          latitude:      lat  ?? undefined,
+          longitude:     lng  ?? undefined,
           images,
           videoUrl:      videoUrl      || undefined,
           tourImageUrl:  tourImageUrl  || undefined,
