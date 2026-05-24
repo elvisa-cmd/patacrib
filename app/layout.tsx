@@ -121,6 +121,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
         <link rel="dns-prefetch" href="https://router.project-osrm.org" />
+        {/* Apple PWA meta tags — required for proper iOS standalone mode */}
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
       </head>
       <body className="bg-bg text-ink font-sans antialiased">
         {/* Organization / LocalBusiness schema */}

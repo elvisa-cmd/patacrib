@@ -1,41 +1,35 @@
 {
-  "name": "PataKrib — GPS-Verified Rentals in Kenya",
+  "name": "PataKrib",
   "short_name": "PataKrib",
-  "description": "Find GPS-verified rental properties across Kenya",
-  "start_url": "/dashboard",
+  "description": "Kenya's GPS-verified rental platform",
+  "start_url": "/dashboard/add",
   "display": "standalone",
   "background_color": "#0d0d0d",
   "theme_color": "#1a6b4a",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "scope": "/",
-  "lang": "en",
-  "categories": ["real estate", "lifestyle"],
   "icons": [
-    { "src": "/icons/icon-72x72.png", "sizes": "72x72", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-128x128.png", "sizes": "128x128", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-144x144.png", "sizes": "144x144", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-152x152.png", "sizes": "152x152", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-384x384.png", "sizes": "384x384", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable any" },
-    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
-  ],
-  "screenshots": [
     {
-      "src": "/screenshots/home.png",
-      "sizes": "1080x1920",
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Homepage with GPS map"
+      "purpose": "any maskable"
     },
     {
-      "src": "/screenshots/browse.png",
-      "sizes": "1080x1920",
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
       "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Browse properties"
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
   "shortcuts": [
@@ -43,13 +37,13 @@
       "name": "Browse Properties",
       "short_name": "Browse",
       "url": "/browse/map",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     },
     {
       "name": "List a Property",
       "short_name": "List",
       "url": "/dashboard/add",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
     }
   ]
 }

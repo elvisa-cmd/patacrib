@@ -180,15 +180,14 @@ export default function SmartPhotoLocation({ onPhotosChanged, onLocationFound, e
         </div>
       </button>
 
-      {/* iPhone one-time tip */}
+      {/* iPhone tip — shown when running as installed PWA */}
       {isIOS() && gpsStatus === 'idle' && (
         <div style={{
           background: '#fffbeb', border: '1px solid #f59e0b',
           borderRadius: 12, padding: 12, fontSize: 13, color: '#92400e', lineHeight: 1.5,
         }}>
-          📱 <strong>iPhone tip (one time only):</strong> Make sure camera location is on —
-          Settings → Privacy &amp; Security → Location Services → Camera → While Using App.
-          Then take photos at the property before uploading.
+          📱 You are running PataKrib as an installed app — GPS will be captured automatically from your photos.
+          Make sure Camera location is on: Settings → Privacy &amp; Security → Location Services → Camera → While Using App.
         </div>
       )}
 

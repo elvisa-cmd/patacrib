@@ -12,7 +12,9 @@ function isInStandaloneMode(): boolean {
   if (typeof window === 'undefined') return false
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (window.navigator as any).standalone === true ||
-    window.matchMedia('(display-mode: standalone)').matches
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.matchMedia('(display-mode: fullscreen)').matches ||
+    document.referrer.includes('android-app://')
 }
 
 export default function IOSInstallGate({ children }: { children: ReactNode }) {
@@ -20,6 +22,12 @@ export default function IOSInstallGate({ children }: { children: ReactNode }) {
   const [step,     setStep]     = useState(1)
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('bypass') === 'true') {
+      setShowGate(false)
+      return
+    }
     if (isIOS() && !isInStandaloneMode()) {
       setShowGate(true)
     }
