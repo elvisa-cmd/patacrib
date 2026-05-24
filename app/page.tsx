@@ -1,5 +1,8 @@
 import { Suspense }        from 'react'
 import { unstable_cache }  from 'next/cache'
+import { redirect }        from 'next/navigation'
+import { getServerSession } from 'next-auth'
+import { authOptions }     from '@/lib/auth'
 import { prisma }          from '@/lib/db'
 import Nav                 from '@/components/home/Nav'
 import HomeContent         from '@/components/home/HomeContent'
@@ -8,6 +11,8 @@ import HowItWorks          from '@/components/home/HowItWorks'
 import Footer              from '@/components/home/Footer'
 import SkeletonLoader      from '@/components/ui/SkeletonLoader'
 import type { SerializedProperty } from '@/types/property'
+
+const LISTER_TYPES = ['LANDLORD', 'LISTER', 'AGENT', 'AGENCY', 'ADMIN']
 
 // Cache the DB result for 60 s, independently of the page render cycle.
 // This means even though Nav makes the page "dynamic" (auth cookies),
@@ -43,6 +48,11 @@ const CATEGORY_PILLS = [
 ]
 
 export default async function HomePage() {
+  const session = await getServerSession(authOptions)
+  if (session?.user?.userType && LISTER_TYPES.includes(session.user.userType)) {
+    redirect('/dashboard')
+  }
+
   let totalListings  = 0
   let totalLandlords = 0
   let estatesCovered = 0

@@ -478,7 +478,7 @@ export default function AddPropertyForm() {
                 {(videoPreviewUrl || videoUrl) ? (
                   <div style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', background: '#000' }}>
                     <video
-                      src={videoUrl || videoPreviewUrl ?? ''}
+                      src={videoUrl || (videoPreviewUrl ?? '')}
                       controls
                       playsInline
                       style={{ width: '100%', aspectRatio: '16/9', display: 'block' }}

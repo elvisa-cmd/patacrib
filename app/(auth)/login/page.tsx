@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import AuthBackground from '@/components/shared/AuthBackground'
 import { FloatingInput } from '@/components/shared/FloatingInput'
@@ -66,7 +66,13 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/dashboard')
+    const session = await getSession()
+    const userType = session?.user?.userType
+    if (userType === 'SEEKER') {
+      router.push('/dashboard/seeker')
+    } else {
+      router.push('/dashboard')
+    }
     router.refresh()
   }
 
