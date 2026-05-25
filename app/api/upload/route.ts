@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
       type:       isVideo ? 'video' : 'image',
       size:       file.size,
       filename,
-      gps,
+      lat:  gps?.lat ?? null,
+      lng:  gps?.lng ?? null,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'

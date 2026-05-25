@@ -376,13 +376,15 @@ export default function AddPropertyForm() {
                       const res  = await fetch('/api/upload', { method: 'POST', body: fd })
                       const data = await res.json() as {
                         url?: string
-                        gps?: { lat: number; lng: number } | null
+                        lat?: number | null
+                        lng?: number | null
                       }
                       if (res.ok && data.url) setImages(prev => [...prev, data.url!])
                       // Use server GPS only if client-side EXIF didn't already capture location
-                      if (res.ok && data.gps && !locationCapturedRef.current) {
+                      if (res.ok && data.lat && data.lng && !locationCapturedRef.current) {
                         locationCapturedRef.current = true
-                        const { lat: gpsLat, lng: gpsLng } = data.gps
+                        const gpsLat = data.lat
+                        const gpsLng = data.lng
                         setLat(gpsLat)
                         setLng(gpsLng)
                         setLocationSource('exif')
