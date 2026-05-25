@@ -48,7 +48,34 @@ export async function POST(req: NextRequest) {
     const userId    = (session.user.userId as string).slice(-8)
     const filename  = `${userId}-${Date.now()}.${ext}`
     const bucket    = isVideo ? 'property-videos' : 'property-images'
-    const buffer    = Buffer.from(await file.arrayBuffer())
+
+    // Read raw buffer first — before any processing — so EXIF is intact
+    const buffer = Buffer.from(await file.arrayBuffer())
+
+    // Extract GPS from EXIF before anything touches the bytes
+    let gps: { lat: number; lng: number } | null = null
+    if (isImage) {
+      try {
+        const sharp = (await import('sharp')).default
+        const metadata = await sharp(buffer).metadata()
+        if (metadata.exif) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const ExifReader = (await import('exif-reader')).default as (buf: Buffer) => any
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const exif = ExifReader(metadata.exif) as any
+          const g = exif?.gps
+          if (g?.GPSLatitude && g?.GPSLongitude) {
+            const toDecimal = (d: number[], ref: string) => {
+              const decimal = d[0] + d[1] / 60 + d[2] / 3600
+              return ref === 'S' || ref === 'W' ? -decimal : decimal
+            }
+            const lat = toDecimal(g.GPSLatitude as number[], g.GPSLatitudeRef as string)
+            const lng = toDecimal(g.GPSLongitude as number[], g.GPSLongitudeRef as string)
+            if (lat !== 0 && lng !== 0) gps = { lat, lng }
+          }
+        }
+      } catch { /* GPS extraction failed — upload continues normally */ }
+    }
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -66,13 +93,14 @@ export async function POST(req: NextRequest) {
     const publicUrl = urlData.publicUrl
 
     return NextResponse.json({
-      url:       publicUrl,
-      videoUrl:  isVideo ? publicUrl : undefined,
-      imageUrl:  isImage ? publicUrl : undefined,
+      url:        publicUrl,
+      videoUrl:   isVideo ? publicUrl : undefined,
+      imageUrl:   isImage ? publicUrl : undefined,
       secure_url: publicUrl,
-      type:      isVideo ? 'video' : 'image',
-      size:      file.size,
+      type:       isVideo ? 'video' : 'image',
+      size:       file.size,
       filename,
+      gps,
     })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error'

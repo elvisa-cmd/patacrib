@@ -162,8 +162,9 @@ export default function AddPropertyForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
 
-  const videoInputRef    = useRef<HTMLInputElement>(null)
-  const videoUploadToken = useRef(0)
+  const videoInputRef      = useRef<HTMLInputElement>(null)
+  const videoUploadToken   = useRef(0)
+  const locationCapturedRef = useRef(false)
 
   const doSubmit = async () => {
     if (title.length < 5)            { setError('Title must be at least 5 characters'); return }
@@ -358,6 +359,7 @@ export default function AddPropertyForm() {
 
               <ExifLocationCapture
                 onLocationFound={(capLat, capLng, capAddress, source) => {
+                  locationCapturedRef.current = true
                   setLat(capLat)
                   setLng(capLng)
                   setCapturedAddress(capAddress)
@@ -372,8 +374,32 @@ export default function AddPropertyForm() {
                       const fd = new FormData()
                       fd.append('file', file)
                       const res  = await fetch('/api/upload', { method: 'POST', body: fd })
-                      const data = await res.json() as { url?: string }
+                      const data = await res.json() as {
+                        url?: string
+                        gps?: { lat: number; lng: number } | null
+                      }
                       if (res.ok && data.url) setImages(prev => [...prev, data.url!])
+                      // Use server GPS only if client-side EXIF didn't already capture location
+                      if (res.ok && data.gps && !locationCapturedRef.current) {
+                        locationCapturedRef.current = true
+                        const { lat: gpsLat, lng: gpsLng } = data.gps
+                        setLat(gpsLat)
+                        setLng(gpsLng)
+                        setLocationSource('exif')
+                        fetch(
+                          `https://nominatim.openstreetmap.org/reverse?lat=${gpsLat}&lon=${gpsLng}&format=json`,
+                          { headers: { 'Accept-Language': 'en' } },
+                        )
+                          .then(r => r.json() as Promise<{ display_name?: string }>)
+                          .then(geo => {
+                            const addr = geo.display_name ?? `${gpsLat.toFixed(6)}, ${gpsLng.toFixed(6)}`
+                            setCapturedAddress(addr)
+                            setAddress(prev => prev || addr.split(',').slice(0, 2).join(','))
+                          })
+                          .catch(() => {
+                            setCapturedAddress(`${gpsLat.toFixed(6)}, ${gpsLng.toFixed(6)}`)
+                          })
+                      }
                     } catch { /* skip failed upload */ }
                   }
                   setUploading(false)
